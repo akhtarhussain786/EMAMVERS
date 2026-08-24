@@ -1,0 +1,28 @@
+# IDE & System files
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Scratch and temp
+scratch/
+*.log
+*.tmp
+
+# Flutter / Dart
+student_app/.dart_tool/
+student_app/.flutter-plugins
+student_app/.flutter-plugins-dependencies
+student_app/.pub-cache/
+student_app/.pub/
+student_app/build/
+student_app/android/local.properties
+student_app/android/.gradle/
+student_app/android/app/debug/
+student_app/android/app/profile/
+student_app/android/app/release/
+
+# PHP / Environment
+vendor/
+.env
