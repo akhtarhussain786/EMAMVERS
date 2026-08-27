@@ -45,9 +45,10 @@ class _WrongQuestionsViewState extends State<WrongQuestionsView> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppConstants.accentBlue))
-          : wrongQuestions.isEmpty
+      body: SafeArea(
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator(color: AppConstants.accentBlue))
+            : wrongQuestions.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -199,6 +200,7 @@ class _WrongQuestionsViewState extends State<WrongQuestionsView> {
                     );
                   },
                 ),
+      ),
     );
   }
 }

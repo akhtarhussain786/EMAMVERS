@@ -71,8 +71,9 @@ class _EditProfileViewState extends State<EditProfileView> {
         title: const Text('Edit Profile', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppConstants.space20),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppConstants.space20),
         child: Column(
           children: [
             Center(
@@ -114,6 +115,7 @@ class _EditProfileViewState extends State<EditProfileView> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

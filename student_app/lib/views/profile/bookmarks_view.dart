@@ -69,9 +69,10 @@ class _BookmarksViewState extends State<BookmarksView> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppConstants.accentBlue))
-          : Column(
+      body: SafeArea(
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator(color: AppConstants.accentBlue))
+            : Column(
               children: [
                 // Filter Tabs
                 Container(
@@ -180,6 +181,7 @@ class _BookmarksViewState extends State<BookmarksView> {
                 ),
               ],
             ),
+      ),
     );
   }
 

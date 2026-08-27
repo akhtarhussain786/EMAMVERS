@@ -123,13 +123,15 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
           ),
         ],
       ),
-      body: _loading
-          ? _buildLoadingView()
-          : _errorMsg.isNotEmpty
-              ? _buildErrorView()
-              : _quizFinished
+      body: SafeArea(
+        child: _loading
+            ? _buildLoadingView()
+            : _errorMsg.isNotEmpty
+                ? _buildErrorView()
+                : _quizFinished
                   ? _buildScorecardView()
                   : _buildQuestionPlayer(),
+      ),
     );
   }
 

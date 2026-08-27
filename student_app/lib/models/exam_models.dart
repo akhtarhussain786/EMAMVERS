@@ -107,6 +107,16 @@ class QuestionItem {
   bool isMarkedForReview;
   int timeSpentSeconds;
 
+  int get id => questionId;
+  String? get selectedOption => selectedOptionKey;
+  set selectedOption(String? val) => selectedOptionKey = val;
+  bool get isAnswered => selectedOptionKey != null && selectedOptionKey!.isNotEmpty;
+  set isAnswered(bool val) {}
+  String get questionText {
+    if (translations.isNotEmpty) return translations.first.questionText;
+    return 'Question';
+  }
+
   QuestionItem({
     required this.questionId,
     required this.questionOrder,

@@ -107,22 +107,24 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Search & Filters Header
-          _buildSearchAndFilters(),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Search & Filters Header
+            _buildSearchAndFilters(),
 
-          // Main Article List
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF818cf8)))
-                : _errorMsg.isNotEmpty
-                    ? _buildErrorState()
-                    : _articles.isEmpty
-                        ? _buildEmptyState()
-                        : _buildArticleList(),
-          ),
-        ],
+            // Main Article List
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator(color: Color(0xFF818cf8)))
+                  : _errorMsg.isNotEmpty
+                      ? _buildErrorState()
+                      : _articles.isEmpty
+                          ? _buildEmptyState()
+                          : _buildArticleList(),
+            ),
+          ],
+        ),
       ),
     );
   }

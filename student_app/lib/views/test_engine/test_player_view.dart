@@ -60,75 +60,68 @@ class _TestPlayerViewState extends State<TestPlayerView> {
   }
 
   void _initTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (remainingSeconds <= 1) {
-        timer.cancel();
-        _autoSubmit();
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (remainingSeconds > 0) {
+        setState(() => remainingSeconds--);
       } else {
-        setState(() {
-          remainingSeconds--;
-          if (questions.isNotEmpty) {
-            questions[currentIndex].timeSpentSeconds++;
-          }
-        });
+        t.cancel();
+        _submitFinalAttempt();
       }
     });
   }
 
-  void _autosaveCurrentState() async {
-    if (questions.isEmpty) return;
-    final q = questions[currentIndex];
-    try {
-      await ApiService.put('/v1/attempts/$attemptId/answers', {
-        'question_id': q.questionId,
-        'selected_option_key': q.selectedOptionKey,
-        'numerical_answer': q.numericalAnswer,
-        'is_marked_for_review': q.isMarkedForReview ? 1 : 0,
-        'time_spent_seconds': q.timeSpentSeconds,
-      });
-    } catch (_) {}
+  String _formatTimer(int seconds) {
+    final m = seconds ~/ 60;
+    final s = seconds % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
-  void _onSaveAndNext() {
-    _autosaveCurrentState();
-    if (currentIndex < questions.length - 1) {
-      setState(() => currentIndex++);
-    }
+  void _onOptionSelected(String optionKey) {
+    setState(() {
+      questions[currentIndex].selectedOption = optionKey;
+      questions[currentIndex].isAnswered = true;
+    });
   }
 
   void _onMarkForReview() {
     setState(() {
       questions[currentIndex].isMarkedForReview = !questions[currentIndex].isMarkedForReview;
     });
-    _onSaveAndNext();
   }
 
   void _onClearResponse() {
     setState(() {
-      questions[currentIndex].selectedOptionKey = null;
-      questions[currentIndex].numericalAnswer = null;
+      questions[currentIndex].selectedOption = null;
+      questions[currentIndex].isAnswered = false;
     });
-    _autosaveCurrentState();
   }
 
-  void _autoSubmit() {
-    _submitFinalAttempt();
-  }
-
-  void _submitFinalAttempt() async {
-    _timer?.cancel();
-    try {
-      await ApiService.post('/v1/attempts/$attemptId/submit', {});
-      widget.onTestSubmitted(attemptId);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+  void _onSaveAndNext() {
+    if (currentIndex < questions.length - 1) {
+      setState(() => currentIndex++);
+    } else {
+      _showSubmitDialog(context);
     }
   }
 
-  String _formatTimer(int seconds) {
-    final m = (seconds ~/ 60).toString().padLeft(2, '0');
-    final s = (seconds % 60).toString().padLeft(2, '0');
-    return '$m:$s';
+  void _submitFinalAttempt() async {
+    try {
+      final responses = questions.map((q) {
+        return {
+          'question_id': q.id,
+          'selected_option': q.selectedOption,
+          'is_marked_review': q.isMarkedForReview ? 1 : 0,
+        };
+      }).toList();
+
+      await ApiService.post('/v1/attempts/$attemptId/submit', {
+        'responses': responses,
+      });
+
+      if (mounted) widget.onTestSubmitted(attemptId);
+    } catch (_) {
+      if (mounted) widget.onTestSubmitted(attemptId);
+    }
   }
 
   @override
@@ -136,37 +129,49 @@ class _TestPlayerViewState extends State<TestPlayerView> {
     if (isLoading) {
       return Scaffold(
         backgroundColor: AppConstants.primaryDark,
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(AppConstants.space20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                SkeletonCard(height: 50, borderRadius: 12),
-                SizedBox(height: 20),
-                Expanded(child: SkeletonListLoader(count: 4, itemHeight: 80)),
-              ],
-            ),
+        appBar: AppBar(
+          backgroundColor: AppConstants.cardDark,
+          title: const Text('Loading Test Engine...', style: TextStyle(color: Colors.white, fontSize: 16)),
+          leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: widget.onExit),
+        ),
+        body: const Padding(
+          padding: EdgeInsets.all(AppConstants.space24),
+          child: SkeletonListLoader(count: 3, itemHeight: 140),
+        ),
+      );
+    }
+
+    if (questions.isEmpty) {
+      return Scaffold(
+        backgroundColor: AppConstants.primaryDark,
+        appBar: AppBar(backgroundColor: AppConstants.cardDark, title: const Text('Test Attempt')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('No questions found for this test.', style: TextStyle(color: Colors.white70)),
+              const SizedBox(height: 16),
+              ElevatedButton(onPressed: widget.onExit, child: const Text('Back')),
+            ],
           ),
         ),
       );
     }
 
     final currentQuestion = questions[currentIndex];
-    final trans = currentQuestion.translations.firstWhere((t) => t.language == selectedLanguage, orElse: () => currentQuestion.translations.first);
 
     return Scaffold(
       backgroundColor: AppConstants.primaryDark,
       appBar: AppBar(
         backgroundColor: AppConstants.cardDark,
         elevation: 0,
+        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: widget.onExit),
         title: Row(
           children: [
-            Text('Q ${currentIndex + 1}/${questions.length}', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
-            const Spacer(),
-            // Timer Badge
+            Text('Q ${currentIndex + 1}/${questions.length}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+            const SizedBox(width: 12),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: AppConstants.primaryDark,
                 borderRadius: BorderRadius.circular(10),
@@ -205,115 +210,113 @@ class _TestPlayerViewState extends State<TestPlayerView> {
           IconButton(icon: const Icon(Icons.exit_to_app_rounded, color: AppConstants.accentRose), onPressed: () => _showSubmitDialog(context)),
         ],
       ),
-      body: Column(
-        children: [
-          // Section Bar
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            color: AppConstants.cardDark.withOpacity(0.6),
-            child: Row(
-              children: [
-                Text(currentQuestion.sectionName ?? 'Section', style: const TextStyle(color: AppConstants.textSecondary, fontSize: 12.5, fontWeight: FontWeight.bold)),
-                const Spacer(),
-                Text('+${currentQuestion.positiveMarks} / -${currentQuestion.negativeMarks}', style: const TextStyle(color: AppConstants.accentEmerald, fontSize: 11.5, fontWeight: FontWeight.w800)),
-              ],
-            ),
-          ),
-
-          // Question Body
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppConstants.space20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Section Bar
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              color: AppConstants.cardDark.withValues(alpha: 0.6),
+              child: Row(
                 children: [
-                  Text(trans.questionText, style: const TextStyle(color: Colors.white, fontSize: 16.5, height: 1.5, fontWeight: FontWeight.w500)),
-                  const SizedBox(height: AppConstants.space24),
-
-                  // MCQ Options
-                  ...currentQuestion.options.where((o) => o.language == selectedLanguage || o.language == 'en').map((opt) {
-                    final isSelected = currentQuestion.selectedOptionKey == opt.optionKey;
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          currentQuestion.selectedOptionKey = opt.optionKey;
-                        });
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppConstants.accentIndigo.withOpacity(0.18) : AppConstants.cardDark,
-                          borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-                          border: Border.all(
-                            color: isSelected ? AppConstants.accentIndigo : AppConstants.cardBorder,
-                            width: isSelected ? 1.8 : 1.0,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                color: isSelected ? AppConstants.accentIndigo : AppConstants.primaryDark,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(opt.optionKey, style: TextStyle(color: isSelected ? Colors.white : AppConstants.textSecondary, fontWeight: FontWeight.bold, fontSize: 13)),
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(child: Text(opt.optionText, style: const TextStyle(color: Colors.white, fontSize: 14.5, height: 1.3))),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                  Text(currentQuestion.sectionName ?? 'Section', style: const TextStyle(color: AppConstants.textSecondary, fontSize: 12.5, fontWeight: FontWeight.bold)),
+                  const Spacer(),
+                  Text('+${currentQuestion.positiveMarks} / -${currentQuestion.negativeMarks}', style: const TextStyle(color: AppConstants.accentEmerald, fontSize: 11.5, fontWeight: FontWeight.w800)),
                 ],
               ),
             ),
-          ),
 
-          // Bottom Action Bar
-          Container(
-            padding: const EdgeInsets.all(AppConstants.space16),
-            decoration: BoxDecoration(
-              color: AppConstants.cardDark,
-              border: Border(top: BorderSide(color: AppConstants.cardBorder)),
+            // Question Body
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppConstants.space20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      currentQuestion.questionText,
+                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600, height: 1.4),
+                    ),
+                    const SizedBox(height: AppConstants.space24),
+
+                    // Options List
+                    ...currentQuestion.options.map((opt) {
+                      final isSelected = currentQuestion.selectedOption == opt.optionKey;
+                      return GestureDetector(
+                        onTap: () => _onOptionSelected(opt.optionKey),
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppConstants.accentIndigo.withValues(alpha: 0.15) : AppConstants.cardDark,
+                            borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+                            border: Border.all(color: isSelected ? AppConstants.accentIndigo : AppConstants.cardBorder, width: isSelected ? 1.5 : 1.0),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 30,
+                                height: 30,
+                                decoration: BoxDecoration(
+                                  color: isSelected ? AppConstants.accentIndigo : AppConstants.primaryDark,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(opt.optionKey, style: TextStyle(color: isSelected ? Colors.white : AppConstants.textSecondary, fontWeight: FontWeight.bold, fontSize: 13)),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(child: Text(opt.optionText, style: const TextStyle(color: Colors.white, fontSize: 14.5, height: 1.3))),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
             ),
-            child: Row(
-              children: [
-                OutlinedButton(
-                  onPressed: _onMarkForReview,
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppConstants.accentAmber),
-                    foregroundColor: AppConstants.accentAmber,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+
+            // Bottom Action Bar
+            Container(
+              padding: const EdgeInsets.all(AppConstants.space16),
+              decoration: BoxDecoration(
+                color: AppConstants.cardDark,
+                border: Border(top: BorderSide(color: AppConstants.cardBorder)),
+              ),
+              child: Row(
+                children: [
+                  OutlinedButton(
+                    onPressed: _onMarkForReview,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppConstants.accentAmber),
+                      foregroundColor: AppConstants.accentAmber,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: Text(currentQuestion.isMarkedForReview ? 'Unmark' : 'Mark Review', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
                   ),
-                  child: Text(currentQuestion.isMarkedForReview ? 'Unmark' : 'Mark Review', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
-                ),
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: _onClearResponse,
-                  child: const Text('Clear', style: TextStyle(color: AppConstants.textMuted, fontSize: 12.5)),
-                ),
-                const Spacer(),
-                ElevatedButton(
-                  onPressed: _onSaveAndNext,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConstants.accentIndigo,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: _onClearResponse,
+                    child: const Text('Clear', style: TextStyle(color: AppConstants.textMuted, fontSize: 12.5)),
                   ),
-                  child: const Text('Save & Next →', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
-                ),
-              ],
+                  const Spacer(),
+                  ElevatedButton(
+                    onPressed: _onSaveAndNext,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppConstants.accentIndigo,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: const Text('Save & Next →', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -338,9 +341,13 @@ class _TestPlayerViewState extends State<TestPlayerView> {
                   itemBuilder: (context, i) {
                     final q = questions[i];
                     Color bg = AppConstants.primaryDark;
-                    if (q.isAnswered && q.isMarkedForReview) bg = AppConstants.accentPurple;
-                    else if (q.isMarkedForReview) bg = AppConstants.accentAmber;
-                    else if (q.isAnswered) bg = AppConstants.accentEmerald;
+                    if (q.isAnswered && q.isMarkedForReview) {
+                      bg = AppConstants.accentPurple;
+                    } else if (q.isMarkedForReview) {
+                      bg = AppConstants.accentAmber;
+                    } else if (q.isAnswered) {
+                      bg = AppConstants.accentEmerald;
+                    }
 
                     return GestureDetector(
                       onTap: () {

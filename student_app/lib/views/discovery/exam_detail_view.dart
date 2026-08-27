@@ -73,8 +73,9 @@ class _ExamDetailViewState extends State<ExamDetailView> {
         leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: widget.onBack),
         title: Text(exam?['title'] ?? 'Exam Detail', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppConstants.space20),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppConstants.space20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -172,8 +173,9 @@ class _ExamDetailViewState extends State<ExamDetailView> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _patternMetric(String label, String value) {
     return Column(

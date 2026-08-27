@@ -74,8 +74,9 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
         title: const Text('Test Instructions', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
         leading: IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: widget.onCancel),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppConstants.space24),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppConstants.space24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -132,8 +133,9 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _infoTile(String label, String value) {
     return Column(
