@@ -110,7 +110,7 @@ class QuestionItem {
   int get id => questionId;
   String? get selectedOption => selectedOptionKey;
   set selectedOption(String? val) => selectedOptionKey = val;
-  bool get isAnswered => selectedOptionKey != null && selectedOptionKey!.isNotEmpty;
+  bool get isAnswered => (selectedOptionKey != null && selectedOptionKey!.isNotEmpty) || (numericalAnswer != null && numericalAnswer!.isNotEmpty);
   set isAnswered(bool val) {}
   String get questionText {
     if (translations.isNotEmpty) return translations.first.questionText;
@@ -152,8 +152,6 @@ class QuestionItem {
       timeSpentSeconds: uState != null ? (uState['time_spent_seconds'] ?? 0) : 0,
     );
   }
-
-  bool get isAnswered => (selectedOptionKey != null && selectedOptionKey!.isNotEmpty) || (numericalAnswer != null && numericalAnswer!.isNotEmpty);
 }
 
 class QuestionTranslation {
