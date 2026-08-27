@@ -9,6 +9,7 @@ Thumbs.db
 scratch/
 *.log
 *.tmp
+api/scratch_input.json
 
 # Flutter / Dart
 student_app/.dart_tool/
@@ -22,6 +23,7 @@ student_app/android/.gradle/
 student_app/android/app/debug/
 student_app/android/app/profile/
 student_app/android/app/release/
+student_app/android/build/
 
 # PHP / Environment
 vendor/

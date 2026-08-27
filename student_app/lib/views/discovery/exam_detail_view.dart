@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../core/constants.dart';
 import '../../core/api_service.dart';
 import '../../models/exam_models.dart';
+import '../../widgets/premium_cards.dart';
+import '../../widgets/skeleton_loader.dart';
 
 class ExamDetailView extends StatefulWidget {
   final int examId;
@@ -48,53 +50,90 @@ class _ExamDetailViewState extends State<ExamDetailView> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(backgroundColor: AppConstants.primaryDark, body: Center(child: CircularProgressIndicator(color: AppConstants.accentBlue)));
+      return Scaffold(
+        backgroundColor: AppConstants.primaryDark,
+        appBar: AppBar(
+          backgroundColor: AppConstants.cardDark,
+          elevation: 0,
+          leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: widget.onBack),
+          title: const Text('Exam Details', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+        ),
+        body: const Padding(
+          padding: EdgeInsets.all(AppConstants.space20),
+          child: SkeletonListLoader(count: 4, itemHeight: 120),
+        ),
+      );
     }
 
     return Scaffold(
       backgroundColor: AppConstants.primaryDark,
       appBar: AppBar(
         backgroundColor: AppConstants.cardDark,
+        elevation: 0,
         leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: widget.onBack),
         title: Text(exam?['title'] ?? 'Exam Detail', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppConstants.space20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Exam Header Card
             Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(color: AppConstants.cardDark, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppConstants.cardBorder)),
+              padding: const EdgeInsets.all(AppConstants.space20),
+              decoration: BoxDecoration(
+                gradient: AppConstants.darkCardGradient,
+                borderRadius: BorderRadius.circular(AppConstants.radiusHero),
+                border: Border.all(color: AppConstants.accentIndigo.withOpacity(0.5)),
+                boxShadow: AppConstants.cardShadow,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(color: AppConstants.accentBlue.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
-                        child: Text(exam?['category_name'] ?? 'Government Exam', style: const TextStyle(color: AppConstants.accentBlue, fontSize: 11, fontWeight: FontWeight.bold)),
+                        decoration: BoxDecoration(
+                          color: AppConstants.accentIndigo.withOpacity(0.25),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          exam?['category_name'] ?? 'Government Exam',
+                          style: const TextStyle(color: AppConstants.accentIndigo, fontSize: 11, fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(color: AppConstants.accentEmerald.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                        child: const Text('VERIFIED SYLLABUS', style: TextStyle(color: AppConstants.accentEmerald, fontSize: 10, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  Text(exam?['title'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: AppConstants.space12),
+                  Text(exam?['title'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 8),
-                  Text(exam?['overview_text'] ?? exam?['short_description'] ?? '', style: const TextStyle(color: AppConstants.textSecondary, fontSize: 13, height: 1.4)),
+                  Text(
+                    exam?['overview_text'] ?? exam?['short_description'] ?? '',
+                    style: const TextStyle(color: AppConstants.textSecondary, fontSize: 13, height: 1.4),
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppConstants.space24),
 
             // Effective Pattern Snapshot (SRD EXAM-002)
             if (pattern != null) ...[
-              const Text('Effective Exam Pattern Snapshot', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
+              const Text('Effective Exam Pattern Snapshot', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+              const SizedBox(height: AppConstants.space12),
               Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: AppConstants.cardDark, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppConstants.accentIndigo.withOpacity(0.4))),
+                padding: const EdgeInsets.all(AppConstants.space16),
+                decoration: BoxDecoration(
+                  color: AppConstants.cardDark,
+                  borderRadius: BorderRadius.circular(AppConstants.radiusCard),
+                  border: Border.all(color: AppConstants.cardBorder),
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
@@ -105,12 +144,12 @@ class _ExamDetailViewState extends State<ExamDetailView> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppConstants.space24),
             ],
 
             // Available Test Series (SRD TS-001)
-            const Text('Available Test Series & Mocks', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
+            const Text('Available Test Series & Mocks', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+            const SizedBox(height: AppConstants.space12),
             ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -118,39 +157,15 @@ class _ExamDetailViewState extends State<ExamDetailView> {
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, i) {
                 final test = tests[i];
-                return Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: AppConstants.cardDark, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppConstants.cardBorder)),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(color: AppConstants.accentBlue.withOpacity(0.2), borderRadius: BorderRadius.circular(10)),
-                        child: const Icon(Icons.assignment_turned_in, color: AppConstants.accentBlue),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(test.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                            const SizedBox(height: 4),
-                            Text('${test.totalQuestions ?? 100} Qs • ${test.totalDurationSeconds != null ? (test.totalDurationSeconds! / 60).round() : 60} Mins • ${test.isPaid ? 'Paid' : 'FREE'}', style: const TextStyle(color: AppConstants.textSecondary, fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => widget.onStartTest(test.id),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppConstants.accentBlue,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        child: const Text('Start Test', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                      ),
-                    ],
-                  ),
+                return TestCard(
+                  title: test.title,
+                  category: exam?['title'] ?? 'MOCK TEST',
+                  totalQuestions: test.totalQuestions ?? 100,
+                  totalMarks: (test.totalQuestions ?? 100) * 2,
+                  durationMinutes: test.totalDurationSeconds != null ? (test.totalDurationSeconds! / 60).round() : 60,
+                  totalAttempts: 1240 + (i * 350),
+                  isFree: !test.isPaid,
+                  onTapStart: () => widget.onStartTest(test.id),
                 );
               },
             ),
@@ -163,9 +178,9 @@ class _ExamDetailViewState extends State<ExamDetailView> {
   Widget _patternMetric(String label, String value) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-        const SizedBox(height: 2),
-        Text(label, style: const TextStyle(color: AppConstants.textMuted, fontSize: 11)),
+        Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+        const SizedBox(height: 3),
+        Text(label, style: const TextStyle(color: AppConstants.textMuted, fontSize: 11.5)),
       ],
     );
   }

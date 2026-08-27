@@ -20,6 +20,7 @@ require_once __DIR__ . '/controllers/ContentController.php';
 require_once __DIR__ . '/controllers/AdminController.php';
 require_once __DIR__ . '/controllers/CreatorController.php';
 require_once __DIR__ . '/controllers/MarketplaceController.php';
+require_once __DIR__ . '/controllers/UserController.php';
 
 // Extract URI path
 $requestUri = $_SERVER['REQUEST_URI'];
@@ -44,8 +45,13 @@ function matchRoute($pattern, $path, &$params) {
 
 $params = [];
 
+// Global try-catch: ensure ALL errors return JSON, never HTML
+try {
+
 // ROUTE DISPATCHER
-if ($path === '/v1/auth/login' && $method === 'POST') {
+if (($path === '/v1/health' || $path === '/health') && $method === 'GET') {
+    Response::json(['status' => 'online', 'app' => 'EXAMVERSE API'], 'EXAMVERSE API is running');
+} elseif ($path === '/v1/auth/login' && $method === 'POST') {
     AuthController::login();
 } elseif ($path === '/v1/auth/signup' && $method === 'POST') {
     AuthController::signup();
@@ -53,6 +59,8 @@ if ($path === '/v1/auth/login' && $method === 'POST') {
     AuthController::sendOtp();
 } elseif ($path === '/v1/auth/verify-otp' && $method === 'POST') {
     AuthController::verifyOtp();
+} elseif ($path === '/v1/auth/reset-password' && $method === 'POST') {
+    AuthController::resetPassword();
 } elseif ($path === '/v1/auth/meta' && $method === 'GET') {
     AuthController::getStatesAndQualifications();
 } elseif ($path === '/v1/home' && $method === 'GET') {
@@ -117,6 +125,20 @@ if ($path === '/v1/auth/login' && $method === 'POST') {
     AdminController::bulkImportQuestions();
 } elseif ($path === '/v1/admin/audit-logs' && $method === 'GET') {
     AdminController::getAuditLogs();
+} elseif ($path === '/v1/admin/tests' && $method === 'POST') {
+    AdminController::createTest();
+} elseif ($path === '/v1/admin/test-questions' && $method === 'POST') {
+    AdminController::assignQuestionsToTest();
+} elseif ($path === '/v1/admin/categories' && $method === 'POST') {
+    AdminController::createCategory();
+} elseif ($path === '/v1/admin/subjects' && $method === 'POST') {
+    AdminController::createSubject();
+} elseif ($path === '/v1/admin/questions' && $method === 'POST') {
+    AdminController::createQuestion();
+} elseif (matchRoute('/v1/admin/questions/{id}', $path, $params) && $method === 'DELETE') {
+    AdminController::deleteQuestion($params['id']);
+} elseif ($path === '/v1/admin/challenges' && $method === 'POST') {
+    AdminController::createChallenge();
 
 // ── AI KEY MANAGEMENT ─────────────────────────────────────────────────────
 } elseif ($path === '/v1/admin/ai-keys' && $method === 'GET') {
@@ -184,10 +206,40 @@ if ($path === '/v1/auth/login' && $method === 'POST') {
 } elseif ($path === '/v1/admin/marketplace/stats' && $method === 'GET') {
     MarketplaceController::adminStats();
 
-// ── EXAM SEARCH ──────────────────────────────────────────────────────────
-} elseif ($path === '/v1/exams/search' && $method === 'GET') {
-    DiscoveryController::searchExams();
+// ─── USER PROFILE & BOOKMARKS ─────────────────────────────────────────────
+} elseif ($path === '/v1/user/profile' && $method === 'GET') {
+    UserController::getProfile();
+} elseif ($path === '/v1/user/profile' && ($method === 'PUT' || $method === 'POST')) {
+    UserController::updateProfile();
+} elseif ($path === '/v1/bookmarks' && $method === 'GET') {
+    UserController::getBookmarks();
+} elseif ($path === '/v1/bookmarks' && $method === 'POST') {
+    UserController::addBookmark();
+} elseif (matchRoute('/v1/bookmarks/{id}', $path, $params) && $method === 'DELETE') {
+    UserController::deleteBookmark($params['id']);
+} elseif ($path === '/v1/user/wrong-questions' && $method === 'GET') {
+    UserController::getWrongQuestions();
+} elseif ($path === '/v1/notifications' && $method === 'GET') {
+    UserController::getNotifications();
+} elseif (matchRoute('/v1/notifications/{id}/read', $path, $params) && $method === 'POST') {
+    UserController::markNotificationRead($params['id']);
+} elseif ($path === '/v1/user/target-exams' && $method === 'POST') {
+    UserController::addTargetExam();
 
 } else {
     Response::error("Endpoint '$path' not found or unsupported method '$method'", 404);
+}
+
+} catch (Throwable $e) {
+    // Global safety net: always return JSON, never HTML
+    http_response_code(500);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Internal server error: ' . $e->getMessage(),
+        'data' => null,
+        'errors' => [],
+        'timestamp' => date('Y-m-d H:i:s')
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    exit;
 }

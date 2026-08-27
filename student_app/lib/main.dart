@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'core/constants.dart';
+import 'widgets/premium_nav_bar.dart';
 import 'views/auth/login_signup_view.dart';
 import 'views/home/home_view.dart';
 import 'views/discovery/exam_detail_view.dart';
@@ -46,8 +47,15 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: AppConstants.primaryDark,
-        primaryColor: AppConstants.accentBlue,
+        primaryColor: AppConstants.accentIndigo,
+        cardColor: AppConstants.cardDark,
         textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+        colorScheme: const ColorScheme.dark(
+          primary: AppConstants.accentIndigo,
+          secondary: AppConstants.accentPurple,
+          surface: AppConstants.cardDark,
+          background: AppConstants.primaryDark,
+        ),
         useMaterial3: true,
       ),
       routes: {
@@ -120,6 +128,7 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
 
     return Scaffold(
       backgroundColor: AppConstants.primaryDark,
+      extendBody: true,
       body: IndexedStack(
         index: currentTabIndex,
         children: [
@@ -137,25 +146,21 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
           const MarketplaceScreen(),
           const AiCoachView(),
           const LeaderboardView(),
-          const PassportView(),
+          PassportView(onLogout: () => setState(() => isAuthenticated = false)),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: PremiumNavBar(
         currentIndex: currentTabIndex,
         onTap: (i) => setState(() {
           selectedExamId = null;
           currentTabIndex = i;
         }),
-        backgroundColor: AppConstants.cardDark,
-        selectedItemColor: AppConstants.accentBlue,
-        unselectedItemColor: AppConstants.textMuted,
-        type: BottomNavigationBarType.fixed,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.storefront_outlined), label: 'Marketplace'),
-          BottomNavigationBarItem(icon: Icon(Icons.auto_awesome), label: 'AI Coach'),
-          BottomNavigationBarItem(icon: Icon(Icons.leaderboard), label: 'Leaderboard'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Passport'),
+          PremiumNavBarItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
+          PremiumNavBarItem(icon: Icons.storefront_outlined, activeIcon: Icons.storefront, label: 'Market'),
+          PremiumNavBarItem(icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome, label: 'AI Twin'),
+          PremiumNavBarItem(icon: Icons.leaderboard_outlined, activeIcon: Icons.leaderboard_rounded, label: 'Ranks'),
+          PremiumNavBarItem(icon: Icons.person_outline, activeIcon: Icons.person_rounded, label: 'Passport'),
         ],
       ),
     );

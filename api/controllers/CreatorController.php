@@ -10,6 +10,7 @@ class CreatorController {
 
     public static function register() {
         $user = AuthMiddleware::getAuthenticatedUser('student');
+        $userId = $user['sub'] ?? ($user['id'] ?? null);
         $body = json_decode(file_get_contents('php://input'), true);
 
         $displayName = trim($body['display_name'] ?? '');
@@ -28,17 +29,17 @@ class CreatorController {
 
         // Check if already a creator
         $existing = $db->prepare("SELECT id FROM creators WHERE user_id=?");
-        $existing->execute([$user['id']]);
+        $existing->execute([$userId]);
         if ($existing->fetch()) {
             Response::json(null, 'Already registered as creator', 'error', 409);
             return;
         }
 
         $stmt = $db->prepare("INSERT INTO creators (user_id, display_name, about, upi_id, bank_account_number, bank_ifsc, bank_account_name, verification_status) VALUES (?,?,?,?,?,?,?,'pending')");
-        $stmt->execute([$user['id'], $displayName, $about, $upiId, $bankAccount, $bankIfsc, $bankName]);
+        $stmt->execute([$userId, $displayName, $about, $upiId, $bankAccount, $bankIfsc, $bankName]);
 
         // Update user_type
-        $db->prepare("UPDATE users SET user_type='creator' WHERE id=?")->execute([$user['id']]);
+        $db->prepare("UPDATE users SET user_type='creator' WHERE id=?")->execute([$userId]);
 
         Response::json(['creator_id' => $db->lastInsertId()], 'Creator registration submitted! Pending admin review.', 'success', 201);
     }
@@ -47,10 +48,11 @@ class CreatorController {
 
     public static function dashboard() {
         $user = AuthMiddleware::getAuthenticatedUser();
+        $userId = $user['sub'] ?? ($user['id'] ?? null);
         $db = Database::getConnection();
 
         $cStmt = $db->prepare("SELECT c.*, u.full_name, u.email FROM creators c JOIN users u ON c.user_id=u.id WHERE c.user_id=?");
-        $cStmt->execute([$user['id']]);
+        $cStmt->execute([$userId]);
         $creator = $cStmt->fetch(PDO::FETCH_ASSOC);
         if (!$creator) { Response::json(null,'Creator profile not found','error',404); return; }
 
@@ -99,10 +101,11 @@ class CreatorController {
 
     public static function uploadMaterial() {
         $user = AuthMiddleware::getAuthenticatedUser();
+        $userId = $user['sub'] ?? ($user['id'] ?? null);
         $db = Database::getConnection();
 
         $cStmt = $db->prepare("SELECT id, verification_status FROM creators WHERE user_id=?");
-        $cStmt->execute([$user['id']]);
+        $cStmt->execute([$userId]);
         $creator = $cStmt->fetch(PDO::FETCH_ASSOC);
         if (!$creator) { Response::json(null,'Creator profile not found. Register as creator first.','error',403); return; }
         if ($creator['verification_status'] !== 'approved') {
@@ -157,10 +160,11 @@ class CreatorController {
 
     public static function myMaterials() {
         $user = AuthMiddleware::getAuthenticatedUser();
+        $userId = $user['sub'] ?? ($user['id'] ?? null);
         $db = Database::getConnection();
 
         $cStmt = $db->prepare("SELECT id FROM creators WHERE user_id=?");
-        $cStmt->execute([$user['id']]);
+        $cStmt->execute([$userId]);
         $creator = $cStmt->fetch(PDO::FETCH_ASSOC);
         if (!$creator) { Response::json([],'No creator profile'); return; }
 
@@ -179,10 +183,11 @@ class CreatorController {
 
     public static function requestPayout() {
         $user = AuthMiddleware::getAuthenticatedUser();
+        $userId = $user['sub'] ?? ($user['id'] ?? null);
         $db = Database::getConnection();
 
         $cStmt = $db->prepare("SELECT * FROM creators WHERE user_id=?");
-        $cStmt->execute([$user['id']]);
+        $cStmt->execute([$userId]);
         $creator = $cStmt->fetch(PDO::FETCH_ASSOC);
         if (!$creator) { Response::json(null,'Creator not found','error',404); return; }
 

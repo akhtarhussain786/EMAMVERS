@@ -17,7 +17,17 @@ class AuthController {
 
     public static function login() {
         $input = json_decode(file_get_contents('php://input'), true);
-        $identity = isset($input['identity']) ? trim($input['identity']) : ''; // Email or Mobile
+        $identity = '';
+        if (isset($input['identity']) && trim($input['identity']) !== '') {
+            $identity = trim($input['identity']);
+        } elseif (isset($input['mobile_or_email']) && trim($input['mobile_or_email']) !== '') {
+            $identity = trim($input['mobile_or_email']);
+        } elseif (isset($input['email']) && trim($input['email']) !== '') {
+            $identity = trim($input['email']);
+        } elseif (isset($input['mobile']) && trim($input['mobile']) !== '') {
+            $identity = trim($input['mobile']);
+        }
+
         $password = isset($input['password']) ? trim($input['password']) : '';
 
         if (!$identity || !$password) {
@@ -30,9 +40,9 @@ class AuthController {
             FROM users u
             LEFT JOIN states s ON u.state_id = s.id
             LEFT JOIN qualifications q ON u.qualification_id = q.id
-            WHERE u.email = :identity OR u.mobile = :identity
+            WHERE u.email = :email OR u.mobile = :mobile
         ");
-        $stmt->execute(['identity' => $identity]);
+        $stmt->execute(['email' => $identity, 'mobile' => $identity]);
         $user = $stmt->fetch();
 
         if (!$user || !password_verify($password, $user['password_hash'])) {
@@ -61,17 +71,36 @@ class AuthController {
         $stateId = isset($input['state_id']) ? intval($input['state_id']) : null;
         $qualificationId = isset($input['qualification_id']) ? intval($input['qualification_id']) : null;
 
-        if (!$fullName || !$email || !$mobile || !$password) {
-            Response::error('Full Name, Email, Mobile and Password are required', 400);
+        if (!$fullName || (!$email && !$mobile) || !$password) {
+            Response::error('Full Name, Email/Mobile and Password are required', 400);
+        }
+
+        // If email field does not contain '@', treat it as mobile number
+        if ($email && strpos($email, '@') === false) {
+            $mobile = $email;
+            $email = $mobile . '@examverse.com';
+        }
+
+        if (!$email) {
+            $email = $mobile . '@examverse.com';
+        }
+
+        if (!$mobile) {
+            $mobile = '98' . substr(strval(microtime(true) * 10000), -8);
         }
 
         $db = Database::getConnection();
         
         // Check duplicate
-        $stmt = $db->prepare("SELECT id FROM users WHERE email = :email OR mobile = :mobile");
+        $stmt = $db->prepare("SELECT id, email, mobile FROM users WHERE email = :email OR mobile = :mobile");
         $stmt->execute(['email' => $email, 'mobile' => $mobile]);
-        if ($stmt->fetch()) {
-            Response::error('User with this email or mobile already exists', 409);
+        $existing = $stmt->fetch();
+        if ($existing) {
+            if ($existing['email'] === $email) {
+                Response::error('Account with this email already exists. Please Log In.', 409);
+            } else {
+                Response::error('Account with this mobile number already exists. Please Log In.', 409);
+            }
         }
 
         $passwordHash = password_hash($password, PASSWORD_BCRYPT);
@@ -139,5 +168,33 @@ class AuthController {
 
         $db->prepare("UPDATE user_otps SET is_used = 1 WHERE id = :id")->execute(['id' => $record['id']]);
         Response::json(null, 'OTP verified successfully');
+    }
+
+    public static function resetPassword() {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $identity = isset($input['identity']) ? trim($input['identity']) : '';
+        $otp = isset($input['otp']) ? trim($input['otp']) : '';
+        $newPassword = isset($input['new_password']) ? trim($input['new_password']) : '';
+
+        if (!$identity || !$newPassword) {
+            Response::error('Identity and new password are required', 422);
+        }
+
+        $db = Database::getConnection();
+
+        // Find user
+        $stmtUser = $db->prepare("SELECT id FROM users WHERE email = :u1 OR mobile = :u2");
+        $stmtUser->execute(['u1' => $identity, 'u2' => $identity]);
+        $user = $stmtUser->fetch();
+
+        if (!$user) {
+            Response::error('User not found with provided email/mobile', 404);
+        }
+
+        $newHash = password_hash($newPassword, PASSWORD_BCRYPT);
+        $updateStmt = $db->prepare("UPDATE users SET password_hash = :hash WHERE id = :id");
+        $updateStmt->execute(['hash' => $newHash, 'id' => $user['id']]);
+
+        Response::json(['updated' => true], 'Password reset successful. Please log in with your new password.');
     }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants.dart';
 import '../../core/api_service.dart';
 import '../../models/exam_models.dart';
+import '../../widgets/skeleton_loader.dart';
 
 class TestPlayerView extends StatefulWidget {
   final int testId;
@@ -133,7 +134,22 @@ class _TestPlayerViewState extends State<TestPlayerView> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(backgroundColor: AppConstants.primaryDark, body: Center(child: CircularProgressIndicator(color: AppConstants.accentBlue)));
+      return Scaffold(
+        backgroundColor: AppConstants.primaryDark,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppConstants.space20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                SkeletonCard(height: 50, borderRadius: 12),
+                SizedBox(height: 20),
+                Expanded(child: SkeletonListLoader(count: 4, itemHeight: 80)),
+              ],
+            ),
+          ),
+        ),
+      );
     }
 
     final currentQuestion = questions[currentIndex];
@@ -143,26 +159,37 @@ class _TestPlayerViewState extends State<TestPlayerView> {
       backgroundColor: AppConstants.primaryDark,
       appBar: AppBar(
         backgroundColor: AppConstants.cardDark,
+        elevation: 0,
         title: Row(
           children: [
-            Text('Q ${currentIndex + 1}/${questions.length}', style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+            Text('Q ${currentIndex + 1}/${questions.length}', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
             const Spacer(),
             // Timer Badge
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(color: AppConstants.primaryDark, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppConstants.accentBlue)),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: AppConstants.primaryDark,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: remainingSeconds < 300 ? AppConstants.accentRose : AppConstants.accentBlue),
+              ),
               child: Row(
                 children: [
-                  const Icon(Icons.timer_outlined, color: AppConstants.accentBlue, size: 16),
-                  const SizedBox(width: 4),
-                  Text(_formatTimer(remainingSeconds), style: const TextStyle(color: AppConstants.accentBlue, fontWeight: FontWeight.bold, fontSize: 13)),
+                  Icon(Icons.timer_outlined, color: remainingSeconds < 300 ? AppConstants.accentRose : AppConstants.accentBlue, size: 16),
+                  const SizedBox(width: 6),
+                  Text(
+                    _formatTimer(remainingSeconds),
+                    style: TextStyle(
+                      color: remainingSeconds < 300 ? AppConstants.accentRose : AppConstants.accentBlue,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13.5,
+                    ),
+                  ),
                 ],
               ),
             ),
           ],
         ),
         actions: [
-          // Language Switcher
           DropdownButton<String>(
             value: selectedLanguage,
             dropdownColor: AppConstants.cardDark,
@@ -174,8 +201,8 @@ class _TestPlayerViewState extends State<TestPlayerView> {
             ],
             onChanged: (v) => setState(() => selectedLanguage = v ?? 'en'),
           ),
-          IconButton(icon: const Icon(Icons.grid_view, color: Colors.white), onPressed: () => _openQuestionPalette(context)),
-          IconButton(icon: const Icon(Icons.exit_to_app, color: Colors.redAccent), onPressed: () => _showSubmitDialog(context)),
+          IconButton(icon: const Icon(Icons.grid_view_rounded, color: Colors.white), onPressed: () => _openQuestionPalette(context)),
+          IconButton(icon: const Icon(Icons.exit_to_app_rounded, color: AppConstants.accentRose), onPressed: () => _showSubmitDialog(context)),
         ],
       ),
       body: Column(
@@ -183,13 +210,13 @@ class _TestPlayerViewState extends State<TestPlayerView> {
           // Section Bar
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: AppConstants.cardDark.withOpacity(0.5),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            color: AppConstants.cardDark.withOpacity(0.6),
             child: Row(
               children: [
-                Text(currentQuestion.sectionName ?? 'Section', style: const TextStyle(color: AppConstants.textSecondary, fontSize: 12, fontWeight: FontWeight.bold)),
+                Text(currentQuestion.sectionName ?? 'Section', style: const TextStyle(color: AppConstants.textSecondary, fontSize: 12.5, fontWeight: FontWeight.bold)),
                 const Spacer(),
-                Text('+${currentQuestion.positiveMarks} / -${currentQuestion.negativeMarks}', style: const TextStyle(color: AppConstants.accentEmerald, fontSize: 11, fontWeight: FontWeight.bold)),
+                Text('+${currentQuestion.positiveMarks} / -${currentQuestion.negativeMarks}', style: const TextStyle(color: AppConstants.accentEmerald, fontSize: 11.5, fontWeight: FontWeight.w800)),
               ],
             ),
           ),
@@ -197,12 +224,12 @@ class _TestPlayerViewState extends State<TestPlayerView> {
           // Question Body
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(AppConstants.space20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(trans.questionText, style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.5, fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 24),
+                  Text(trans.questionText, style: const TextStyle(color: Colors.white, fontSize: 16.5, height: 1.5, fontWeight: FontWeight.w500)),
+                  const SizedBox(height: AppConstants.space24),
 
                   // MCQ Options
                   ...currentQuestion.options.where((o) => o.language == selectedLanguage || o.language == 'en').map((opt) {
@@ -215,27 +242,30 @@ class _TestPlayerViewState extends State<TestPlayerView> {
                       },
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(14),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: isSelected ? AppConstants.accentBlue.withOpacity(0.15) : AppConstants.cardDark,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: isSelected ? AppConstants.accentBlue : AppConstants.cardBorder),
+                          color: isSelected ? AppConstants.accentIndigo.withOpacity(0.18) : AppConstants.cardDark,
+                          borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+                          border: Border.all(
+                            color: isSelected ? AppConstants.accentIndigo : AppConstants.cardBorder,
+                            width: isSelected ? 1.8 : 1.0,
+                          ),
                         ),
                         child: Row(
                           children: [
                             Container(
-                              width: 28,
-                              height: 28,
+                              width: 30,
+                              height: 30,
                               decoration: BoxDecoration(
-                                color: isSelected ? AppConstants.accentBlue : AppConstants.primaryDark,
+                                color: isSelected ? AppConstants.accentIndigo : AppConstants.primaryDark,
                                 shape: BoxShape.circle,
                               ),
                               child: Center(
-                                child: Text(opt.optionKey, style: TextStyle(color: isSelected ? Colors.white : AppConstants.textSecondary, fontWeight: FontWeight.bold, fontSize: 12)),
+                                child: Text(opt.optionKey, style: TextStyle(color: isSelected ? Colors.white : AppConstants.textSecondary, fontWeight: FontWeight.bold, fontSize: 13)),
                               ),
                             ),
                             const SizedBox(width: 14),
-                            Expanded(child: Text(opt.optionText, style: const TextStyle(color: Colors.white, fontSize: 14))),
+                            Expanded(child: Text(opt.optionText, style: const TextStyle(color: Colors.white, fontSize: 14.5, height: 1.3))),
                           ],
                         ),
                       ),
@@ -248,25 +278,37 @@ class _TestPlayerViewState extends State<TestPlayerView> {
 
           // Bottom Action Bar
           Container(
-            padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(color: AppConstants.cardDark, border: Border(top: BorderSide(color: AppConstants.cardBorder))),
+            padding: const EdgeInsets.all(AppConstants.space16),
+            decoration: BoxDecoration(
+              color: AppConstants.cardDark,
+              border: Border(top: BorderSide(color: AppConstants.cardBorder)),
+            ),
             child: Row(
               children: [
                 OutlinedButton(
                   onPressed: _onMarkForReview,
-                  style: OutlinedButton.styleFrom(side: const BorderSide(color: AppConstants.accentAmber), foregroundColor: AppConstants.accentAmber),
-                  child: Text(currentQuestion.isMarkedForReview ? 'Unmark' : 'Mark for Review', style: const TextStyle(fontSize: 12)),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppConstants.accentAmber),
+                    foregroundColor: AppConstants.accentAmber,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: Text(currentQuestion.isMarkedForReview ? 'Unmark' : 'Mark Review', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
                 ),
                 const SizedBox(width: 8),
                 TextButton(
                   onPressed: _onClearResponse,
-                  child: const Text('Clear', style: TextStyle(color: AppConstants.textMuted, fontSize: 12)),
+                  child: const Text('Clear', style: TextStyle(color: AppConstants.textMuted, fontSize: 12.5)),
                 ),
                 const Spacer(),
                 ElevatedButton(
                   onPressed: _onSaveAndNext,
-                  style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentBlue, foregroundColor: Colors.white),
-                  child: const Text('Save & Next', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppConstants.accentIndigo,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: const Text('Save & Next →', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
                 ),
               ],
             ),
@@ -283,21 +325,21 @@ class _TestPlayerViewState extends State<TestPlayerView> {
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) {
         return Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(AppConstants.space20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Question Palette', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
+              const Text('Question Palette', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+              const SizedBox(height: AppConstants.space16),
               Expanded(
                 child: GridView.builder(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 5, crossAxisSpacing: 10, mainAxisSpacing: 10),
                   itemCount: questions.length,
                   itemBuilder: (context, i) {
                     final q = questions[i];
-                    Color bg = Colors.grey.shade800;
-                    if (q.isAnswered && q.isMarkedForReview) bg = Colors.purpleAccent;
-                    else if (q.isMarkedForReview) bg = Colors.purple;
+                    Color bg = AppConstants.primaryDark;
+                    if (q.isAnswered && q.isMarkedForReview) bg = AppConstants.accentPurple;
+                    else if (q.isMarkedForReview) bg = AppConstants.accentAmber;
                     else if (q.isAnswered) bg = AppConstants.accentEmerald;
 
                     return GestureDetector(
@@ -306,8 +348,8 @@ class _TestPlayerViewState extends State<TestPlayerView> {
                         setState(() => currentIndex = i);
                       },
                       child: Container(
-                        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
-                        child: Center(child: Text('${i + 1}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+                        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppConstants.cardBorder)),
+                        child: Center(child: Text('${i + 1}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13))),
                       ),
                     );
                   },
@@ -330,28 +372,40 @@ class _TestPlayerViewState extends State<TestPlayerView> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: AppConstants.cardDark,
-          title: const Text('Submit Test Attempt?', style: TextStyle(color: Colors.white)),
+          title: const Text('Submit Test Attempt?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Answered: $answered', style: const TextStyle(color: AppConstants.accentEmerald)),
-              Text('Unattempted: $unattempted', style: const TextStyle(color: Colors.redAccent)),
-              Text('Marked for Review: $marked', style: const TextStyle(color: AppConstants.accentAmber)),
+              _dialogRow('Answered Questions', '$answered', AppConstants.accentEmerald),
+              const SizedBox(height: 8),
+              _dialogRow('Unattempted Questions', '$unattempted', AppConstants.accentRose),
+              const SizedBox(height: 8),
+              _dialogRow('Marked for Review', '$marked', AppConstants.accentAmber),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Continue Test')),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Continue Test', style: TextStyle(color: AppConstants.textSecondary))),
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
                 _submitFinalAttempt();
               },
-              style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentEmerald),
-              child: const Text('Confirm Submit'),
+              style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentEmerald, foregroundColor: Colors.white),
+              child: const Text('Confirm & Submit', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         );
       },
+    );
+  }
+
+  Widget _dialogRow(String label, String val, Color color) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(color: AppConstants.textSecondary, fontSize: 13)),
+        Text(val, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14)),
+      ],
     );
   }
 }

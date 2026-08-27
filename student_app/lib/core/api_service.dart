@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'constants.dart';
 
 class ApiService {
   static String? authToken;
+  static const Duration timeoutDuration = Duration(seconds: 20);
 
   static Map<String, String> get _headers => {
     'Content-Type': 'application/json',
@@ -23,9 +26,13 @@ class ApiService {
   }
 
   static Future<dynamic> get(String endpoint, {Map<String, dynamic>? params}) async {
-    final uri = _buildUri(endpoint, params);
-    final response = await http.get(uri, headers: _headers);
-    return _processResponse(response);
+    try {
+      final uri = _buildUri(endpoint, params);
+      final response = await http.get(uri, headers: _headers).timeout(timeoutDuration);
+      return _processResponse(response);
+    } catch (e) {
+      _handleNetworkError(e);
+    }
   }
 
   static Future<dynamic> getAuth(String endpoint, {Map<String, dynamic>? params}) async {
@@ -33,13 +40,17 @@ class ApiService {
   }
 
   static Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
-    final uri = _buildUri(endpoint);
-    final response = await http.post(
-      uri,
-      headers: _headers,
-      body: jsonEncode(body),
-    );
-    return _processResponse(response);
+    try {
+      final uri = _buildUri(endpoint);
+      final response = await http.post(
+        uri,
+        headers: _headers,
+        body: jsonEncode(body),
+      ).timeout(timeoutDuration);
+      return _processResponse(response);
+    } catch (e) {
+      _handleNetworkError(e);
+    }
   }
 
   static Future<dynamic> postAuth(String endpoint, Map<String, dynamic> body) async {
@@ -47,34 +58,63 @@ class ApiService {
   }
 
   static Future<dynamic> put(String endpoint, Map<String, dynamic> body) async {
-    final uri = _buildUri(endpoint);
-    final response = await http.put(
-      uri,
-      headers: _headers,
-      body: jsonEncode(body),
-    );
-    return _processResponse(response);
+    try {
+      final uri = _buildUri(endpoint);
+      final response = await http.put(
+        uri,
+        headers: _headers,
+        body: jsonEncode(body),
+      ).timeout(timeoutDuration);
+      return _processResponse(response);
+    } catch (e) {
+      _handleNetworkError(e);
+    }
+  }
+
+  static Future<dynamic> delete(String endpoint) async {
+    try {
+      final uri = _buildUri(endpoint);
+      final response = await http.delete(uri, headers: _headers).timeout(timeoutDuration);
+      return _processResponse(response);
+    } catch (e) {
+      _handleNetworkError(e);
+    }
+  }
+
+  static void _handleNetworkError(dynamic e) {
+    if (e is TimeoutException) {
+      throw Exception('Server connection timed out. Check Wi-Fi connection and server status.');
+    } else if (e is SocketException) {
+      throw Exception('Cannot reach EXAMVERSE server (${AppConstants.hostLanIp}). Make sure phone & PC are on same Wi-Fi.');
+    } else if (e is Exception) {
+      throw e;
+    } else {
+      throw Exception('Network error: $e');
+    }
   }
 
   static dynamic _processResponse(http.Response response) {
+    if (response.body.trim().isEmpty) {
+      throw Exception('Empty response from server. Check server URL/IP.');
+    }
     try {
       final json = jsonDecode(response.body);
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        if (json is Map<String, dynamic>) {
-          return {
-            'status': json['status'] ?? 'success',
-            'data': json['data'] ?? json,
-            'message': json['message'] ?? 'Success',
-            ...json,
-          };
+        if (json is Map<String, dynamic> && json.containsKey('data') && json['data'] != null) {
+          if (json['data'] is Map<String, dynamic>) {
+            return json['data'];
+          }
         }
-        return {'status': 'success', 'data': json};
+        return json;
       } else {
-        final msg = json is Map ? (json['message'] ?? 'API Request Failed') : 'API Request Failed';
-        return {'status': 'error', 'message': msg};
+        final msg = json is Map ? (json['message'] ?? 'API Request Failed') : 'API Request Failed (${response.statusCode})';
+        throw Exception(msg);
       }
+    } on FormatException {
+      throw Exception('Invalid response from server. Make sure IP points to PC (192.168.31.120), not Wi-Fi router (192.168.31.1).');
     } catch (e) {
-      return {'status': 'error', 'message': 'Invalid response: $e'};
+      if (e is Exception) rethrow;
+      throw Exception('Response error: $e');
     }
   }
 }

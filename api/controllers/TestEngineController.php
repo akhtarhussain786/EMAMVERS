@@ -282,13 +282,23 @@ class TestEngineController {
             'advice' => 'Focus on Quantitative Ratio concepts and avoid hasty answers during final 10 minutes.'
         ]);
 
+        // Dynamic Speed & Consistency calculation
+        $totalQuestionsCount = count($testQuestions);
+        $avgTimePerQ = $totalQuestionsCount > 0 ? ($totalTimeSpent / $totalQuestionsCount) : 60;
+        // Ideal time per question ~ 45-60 seconds
+        $speedScore = min(100.0, max(20.0, round(100 - ($avgTimePerQ > 60 ? ($avgTimePerQ - 60) * 0.8 : 0), 2)));
+        $consistencyScore = min(100.0, max(20.0, round(($accuracy * 0.7) + (($correctCount / max(1, $totalQuestionsCount)) * 30), 2)));
+
         // Auto-Generate or Update AI Exam Twin Snapshot (SRD requirement AI-001)
-        $overallReadiness = min(100.0, max(10.0, round(($totalScore / 200.0) * 100, 2)));
+        $overallReadiness = min(100.0, max(10.0, round(($totalScore / max(1.0, $attempt['score'] > 0 ? $attempt['score'] * 1.2 : 200.0)) * 100, 2)));
         $stmtTwin = $db->prepare("
             INSERT INTO exam_twin_snapshots (user_id, exam_id, knowledge_score, accuracy_score, speed_score, consistency_score, overall_readiness, estimated_score_min, estimated_score_max, target_benchmark, diagnosis_summary, recommended_route)
-            VALUES (:uid, :eid, :k, :acc, :sp, :cs, :readiness, :min_s, :max_s, 160, 'Strong speed in Reasoning; Concept gap identified in Quant Ratio.', '1. Revise Percentage Ratio -> 2. Attempt Retry Wrong -> 3. Take 15-Min Daily Mission')
+            VALUES (:uid, :eid, :k, :acc, :sp, :cs, :readiness, :min_s, :max_s, 160, 'Analysis complete. Strong performance recorded.', '1. Revise weak sections -> 2. Retake wrong questions -> 3. Complete 15-Min Daily Mission')
             ON DUPLICATE KEY UPDATE 
+                knowledge_score = VALUES(knowledge_score),
                 accuracy_score = VALUES(accuracy_score),
+                speed_score = VALUES(speed_score),
+                consistency_score = VALUES(consistency_score),
                 overall_readiness = VALUES(overall_readiness),
                 estimated_score_min = VALUES(estimated_score_min),
                 estimated_score_max = VALUES(estimated_score_max)
@@ -298,8 +308,8 @@ class TestEngineController {
             'eid' => $attempt['exam_id'],
             'k' => round($accuracy * 0.9, 2),
             'acc' => $accuracy,
-            'sp' => 78.50,
-            'cs' => 82.00,
+            'sp' => $speedScore,
+            'cs' => $consistencyScore,
             'readiness' => $overallReadiness,
             'min_s' => max(0, intval($totalScore - 15)),
             'max_s' => intval($totalScore + 25)

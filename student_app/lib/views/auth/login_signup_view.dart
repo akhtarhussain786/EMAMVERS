@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/constants.dart';
 import '../../core/api_service.dart';
+import '../../widgets/design_system_widgets.dart';
+import 'forgot_password_view.dart';
 
 class LoginSignupView extends StatefulWidget {
   final VoidCallback onAuthenticated;
@@ -12,13 +15,12 @@ class LoginSignupView extends StatefulWidget {
 
 class _LoginSignupViewState extends State<LoginSignupView> {
   bool isSignUp = false;
-  bool isOtpMode = false;
+  bool rememberMe = true;
   bool isLoading = false;
 
   final emailMobileController = TextEditingController();
   final passwordController = TextEditingController();
   final fullNameController = TextEditingController();
-  final otpController = TextEditingController();
 
   List<dynamic> states = [];
   List<dynamic> qualifications = [];
@@ -28,7 +30,31 @@ class _LoginSignupViewState extends State<LoginSignupView> {
   @override
   void initState() {
     super.initState();
+    _loadSavedPreferences();
     _loadMetadata();
+  }
+
+  void _loadSavedPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedIdentity = prefs.getString('remembered_identity');
+    final savedRememberMe = prefs.getBool('remember_me') ?? true;
+    setState(() {
+      rememberMe = savedRememberMe;
+      if (savedIdentity != null && savedIdentity.isNotEmpty && rememberMe) {
+        emailMobileController.text = savedIdentity;
+      }
+    });
+  }
+
+  void _savePreferences(String identity) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (rememberMe) {
+      await prefs.setString('remembered_identity', identity);
+      await prefs.setBool('remember_me', true);
+    } else {
+      await prefs.remove('remembered_identity');
+      await prefs.setBool('remember_me', false);
+    }
   }
 
   void _loadMetadata() async {
@@ -44,18 +70,22 @@ class _LoginSignupViewState extends State<LoginSignupView> {
   }
 
   void _handleLogin() async {
-    if (emailMobileController.text.isEmpty || passwordController.text.isEmpty) {
-      _showSnackBar('Please fill in Email/Mobile and Password');
+    final identity = emailMobileController.text.trim();
+    final password = passwordController.text.trim();
+
+    if (identity.isEmpty || password.isEmpty) {
+      _showSnackBar('Please fill in Mobile Number / Email and Password');
       return;
     }
 
     setState(() => isLoading = true);
     try {
       final res = await ApiService.post('/v1/auth/login', {
-        'identity': emailMobileController.text.trim(),
-        'password': passwordController.text.trim(),
+        'identity': identity,
+        'password': password,
       });
       ApiService.authToken = res['token'];
+      _savePreferences(identity);
       widget.onAuthenticated();
     } catch (e) {
       _showSnackBar(e.toString().replaceAll('Exception: ', ''));
@@ -65,7 +95,11 @@ class _LoginSignupViewState extends State<LoginSignupView> {
   }
 
   void _handleSignup() async {
-    if (fullNameController.text.isEmpty || emailMobileController.text.isEmpty || passwordController.text.isEmpty) {
+    final fullName = fullNameController.text.trim();
+    final identity = emailMobileController.text.trim();
+    final password = passwordController.text.trim();
+
+    if (fullName.isEmpty || identity.isEmpty || password.isEmpty) {
       _showSnackBar('Please fill in all required fields');
       return;
     }
@@ -73,14 +107,15 @@ class _LoginSignupViewState extends State<LoginSignupView> {
     setState(() => isLoading = true);
     try {
       final res = await ApiService.post('/v1/auth/signup', {
-        'full_name': fullNameController.text.trim(),
-        'email': emailMobileController.text.trim(),
-        'mobile': '98' + DateTime.now().millisecondsSinceEpoch.toString().substring(5, 13),
-        'password': passwordController.text.trim(),
+        'full_name': fullName,
+        'email': identity.contains('@') ? identity : '$identity@examverse.com',
+        'mobile': identity.contains('@') ? '9876543210' : identity,
+        'password': password,
         'state_id': selectedStateId,
         'qualification_id': selectedQualId,
       });
       ApiService.authToken = res['token'];
+      _savePreferences(identity);
       widget.onAuthenticated();
     } catch (e) {
       _showSnackBar(e.toString().replaceAll('Exception: ', ''));
@@ -90,134 +125,159 @@ class _LoginSignupViewState extends State<LoginSignupView> {
   }
 
   void _showSnackBar(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.redAccent));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: AppConstants.accentRose,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.primaryDark,
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 420),
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: AppConstants.cardDark,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppConstants.cardBorder),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('EXAM', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
-                    Text('VERSE', style: TextStyle(color: AppConstants.accentBlue, fontSize: 28, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'India\'s AI Exam Performance & Career Platform',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppConstants.textSecondary, fontSize: 12),
-                ),
-                const SizedBox(height: 32),
-
-                if (isSignUp) ...[
-                  TextField(
-                    controller: fullNameController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration('Full Name', Icons.person),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-
-                TextField(
-                  controller: emailMobileController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration('Email or Mobile Number', Icons.email),
-                ),
-                const SizedBox(height: 16),
-
-                TextField(
-                  controller: passwordController,
-                  obscureText: true,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration('Password', Icons.lock),
-                ),
-                const SizedBox(height: 16),
-
-                if (isSignUp) ...[
-                  // State Picker
-                  DropdownButtonFormField<int>(
-                    value: selectedStateId,
-                    dropdownColor: AppConstants.cardDark,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration('State (For State Rankings)', Icons.map),
-                    items: states.map((s) => DropdownMenuItem<int>(value: s['id'], child: Text(s['name']))).toList(),
-                    onChanged: (v) => setState(() => selectedStateId = v),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Qualification Picker
-                  DropdownButtonFormField<int>(
-                    value: selectedQualId,
-                    dropdownColor: AppConstants.cardDark,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration('Educational Qualification', Icons.school),
-                    items: qualifications.map((q) => DropdownMenuItem<int>(value: q['id'], child: Text(q['name']))).toList(),
-                    onChanged: (v) => setState(() => selectedQualId = v),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-
-                const SizedBox(height: 8),
-
-                ElevatedButton(
-                  onPressed: isLoading ? null : (isSignUp ? _handleSignup : _handleLogin),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConstants.accentBlue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: isLoading
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : Text(isSignUp ? 'Create Account & Continue' : 'Log In to ExamVerse', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                ),
-
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(isSignUp ? 'Already have an account? ' : 'New candidate on ExamVerse? ', style: const TextStyle(color: AppConstants.textSecondary, fontSize: 13)),
-                    GestureDetector(
-                      onTap: () => setState(() => isSignUp = !isSignUp),
-                      child: Text(isSignUp ? 'Log In' : 'Sign Up', style: const TextStyle(color: AppConstants.accentBlue, fontWeight: FontWeight.bold, fontSize: 13)),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: AppConstants.space24, vertical: AppConstants.space16),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // FUTURISTIC BRAND LOGO
+                  RichText(
+                    text: const TextSpan(
+                      children: [
+                        TextSpan(text: 'EXAM', style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+                        TextSpan(text: 'VERSE', style: TextStyle(color: AppConstants.accentCyan, fontSize: 36, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+                      ],
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    "India's AI Exam Performance & Career Platform",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppConstants.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: AppConstants.space32),
+
+                  // LOGIN / SIGNUP CARD
+                  ExamVerseCard(
+                    padding: const EdgeInsets.all(AppConstants.space24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isSignUp ? 'Create Candidate Account' : 'Welcome Back',
+                          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          isSignUp ? 'Start your competitive exam journey' : 'Continue your AI performance preparation',
+                          style: const TextStyle(color: AppConstants.textSecondary, fontSize: 12.5),
+                        ),
+                        const SizedBox(height: AppConstants.space24),
+
+                        if (isSignUp) ...[
+                          CustomTextField(
+                            controller: fullNameController,
+                            label: 'Full Name',
+                            hint: 'e.g. Rahul Kumar',
+                            prefixIcon: Icons.person_outline,
+                          ),
+                          const SizedBox(height: AppConstants.space16),
+                        ],
+
+                        CustomTextField(
+                          controller: emailMobileController,
+                          label: 'Mobile Number / Email',
+                          hint: 'e.g. 9876543210 or candidate@examverse.com',
+                          prefixIcon: Icons.contact_mail_outlined,
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: AppConstants.space16),
+
+                        CustomTextField(
+                          controller: passwordController,
+                          label: 'Password',
+                          hint: '••••••••',
+                          prefixIcon: Icons.lock_outline,
+                          isPassword: true,
+                        ),
+                        const SizedBox(height: AppConstants.space12),
+
+                        if (!isSignUp) ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              GestureDetector(
+                                onTap: () => setState(() => rememberMe = !rememberMe),
+                                child: Row(
+                                  children: [
+                                    SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: Checkbox(
+                                        value: rememberMe,
+                                        activeColor: AppConstants.accentCyan,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                        onChanged: (val) => setState(() => rememberMe = val ?? true),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text('Remember Me', style: TextStyle(color: AppConstants.textSecondary, fontSize: 12.5)),
+                                  ],
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPasswordView())),
+                                child: const Text(
+                                  'Forgot Password?',
+                                  style: TextStyle(color: AppConstants.accentCyan, fontSize: 12.5, fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppConstants.space20),
+                        ],
+
+                        PrimaryButton(
+                          label: isSignUp ? 'Create ExamVerse Account' : 'Log In to ExamVerse',
+                          onPressed: isSignUp ? _handleSignup : _handleLogin,
+                          isLoading: isLoading,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppConstants.space24),
+
+                  // TOGGLE LOGIN / SIGNUP
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        isSignUp ? 'Already have an account?' : 'New candidate on ExamVerse?',
+                        style: const TextStyle(color: AppConstants.textSecondary, fontSize: 13.5),
+                      ),
+                      TextButton(
+                        onPressed: () => setState(() => isSignUp = !isSignUp),
+                        child: Text(
+                          isSignUp ? 'Sign In' : 'Sign Up',
+                          style: const TextStyle(color: AppConstants.accentCyan, fontSize: 13.5, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
-    );
-  }
-
-  InputDecoration _inputDecoration(String hint, IconData icon) {
-    return InputDecoration(
-      prefixIcon: Icon(icon, color: AppConstants.textSecondary, size: 20),
-      hintText: hint,
-      hintStyle: const TextStyle(color: AppConstants.textMuted, fontSize: 14),
-      filled: true,
-      fillColor: AppConstants.primaryDark,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppConstants.cardBorder)),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppConstants.cardBorder)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppConstants.accentBlue)),
     );
   }
 }

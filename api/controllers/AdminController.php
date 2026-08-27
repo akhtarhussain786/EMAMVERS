@@ -17,8 +17,7 @@ class AdminController {
         $stmt->execute(['u1' => $username, 'u2' => $username]);
         $admin = $stmt->fetch();
 
-        // For default demo baseline admin, if password matches password123 or stored hash
-        if (!$admin || ($password !== 'password123' && !password_verify($password, $admin['password_hash']))) {
+        if (!$admin || !password_verify($password, $admin['password_hash'])) {
             Response::error('Invalid admin credentials', 401);
         }
 
@@ -171,5 +170,183 @@ class AdminController {
             ORDER BY al.id DESC LIMIT 50
         ")->fetchAll();
         Response::json($logs, 'Audit logs loaded');
+    }
+
+    // ─── ADMIN TEST BUILDER ─────────────────────────────────────────────
+
+    public static function createTest() {
+        AuthMiddleware::getAuthenticatedUser('admin');
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        $examId    = intval($input['exam_id'] ?? 0);
+        $patternId = intval($input['pattern_id'] ?? 0);
+        $title     = trim($input['title'] ?? '');
+        $testType  = $input['test_type'] ?? 'full_mock';
+        $isPaid    = !empty($input['is_paid']) ? 1 : 0;
+        $price     = floatval($input['price'] ?? 0.00);
+        $instructions = trim($input['instructions'] ?? 'Read each question carefully.');
+
+        if (!$examId || !$patternId || empty($title)) {
+            Response::error('exam_id, pattern_id, and title are required', 422);
+        }
+
+        $slug = preg_replace('/[^a-z0-9]+/', '-', strtolower($title)) . '-' . uniqid();
+
+        $db = Database::getConnection();
+        $stmt = $db->prepare("
+            INSERT INTO tests (exam_id, pattern_id, title, slug, test_type, is_paid, price, instructions, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'published')
+        ");
+        $stmt->execute([$examId, $patternId, $title, $slug, $testType, $isPaid, $price, $instructions]);
+        $testId = $db->lastInsertId();
+
+        Response::json(['test_id' => $testId, 'slug' => $slug], 'Test created successfully', 'success', 201);
+    }
+
+    public static function assignQuestionsToTest() {
+        AuthMiddleware::getAuthenticatedUser('admin');
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        $testId = intval($input['test_id'] ?? 0);
+        $questionAssignments = $input['assignments'] ?? []; // [{question_id, section_id, question_order, positive_marks, negative_marks}]
+
+        if (!$testId || empty($questionAssignments)) {
+            Response::error('test_id and assignments array are required', 422);
+        }
+
+        $db = Database::getConnection();
+
+        // Clear existing assignments for test
+        $db->prepare("DELETE FROM test_questions WHERE test_id = ?")->execute([$testId]);
+
+        $assignedCount = 0;
+        foreach ($questionAssignments as $idx => $assign) {
+            $qId = intval($assign['question_id'] ?? 0);
+            $secId = isset($assign['section_id']) ? intval($assign['section_id']) : null;
+            $order = intval($assign['question_order'] ?? ($idx + 1));
+            $pos = floatval($assign['positive_marks'] ?? 2.00);
+            $neg = floatval($assign['negative_marks'] ?? 0.50);
+
+            if (!$qId) continue;
+
+            $stmt = $db->prepare("
+                INSERT INTO test_questions (test_id, question_id, section_id, question_order, positive_marks, negative_marks)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([$testId, $qId, $secId, $order, $pos, $neg]);
+            $assignedCount++;
+        }
+
+        Response::json(['test_id' => $testId, 'assigned_count' => $assignedCount], "$assignedCount questions assigned to test");
+    }
+
+    // ─── TAXONOMY MANAGEMENT ──────────────────────────────────────────
+
+    public static function createCategory() {
+        AuthMiddleware::getAuthenticatedUser('admin');
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        $name = trim($input['name'] ?? '');
+        $type = $input['type'] ?? 'government';
+        $description = trim($input['description'] ?? '');
+        $iconUrl = trim($input['icon_url'] ?? '');
+        $keywords = trim($input['keywords'] ?? '');
+
+        if (empty($name)) Response::error('Category name is required', 422);
+
+        $slug = preg_replace('/[^a-z0-9]+/', '-', strtolower($name));
+        $db = Database::getConnection();
+
+        $stmt = $db->prepare("
+            INSERT INTO exam_categories (name, slug, type, description, icon_url, keywords, status)
+            VALUES (?, ?, ?, ?, ?, ?, 'active')
+        ");
+        $stmt->execute([$name, $slug, $type, $description, $iconUrl, $keywords]);
+
+        Response::json(['category_id' => $db->lastInsertId()], 'Category created successfully', 'success', 201);
+    }
+
+    public static function createSubject() {
+        AuthMiddleware::getAuthenticatedUser('admin');
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        $name = trim($input['name'] ?? '');
+        $code = trim($input['code'] ?? strtolower(str_replace(' ', '_', $name)));
+
+        if (empty($name)) Response::error('Subject name is required', 422);
+
+        $db = Database::getConnection();
+        $stmt = $db->prepare("INSERT INTO subjects (name, code) VALUES (?, ?)");
+        $stmt->execute([$name, $code]);
+
+        Response::json(['subject_id' => $db->lastInsertId()], 'Subject created successfully', 'success', 201);
+    }
+
+    // ─── QUESTION CRUD ────────────────────────────────────────────────
+
+    public static function createQuestion() {
+        AuthMiddleware::getAuthenticatedUser('admin');
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        $subjectId = intval($input['subject_id'] ?? 1);
+        $chapterId = isset($input['chapter_id']) ? intval($input['chapter_id']) : null;
+        $topicId = isset($input['topic_id']) ? intval($input['topic_id']) : null;
+        $type = $input['question_type'] ?? 'MCQ';
+        $difficulty = $input['difficulty'] ?? 'medium';
+        $questionText = trim($input['question_text'] ?? '');
+        $solutionText = trim($input['solution_text'] ?? '');
+        $options = $input['options'] ?? []; // [{option_key, option_text, is_correct}]
+
+        if (empty($questionText)) Response::error('question_text is required', 422);
+
+        $db = Database::getConnection();
+
+        $qStmt = $db->prepare("INSERT INTO questions (subject_id, chapter_id, topic_id, question_type, difficulty, status) VALUES (?, ?, ?, ?, ?, 'published')");
+        $qStmt->execute([$subjectId, $chapterId, $topicId, $type, $difficulty]);
+        $qId = $db->lastInsertId();
+
+        $tStmt = $db->prepare("INSERT INTO question_translations (question_id, language, question_text, solution_text) VALUES (?, 'en', ?, ?)");
+        $tStmt->execute([$qId, $questionText, $solutionText]);
+
+        foreach ($options as $opt) {
+            $oStmt = $db->prepare("INSERT INTO question_options (question_id, option_key, language, option_text, is_correct) VALUES (?, ?, 'en', ?, ?)");
+            $oStmt->execute([$qId, $opt['option_key'], $opt['option_text'], !empty($opt['is_correct']) ? 1 : 0]);
+        }
+
+        Response::json(['question_id' => $qId], 'Question created successfully', 'success', 201);
+    }
+
+    public static function deleteQuestion($id) {
+        AuthMiddleware::getAuthenticatedUser('admin');
+        $db = Database::getConnection();
+        $db->prepare("DELETE FROM questions WHERE id = ?")->execute([$id]);
+        Response::json(['deleted' => true], 'Question deleted from bank');
+    }
+
+    // ─── CHALLENGE MANAGER ────────────────────────────────────────────
+
+    public static function createChallenge() {
+        AuthMiddleware::getAuthenticatedUser('admin');
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        $examId = intval($input['exam_id'] ?? 0);
+        $testId = intval($input['test_id'] ?? 0);
+        $title = trim($input['title'] ?? '');
+        $monthYear = trim($input['month_year'] ?? date('F Y'));
+        $startWindow = $input['start_window'] ?? date('Y-m-01 00:00:00');
+        $endWindow = $input['end_window'] ?? date('Y-m-t 23:59:59');
+
+        if (!$examId || !$testId || empty($title)) {
+            Response::error('exam_id, test_id, and title are required', 422);
+        }
+
+        $db = Database::getConnection();
+        $stmt = $db->prepare("
+            INSERT INTO monthly_challenges (exam_id, test_id, title, month_year, start_window, end_window, status)
+            VALUES (?, ?, ?, ?, ?, ?, 'live')
+        ");
+        $stmt->execute([$examId, $testId, $title, $monthYear, $startWindow, $endWindow]);
+
+        Response::json(['challenge_id' => $db->lastInsertId()], 'Monthly challenge created and live!', 'success', 201);
     }
 }

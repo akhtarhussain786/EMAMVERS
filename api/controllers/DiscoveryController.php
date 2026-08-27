@@ -61,27 +61,32 @@ class DiscoveryController {
             FROM exams e
             JOIN exam_categories c ON e.category_id = c.id
             LEFT JOIN organizations o ON e.organization_id = o.id
-            WHERE e.id = :val OR e.slug = :val
+            WHERE e.id = :val_id OR e.slug = :val_slug
         ");
-        $stmt->execute(['val' => $idOrSlug]);
+        $stmt->execute(['val_id' => $idOrSlug, 'val_slug' => $idOrSlug]);
         $exam = $stmt->fetch();
 
         if (!$exam) Response::error('Exam not found', 404);
 
         // Get effective pattern snapshot
         $stmtPattern = $db->prepare("
-            SELECT ep.*, 
-            (SELECT JSON_ARRAYAGG(JSON_OBJECT('id', ps.id, 'name', ps.section_name, 'count', ps.question_count, 'positive', ps.positive_marks, 'negative', ps.negative_marks))
-             FROM pattern_sections ps WHERE ps.pattern_id = ep.id) as sections_json
+            SELECT ep.*
             FROM exam_patterns ep
             WHERE ep.exam_id = :exam_id AND ep.is_active = 1
             LIMIT 1
         ");
         $stmtPattern->execute(['exam_id' => $exam['id']]);
         $pattern = $stmtPattern->fetch();
-        if ($pattern && isset($pattern['sections_json'])) {
-            $pattern['sections'] = json_decode($pattern['sections_json'], true);
-            unset($pattern['sections_json']);
+        
+        if ($pattern) {
+            $stmtSec = $db->prepare("
+                SELECT ps.id, ps.section_name as name, ps.question_count as count, ps.positive_marks as positive, ps.negative_marks as negative
+                FROM pattern_sections ps
+                WHERE ps.pattern_id = :pid
+                ORDER BY ps.sort_order ASC
+            ");
+            $stmtSec->execute(['pid' => $pattern['id']]);
+            $pattern['sections'] = $stmtSec->fetchAll(PDO::FETCH_ASSOC);
         }
 
         // Get available test series

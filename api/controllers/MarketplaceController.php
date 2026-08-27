@@ -113,6 +113,7 @@ class MarketplaceController {
 
     public static function purchase($id) {
         $user = AuthMiddleware::getAuthenticatedUser('student');
+        $userId = $user['sub'] ?? ($user['id'] ?? null);
         $db = Database::getConnection();
 
         $stmt = $db->prepare("SELECT * FROM study_materials WHERE id=? AND status='approved'");
@@ -122,7 +123,7 @@ class MarketplaceController {
 
         // Check already purchased
         $existing = $db->prepare("SELECT id FROM material_purchases WHERE user_id=? AND material_id=?");
-        $existing->execute([$user['id'], $id]);
+        $existing->execute([$userId, $id]);
         if ($existing->fetch()) {
             Response::json(null,'Already purchased','error',409); return;
         }
@@ -130,7 +131,7 @@ class MarketplaceController {
         // Free material — direct access
         if ($material['is_free'] || $material['price'] == 0) {
             $stmt2 = $db->prepare("INSERT INTO material_purchases (user_id, material_id, amount_paid, platform_fee, creator_earning, payment_status, payment_method) VALUES (?,?,0,0,0,'completed','free')");
-            $stmt2->execute([$user['id'], $id]);
+            $stmt2->execute([$userId, $id]);
             $db->prepare("UPDATE study_materials SET total_downloads=total_downloads+1 WHERE id=?")->execute([$id]);
             Response::json(['purchase_id' => $db->lastInsertId(), 'access_granted' => true], 'Free material unlocked!');
             return;
@@ -146,7 +147,7 @@ class MarketplaceController {
         $creatorEarning = round($price - $platformFee, 2);
 
         $purchaseStmt = $db->prepare("INSERT INTO material_purchases (user_id, material_id, amount_paid, platform_fee, creator_earning, payment_status, payment_method, transaction_id) VALUES (?,?,?,?,?,'completed',?,?)");
-        $purchaseStmt->execute([$user['id'], $id, $price, $platformFee, $creatorEarning, $paymentMethod, $txnId]);
+        $purchaseStmt->execute([$userId, $id, $price, $platformFee, $creatorEarning, $paymentMethod, $txnId]);
 
         // Update creator pending_payout
         $db->prepare("UPDATE creators SET pending_payout=pending_payout+?, total_earnings=total_earnings+?, total_sales=total_sales+1 WHERE id=?")->execute([$creatorEarning, $creatorEarning, $material['creator_id']]);
@@ -164,13 +165,14 @@ class MarketplaceController {
 
     public static function download($id) {
         $user = AuthMiddleware::getAuthenticatedUser('student');
+        $userId = $user['sub'] ?? ($user['id'] ?? null);
         $db = Database::getConnection();
 
         $stmt = $db->prepare("SELECT sm.*, mp.payment_status
                                FROM study_materials sm
                                LEFT JOIN material_purchases mp ON sm.id=mp.material_id AND mp.user_id=? AND mp.payment_status='completed'
                                WHERE sm.id=? AND sm.status='approved'");
-        $stmt->execute([$user['id'], $id]);
+        $stmt->execute([$userId, $id]);
         $material = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$material) { Response::json(null,'Material not found','error',404); return; }
@@ -197,6 +199,7 @@ class MarketplaceController {
 
     public static function myPurchases() {
         $user = AuthMiddleware::getAuthenticatedUser();
+        $userId = $user['sub'] ?? ($user['id'] ?? null);
         $db = Database::getConnection();
 
         $stmt = $db->prepare("
@@ -210,7 +213,7 @@ class MarketplaceController {
             WHERE mp.user_id=? AND mp.payment_status='completed'
             ORDER BY mp.purchased_at DESC
         ");
-        $stmt->execute([$user['id']]);
+        $stmt->execute([$userId]);
         Response::json($stmt->fetchAll(PDO::FETCH_ASSOC), 'Purchases fetched');
     }
 
@@ -218,11 +221,12 @@ class MarketplaceController {
 
     public static function rate($id) {
         $user = AuthMiddleware::getAuthenticatedUser('student');
+        $userId = $user['sub'] ?? ($user['id'] ?? null);
         $db = Database::getConnection();
 
         // Must have purchased
         $pStmt = $db->prepare("SELECT id FROM material_purchases WHERE user_id=? AND material_id=? AND payment_status='completed'");
-        $pStmt->execute([$user['id'], $id]);
+        $pStmt->execute([$userId, $id]);
         if (!$pStmt->fetch()) { Response::json(null,'Purchase the material before rating','error',403); return; }
 
         $body = json_decode(file_get_contents('php://input'), true);
@@ -232,7 +236,7 @@ class MarketplaceController {
         if ($rating < 1 || $rating > 5) { Response::json(null,'Rating must be 1-5','error',422); return; }
 
         $stmt = $db->prepare("INSERT INTO material_reviews (material_id, user_id, rating, review_text) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE rating=?, review_text=?");
-        $stmt->execute([$id, $user['id'], $rating, $review, $rating, $review]);
+        $stmt->execute([$id, $userId, $rating, $review, $rating, $review]);
 
         // Recalculate avg
         $avgStmt = $db->prepare("SELECT AVG(rating) as avg, COUNT(*) as cnt FROM material_reviews WHERE material_id=?");

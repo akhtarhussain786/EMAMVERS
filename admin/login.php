@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute(['u1' => $username, 'u2' => $username]);
         $admin = $stmt->fetch();
 
-        if ($admin && ($password === 'password123' || password_verify($password, $admin['password_hash']))) {
+        if ($admin && password_verify($password, $admin['password_hash'])) {
             $_SESSION['admin_logged_in'] = true;
             $_SESSION['admin_user'] = [
                 'id' => $admin['id'],

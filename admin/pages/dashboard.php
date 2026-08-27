@@ -18,10 +18,10 @@ $recentAttempts = $db->query("
 ?>
 
 <div class="metrics-grid">
-    <div class="metric-card">
+    <a href="index.php?page=users" class="metric-card" style="text-decoration: none; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
         <div class="metric-title">Total Candidates</div>
-        <div class="metric-value"><?php echo number_format($usersCount); ?></div>
-    </div>
+        <div class="metric-value" style="color: #38bdf8;"><?php echo number_format($usersCount); ?></div>
+    </a>
     <div class="metric-card">
         <div class="metric-title">Published Tests</div>
         <div class="metric-value"><?php echo number_format($testsCount); ?></div>
