@@ -21,6 +21,9 @@ require_once __DIR__ . '/controllers/AdminController.php';
 require_once __DIR__ . '/controllers/CreatorController.php';
 require_once __DIR__ . '/controllers/MarketplaceController.php';
 require_once __DIR__ . '/controllers/UserController.php';
+require_once __DIR__ . '/controllers/MapController.php';
+require_once __DIR__ . '/controllers/FriendsController.php';
+require_once __DIR__ . '/controllers/NotebookController.php';
 
 // Extract URI path
 $requestUri = $_SERVER['REQUEST_URI'];
@@ -109,6 +112,26 @@ if (($path === '/v1/health' || $path === '/health') && $method === 'GET') {
     ContentController::getTopperWall();
 } elseif ($path === '/v1/passport' && $method === 'GET') {
     ContentController::getPreparationPassport();
+} elseif ($path === '/v1/map/categories' && $method === 'GET') {
+    MapController::getCategories();
+} elseif ($path === '/v1/map/locations' && $method === 'GET') {
+    MapController::getLocations();
+} elseif (matchRoute('/v1/map/locations/{id}', $path, $params) && $method === 'GET') {
+    MapController::getLocationDetail($params['id']);
+} elseif ($path === '/v1/map/quiz' && $method === 'GET') {
+    MapController::getMapQuiz();
+} elseif ($path === '/v1/map/progress' && $method === 'GET') {
+    MapController::getProgress();
+} elseif ($path === '/v1/friends/sync-contacts' && $method === 'POST') {
+    FriendsController::syncContacts();
+} elseif ($path === '/v1/friends/leaderboard' && $method === 'GET') {
+    FriendsController::getFriendsLeaderboard();
+} elseif ($path === '/v1/notebook' && $method === 'GET') {
+    NotebookController::getNotebook();
+} elseif ($path === '/v1/notebook/add' && $method === 'POST') {
+    NotebookController::addMistake();
+} elseif (matchRoute('/v1/notebook/{id}/master', $path, $params) && $method === 'PUT') {
+    NotebookController::markMastered($params['id']);
 } elseif ($path === '/v1/admin/login' && $method === 'POST') {
     AdminController::login();
 } elseif ($path === '/v1/admin/dashboard' && $method === 'GET') {

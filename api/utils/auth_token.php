@@ -17,7 +17,14 @@ class AuthToken {
         return $base64 . '.' . $signature;
     }
 
-    public static function verify($token) {
+    public static function verify($token = null) {
+        if (!$token) {
+            $headers = function_exists('getallheaders') ? getallheaders() : [];
+            $authHeader = isset($headers['Authorization']) ? $headers['Authorization'] : (isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : '');
+            if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+                $token = $matches[1];
+            }
+        }
         if (!$token) return false;
         $parts = explode('.', $token);
         if (count($parts) !== 2) return false;
@@ -31,6 +38,10 @@ class AuthToken {
         if (!$payload || !isset($payload['exp']) || $payload['exp'] < time()) {
             return false;
         }
-        return $payload;
+        return [
+            'user_id' => $payload['sub'],
+            'type' => $payload['type'],
+            'payload' => $payload
+        ];
     }
 }

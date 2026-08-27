@@ -8,6 +8,9 @@ import '../../widgets/skeleton_loader.dart';
 import '../current_affairs/current_affairs_view.dart';
 import '../current_affairs/current_affairs_article_view.dart';
 import '../notifications/notifications_view.dart';
+import '../map_learning/map_learning_home_view.dart';
+import '../friends/friends_leaderboard_view.dart';
+import '../notebook/mistake_notebook_view.dart';
 
 class HomeView extends StatefulWidget {
   final Function(int examId) onSelectExam;
@@ -221,16 +224,24 @@ class _HomeViewState extends State<HomeView> {
               GridView.count(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 3,
+                crossAxisCount: 4,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
-                childAspectRatio: 1.1,
+                childAspectRatio: 0.95,
                 children: [
-                  _buildQuickAction('Practice', Icons.edit_note, AppConstants.accentCyan, widget.onOpenAiCoach),
-                  _buildQuickAction('Mock Tests', Icons.assignment_outlined, AppConstants.accentBlue, () {}),
-                  _buildQuickAction('Daily Quiz', Icons.timer_outlined, AppConstants.accentAmber, widget.onOpenAiCoach),
+                  _buildQuickAction('Map Learn', Icons.map_outlined, AppConstants.accentCyan, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const MapLearningHomeView()));
+                  }),
+                  _buildQuickAction('Friends Rank', Icons.people_outline, AppConstants.accentAmber, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendsLeaderboardView()));
+                  }),
+                  _buildQuickAction('Mistakes', Icons.auto_fix_high, AppConstants.accentRose, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const MistakeNotebookView()));
+                  }),
                   _buildQuickAction('AI Coach', Icons.auto_awesome, AppConstants.accentPurple, widget.onOpenAiCoach),
+                  _buildQuickAction('Practice', Icons.edit_note, AppConstants.accentBlue, widget.onOpenAiCoach),
                   _buildQuickAction('Leaderboard', Icons.emoji_events_outlined, AppConstants.accentEmerald, widget.onOpenLeaderboard),
+                  _buildQuickAction('Daily Quiz', Icons.timer_outlined, AppConstants.accentCyan, widget.onOpenAiCoach),
                   _buildQuickAction('Affairs', Icons.newspaper, AppConstants.accentRose, () {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const CurrentAffairsView()));
                   }),
