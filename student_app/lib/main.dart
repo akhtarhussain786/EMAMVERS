@@ -15,6 +15,7 @@ import 'views/marketplace/marketplace_screen.dart';
 import 'views/creator/become_creator_view.dart';
 import 'views/creator/creator_dashboard_view.dart';
 import 'views/current_affairs/current_affairs_view.dart';
+import 'views/learning/learning_app_shell.dart';
 
 void main() {
   runApp(const ExamVerseApp());
@@ -63,10 +64,9 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
         '/creator-dashboard': (_) => const CreatorDashboardView(),
         '/marketplace': (_) => const MarketplaceScreen(),
         '/current-affairs': (_) => const CurrentAffairsView(),
+        '/learning-app': (_) => const LearningAppShell(),
       },
-      home: !isAuthenticated
-          ? LoginSignupView(onAuthenticated: () => setState(() => isAuthenticated = true))
-          : _buildAuthenticatedShell(),
+      home: const LearningAppShell(),
     );
   }
 

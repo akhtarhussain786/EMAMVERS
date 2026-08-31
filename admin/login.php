@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="demo-box">
             <strong>Default Super Admin Credentials:</strong><br>
-            Username: <code style="color:#fff;">admin</code> | Password: <code style="color:#fff;">password123</code>
+            Username: <code style="color:#fff;">admin</code> | Password: <code style="color:#fff;">admin123</code>
         </div>
 
         <?php if ($error): ?>
@@ -123,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="form-group" style="margin-bottom: 1.5rem;">
                 <label class="form-label">Password</label>
-                <input type="password" name="password" class="form-control" placeholder="••••••••" value="password123" required>
+                <input type="password" name="password" class="form-control" placeholder="••••••••" value="admin123" required>
             </div>
 
             <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:0.8rem; font-size:0.95rem;">
