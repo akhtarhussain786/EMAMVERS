@@ -37,7 +37,7 @@ class ReadinessCard extends StatelessWidget {
               height: 140,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.08),
+                color: Colors.white.withValues(alpha: 0.08),
               ),
             ),
           ),
@@ -50,9 +50,9 @@ class ReadinessCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.25),
+                      color: Colors.black.withValues(alpha: 0.25),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withOpacity(0.2)),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -74,7 +74,7 @@ class ReadinessCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppConstants.accentEmerald.withOpacity(0.25),
+                      color: AppConstants.accentEmerald.withValues(alpha: 0.25),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -105,7 +105,7 @@ class ReadinessCard extends StatelessWidget {
                           child: CircularProgressIndicator(
                             value: score / 100.0,
                             strokeWidth: 8,
-                            backgroundColor: Colors.white.withOpacity(0.15),
+                            backgroundColor: Colors.white.withValues(alpha: 0.15),
                             valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                             strokeCap: StrokeCap.round,
                           ),
@@ -208,7 +208,7 @@ class AiMissionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppConstants.cardDark,
         borderRadius: BorderRadius.circular(AppConstants.radiusCard),
-        border: Border.all(color: AppConstants.accentPurple.withOpacity(0.4), width: 1.2),
+        border: Border.all(color: AppConstants.accentPurple.withValues(alpha: 0.4), width: 1.2),
         boxShadow: AppConstants.cardShadow,
       ),
       child: Column(
@@ -222,7 +222,7 @@ class AiMissionCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppConstants.accentPurple.withOpacity(0.2),
+                      color: AppConstants.accentPurple.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(Icons.auto_awesome, color: AppConstants.accentPurple, size: 20),
@@ -311,10 +311,10 @@ class AiMissionCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: AppConstants.primaryDark.withOpacity(0.6),
+          color: AppConstants.primaryDark.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
           border: Border.all(
-            color: isCompleted ? AppConstants.accentEmerald.withOpacity(0.3) : AppConstants.cardBorder,
+            color: isCompleted ? AppConstants.accentEmerald.withValues(alpha: 0.3) : AppConstants.cardBorder,
           ),
         ),
         child: Row(
@@ -382,7 +382,7 @@ class AiInsightCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: AppConstants.darkCardGradient,
         borderRadius: BorderRadius.circular(AppConstants.radiusCard),
-        border: Border.all(color: AppConstants.accentPurple.withOpacity(0.5), width: 1.2),
+        border: Border.all(color: AppConstants.accentPurple.withValues(alpha: 0.5), width: 1.2),
         boxShadow: AppConstants.glowShadow(AppConstants.accentPurple),
       ),
       child: Column(
@@ -393,7 +393,7 @@ class AiInsightCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppConstants.accentPurple.withOpacity(0.2),
+                  color: AppConstants.accentPurple.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -511,7 +511,7 @@ class MetricTile extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
+                  color: color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: color, size: 20),
@@ -519,7 +519,7 @@ class MetricTile extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppConstants.accentEmerald.withOpacity(0.15),
+                  color: AppConstants.accentEmerald.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -580,7 +580,7 @@ class NationalChallengeCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -594,7 +594,7 @@ class NationalChallengeCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(participants, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
@@ -675,7 +675,7 @@ class TestCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppConstants.accentBlue.withOpacity(0.15),
+                  color: AppConstants.accentBlue.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -686,7 +686,7 @@ class TestCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: isFree ? AppConstants.accentEmerald.withOpacity(0.2) : AppConstants.accentAmber.withOpacity(0.2),
+                  color: isFree ? AppConstants.accentEmerald.withValues(alpha: 0.2) : AppConstants.accentAmber.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -771,7 +771,7 @@ class LostMarksCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppConstants.cardDark,
         borderRadius: BorderRadius.circular(AppConstants.radiusCard),
-        border: Border.all(color: AppConstants.accentRose.withOpacity(0.4), width: 1.2),
+        border: Border.all(color: AppConstants.accentRose.withValues(alpha: 0.4), width: 1.2),
         boxShadow: AppConstants.cardShadow,
       ),
       child: Column(
@@ -787,7 +787,7 @@ class LostMarksCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppConstants.accentRose.withOpacity(0.2),
+                  color: AppConstants.accentRose.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -811,7 +811,7 @@ class LostMarksCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppConstants.primaryDark,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppConstants.accentEmerald.withOpacity(0.4)),
+              border: Border.all(color: AppConstants.accentEmerald.withValues(alpha: 0.4)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

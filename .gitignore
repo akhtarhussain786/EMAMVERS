@@ -28,3 +28,11 @@ student_app/android/build/
 # PHP / Environment
 vendor/
 .env
+
+# Uploaded creator materials (served via API only)
+storage/materials/*
+!storage/materials/.gitignore
+
+# Runtime rate-limiter counters
+api/storage/ratelimit/*
+!api/storage/ratelimit/.gitignore

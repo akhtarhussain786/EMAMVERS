@@ -27,11 +27,11 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
     });
 
     try {
-      final res = await ApiService.getAuth('/creator/dashboard');
+      final res = await ApiService.getAuth('/v1/creator/dashboard');
       if (mounted) {
-        if (res['status'] == 'success') {
+        if (res != null) {
           setState(() {
-            _dashboardData = res['data'];
+            _dashboardData = res as Map<String, dynamic>;
             _loading = false;
           });
         } else {
@@ -83,7 +83,7 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
                   labelText: 'Amount (₹)',
                   labelStyle: GoogleFonts.inter(color: Colors.white54),
                   filled: true,
-                  fillColor: Colors.white.withOpacity(0.05),
+                  fillColor: Colors.white.withValues(alpha: 0.05),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 validator: (v) {
@@ -117,12 +117,13 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
     if (confirmed == true) {
       final amount = double.tryParse(amountCtrl.text) ?? 0;
       try {
-        final res = await ApiService.postAuth('/creator/payout', {'amount': amount});
+        // A failed request throws, so reaching the snackbar means it succeeded.
+        await ApiService.postAuth('/v1/creator/payout', {'amount': amount});
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(res['message'] ?? 'Payout requested!'),
-              backgroundColor: res['status'] == 'success' ? Colors.green : Colors.redAccent,
+            const SnackBar(
+              content: Text('Payout requested!'),
+              backgroundColor: Colors.green,
             ),
           );
           _loadDashboard();
@@ -219,7 +220,7 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF818cf8).withOpacity(0.3)),
+                border: Border.all(color: const Color(0xFF818cf8).withValues(alpha: 0.3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,7 +323,7 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.03),
+                  color: Colors.white.withValues(alpha: 0.03),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Center(
@@ -337,9 +338,9 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.04),
+                      color: Colors.white.withValues(alpha: 0.04),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withOpacity(0.06)),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
                     ),
                     child: Row(
                       children: [
@@ -347,7 +348,7 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF6366f1).withOpacity(0.15),
+                            color: const Color(0xFF6366f1).withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(Icons.picture_as_pdf_outlined, color: Color(0xFF818cf8), size: 22),
@@ -374,7 +375,7 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: m['status'] == 'approved' ? Colors.green.withOpacity(0.2) : Colors.amber.withOpacity(0.2),
+                            color: m['status'] == 'approved' ? Colors.green.withValues(alpha: 0.2) : Colors.amber.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -403,7 +404,7 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.03),
+                      color: Colors.white.withValues(alpha: 0.03),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
@@ -442,9 +443,9 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

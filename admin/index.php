@@ -1,8 +1,10 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/session.php';
+
+adminSessionStart();
 
 // Authentication Guard: Check if admin is logged in
-if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+if (!adminIsLoggedIn()) {
     header('Location: login.php');
     exit;
 }
@@ -15,7 +17,7 @@ $currentAdmin = $_SESSION['admin_user'] ?? [
 ];
 
 $page = isset($_GET['page']) ? trim($_GET['page']) : 'dashboard';
-$allowedPages = ['dashboard', 'users', 'taxonomy', 'patterns', 'questions', 'tests', 'challenges', 'cms', 'audits', 'ai_generator', 'marketplace', 'creators'];
+$allowedPages = ['dashboard', 'users', 'question_review', 'map_locations', 'taxonomy', 'patterns', 'questions', 'tests', 'challenges', 'cms', 'audits', 'ai_generator', 'marketplace', 'creators'];
 
 if (!in_array($page, $allowedPages)) {
     $page = 'dashboard';
@@ -24,6 +26,8 @@ if (!in_array($page, $allowedPages)) {
 $titleMap = [
     'dashboard'     => 'Operational Dashboard & Analytics Summary',
     'users'         => '👥 Registered Student & Candidate Directory',
+    'question_review' => '📝 Teacher Question Submissions & Review',
+    'map_locations' => '🗺️ Map Learning Locations & Geography Bank',
     'taxonomy'      => 'Exam Taxonomy & Organization Governance',
     'patterns'      => 'Universal Test Pattern Builder',
     'questions'     => 'Question Bank & Multilingual Repository',
@@ -48,6 +52,24 @@ $title = isset($titleMap[$page]) ? $titleMap[$page] : 'Admin Control Center';
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/style.css">
+    <meta name="csrf-token" content="<?php echo htmlspecialchars(adminCsrfToken(), ENT_QUOTES); ?>">
+    <script>
+        // Attach the CSRF token to every same-origin admin AJAX call.
+        window.ADMIN_CSRF_TOKEN = <?php echo json_encode(adminCsrfToken()); ?>;
+        (function () {
+            const nativeFetch = window.fetch.bind(window);
+            window.fetch = function (input, init) {
+                init = init || {};
+                const url = typeof input === 'string' ? input : (input && input.url) || '';
+                if (url.indexOf('ajax/') !== -1 || url.indexOf('/admin/ajax/') !== -1) {
+                    init.headers = new Headers(init.headers || {});
+                    init.headers.set('X-CSRF-Token', window.ADMIN_CSRF_TOKEN);
+                    init.credentials = init.credentials || 'same-origin';
+                }
+                return nativeFetch(input, init);
+            };
+        })();
+    </script>
 </head>
 <body>
     <?php include __DIR__ . '/includes/sidebar.php'; ?>

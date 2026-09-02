@@ -47,30 +47,23 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
         'limit': '30',
       };
 
-      final res = await ApiService.get('/current-affairs', params: params);
+      final data = await ApiService.get('/v1/current-affairs', params: params);
 
       if (mounted) {
-        if (res['status'] == 'success') {
-          final data = res['data'];
-          final rawCats = (data['categories'] as List?)?.map((e) => e.toString()).toList() ?? [];
+        final rawCats = (data['categories'] as List?)?.map((e) => e.toString()).toList() ?? [];
 
-          setState(() {
-            _articles = data['articles'] ?? [];
-            _categories = ['All', ...rawCats];
-            _recentDates = (data['recent_dates'] as List?)?.map((e) => e.toString()).toList() ?? [];
-            _loading = false;
-          });
-        } else {
-          setState(() {
-            _errorMsg = res['message'] ?? 'Failed to load current affairs';
-            _loading = false;
-          });
-        }
+        setState(() {
+          _articles = (data['articles'] as List?) ?? [];
+          _categories = ['All', ...rawCats];
+          _recentDates = (data['recent_dates'] as List?)?.map((e) => e.toString()).toList() ?? [];
+          _loading = false;
+          _errorMsg = '';
+        });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMsg = e.toString();
+          _errorMsg = e.toString().replaceAll('Exception: ', '');
           _loading = false;
         });
       }
@@ -134,7 +127,7 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       decoration: BoxDecoration(
         color: const Color(0xFF0F0F1A),
-        border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.06))),
+        border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06))),
       ),
       child: Column(
         children: [
@@ -157,7 +150,7 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
                     )
                   : null,
               filled: true,
-              fillColor: Colors.white.withOpacity(0.05),
+              fillColor: Colors.white.withValues(alpha: 0.05),
               contentPadding: const EdgeInsets.symmetric(vertical: 10),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -192,7 +185,7 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
                       }
                     },
                     selectedColor: const Color(0xFF6366f1),
-                    backgroundColor: Colors.white.withOpacity(0.05),
+                    backgroundColor: Colors.white.withValues(alpha: 0.05),
                     labelStyle: GoogleFonts.inter(
                       fontSize: 11.5,
                       fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
@@ -201,7 +194,7 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                       side: BorderSide(
-                        color: isSelected ? const Color(0xFF818cf8) : Colors.white.withOpacity(0.08),
+                        color: isSelected ? const Color(0xFF818cf8) : Colors.white.withValues(alpha: 0.08),
                       ),
                     ),
                   ),
@@ -209,6 +202,44 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
               },
             ),
           ),
+          if (_recentDates.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 34,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _recentDates.length + 1,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (context, i) {
+                  final isAllDates = i == 0;
+                  final date = isAllDates ? '' : _recentDates[i - 1];
+                  final isSelected = _selectedDate == date;
+
+                  return ChoiceChip(
+                    label: Text(isAllDates ? 'All dates' : date),
+                    selected: isSelected,
+                    onSelected: (_) {
+                      setState(() => _selectedDate = date);
+                      _loadArticles();
+                    },
+                    selectedColor: const Color(0xFF6366f1),
+                    backgroundColor: Colors.white.withValues(alpha: 0.05),
+                    labelStyle: GoogleFonts.inter(
+                      fontSize: 11.5,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected ? Colors.white : Colors.white60,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(
+                        color: isSelected ? const Color(0xFF818cf8) : Colors.white.withValues(alpha: 0.08),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -246,7 +277,7 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          border: Border.all(color: const Color(0xFF818cf8).withOpacity(0.3)),
+          border: Border.all(color: const Color(0xFF818cf8).withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,9 +292,9 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFef4444).withOpacity(0.2),
+                          color: const Color(0xFFef4444).withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFFef4444).withOpacity(0.4)),
+                          border: Border.all(color: const Color(0xFFef4444).withValues(alpha: 0.4)),
                         ),
                         child: Text(
                           'BREAKING FOCUS',
@@ -337,9 +368,9 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.03),
+          color: Colors.white.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withOpacity(0.06)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,7 +380,7 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6366f1).withOpacity(0.15),
+                    color: const Color(0xFF6366f1).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -370,7 +401,7 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Row(
@@ -407,7 +438,7 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
               const SizedBox(height: 10),
               Text(
                 'Exam Targets: ${a['exam_relevance']}',
-                style: GoogleFonts.inter(fontSize: 10.5, color: const Color(0xFF818cf8).withOpacity(0.8), fontWeight: FontWeight.w500),
+                style: GoogleFonts.inter(fontSize: 10.5, color: const Color(0xFF818cf8).withValues(alpha: 0.8), fontWeight: FontWeight.w500),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

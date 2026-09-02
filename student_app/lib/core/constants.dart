@@ -1,23 +1,32 @@
 import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
 import 'package:flutter/material.dart';
 
 class AppConstants {
-  // Development Server Port 8000 Base URL (Unblocked LAN)
-  static const String hostLanIp = '192.168.31.120:8000';
+  /// Host used for on-device debug builds. Override at build time:
+  ///   flutter run --dart-define=API_HOST=192.168.1.50:8000
+  static const String _defaultDevHost = '10.0.2.2:8000';
+  static const String hostLanIp =
+      String.fromEnvironment('API_HOST', defaultValue: _defaultDevHost);
 
+  /// Base URL for the API.
+  ///
+  /// Release builds require `--dart-define=API_BASE_URL=https://...`; there is
+  /// deliberately no plaintext-HTTP fallback baked into a shipped binary.
   static String get apiBaseUrl {
     const envUrl = String.fromEnvironment('API_BASE_URL');
-    if (envUrl.isNotEmpty) {
-      return envUrl;
+    if (envUrl.isNotEmpty) return envUrl;
+
+    if (kReleaseMode) {
+      throw StateError(
+        'API_BASE_URL is not configured. Build with '
+        '--dart-define=API_BASE_URL=https://your-server/EXAMVERSE/api',
+      );
     }
-    if (kIsWeb) {
-      return 'http://localhost/EXAMVERSE/api';
-    } else if (Platform.isAndroid) {
-      return 'http://$hostLanIp/EXAMVERSE/api';
-    } else {
-      return 'http://127.0.0.1/EXAMVERSE/api';
-    }
+
+    if (kIsWeb) return 'http://localhost/EXAMVERSE/api';
+    if (Platform.isAndroid) return 'http://$hostLanIp/EXAMVERSE/api';
+    return 'http://127.0.0.1/EXAMVERSE/api';
   }
 
   // EXAMVERSE Color System — Premium Dark Futuristic Theme

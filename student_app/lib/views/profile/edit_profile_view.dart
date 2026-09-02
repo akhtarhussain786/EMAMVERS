@@ -25,7 +25,9 @@ class _EditProfileViewState extends State<EditProfileView> {
     if (widget.userData != null) {
       _nameController.text = widget.userData!['full_name'] ?? 'Rahul Kumar';
       _emailController.text = widget.userData!['email'] ?? 'demo@examverse.com';
-      _mobileController.text = widget.userData!['mobile'] ?? '9876543210';
+      // Placeholder numbers must not be pre-filled into a real profile field.
+      final mobile = widget.userData!['mobile']?.toString() ?? '';
+      _mobileController.text = mobile.startsWith('NA-') ? '' : mobile;
       _examController.text = widget.userData!['target_exam'] ?? 'SSC CGL';
     } else {
       _nameController.text = 'Rahul Kumar';

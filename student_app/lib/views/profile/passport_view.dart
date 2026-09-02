@@ -189,7 +189,7 @@ class _PassportViewState extends State<PassportView> {
                 subtitle: 'Safely log out of your ExamVerse account',
                 color: AppConstants.textMuted,
                 onTap: () {
-                  ApiService.authToken = null;
+                  ApiService.clearSession();
                   if (widget.onLogout != null) widget.onLogout!();
                 },
               ),

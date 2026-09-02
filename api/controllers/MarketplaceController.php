@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../utils/response.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../config/config.php';
 
 class MarketplaceController {
 
@@ -109,6 +110,26 @@ class MarketplaceController {
         Response::json($material, 'Material detail fetched');
     }
 
+    /**
+     * Absolute path to the material storage root.
+     * Configurable so it can be placed outside the document root in production.
+     */
+    private static function storageRoot() {
+        $configured = trim((string)Config::get('MATERIAL_STORAGE_PATH', ''));
+        $path = $configured !== '' ? $configured : __DIR__ . '/../../storage/materials';
+        return realpath($path) ?: null;
+    }
+
+    /** Resolves a stored filename inside the storage root, or null if it escapes. */
+    private static function resolveMaterialFile($filePath) {
+        $root = self::storageRoot();
+        if (!$root) return null;
+        // basename() strips any directory component a stored value might carry.
+        $abs = realpath($root . DIRECTORY_SEPARATOR . basename((string)$filePath));
+        if (!$abs || strpos($abs, $root . DIRECTORY_SEPARATOR) !== 0 || !is_file($abs)) return null;
+        return $abs;
+    }
+
     // ─── PURCHASE (MOCK PAYMENT) ──────────────────────────────────────
 
     public static function purchase($id) {
@@ -137,24 +158,46 @@ class MarketplaceController {
             return;
         }
 
-        // Mock payment — in production replace with Razorpay
+        // Paid materials require a real settlement. Until a gateway is wired in,
+        // refuse rather than silently recording an unpaid purchase as completed
+        // (which would credit the creator a payable balance for no money).
+        if (!Config::bool('PAYMENTS_ENABLED', false) && !Config::bool('PAYMENTS_MOCK', false)) {
+            Response::json(null, 'Paid purchases are not available yet — payment processing is not configured.', 'error', 503);
+            return;
+        }
+        if (Config::bool('PAYMENTS_ENABLED', false)) {
+            // Real gateway integration goes here (verify signature, capture, then
+            // record the purchase). Refuse until that exists so no unverified
+            // payment is ever marked completed.
+            Response::json(null, 'Payment gateway integration is not implemented.', 'error', 503);
+            return;
+        }
+
+        // Sandbox settlement — local testing only (PAYMENTS_MOCK=true).
         $body = json_decode(file_get_contents('php://input'), true);
-        $paymentMethod = $body['payment_method'] ?? 'mock_upi';
-        $txnId = 'TXN_' . strtoupper(uniqid());
+        $paymentMethod = 'sandbox_' . ($body['payment_method'] ?? 'upi');
+        $txnId = 'SANDBOX_' . strtoupper(bin2hex(random_bytes(8)));
 
         $price = floatval($material['price']);
         $platformFee = round($price * 0.20, 2);       // 20% platform commission
         $creatorEarning = round($price - $platformFee, 2);
 
-        $purchaseStmt = $db->prepare("INSERT INTO material_purchases (user_id, material_id, amount_paid, platform_fee, creator_earning, payment_status, payment_method, transaction_id) VALUES (?,?,?,?,?,'completed',?,?)");
-        $purchaseStmt->execute([$userId, $id, $price, $platformFee, $creatorEarning, $paymentMethod, $txnId]);
+        $db->beginTransaction();
+        try {
+            $purchaseStmt = $db->prepare("INSERT INTO material_purchases (user_id, material_id, amount_paid, platform_fee, creator_earning, payment_status, payment_method, transaction_id) VALUES (?,?,?,?,?,'completed',?,?)");
+            $purchaseStmt->execute([$userId, $id, $price, $platformFee, $creatorEarning, $paymentMethod, $txnId]);
+            $purchaseId = $db->lastInsertId();
 
-        // Update creator pending_payout
-        $db->prepare("UPDATE creators SET pending_payout=pending_payout+?, total_earnings=total_earnings+?, total_sales=total_sales+1 WHERE id=?")->execute([$creatorEarning, $creatorEarning, $material['creator_id']]);
-        $db->prepare("UPDATE study_materials SET total_downloads=total_downloads+1, total_revenue=total_revenue+? WHERE id=?")->execute([$price, $id]);
+            $db->prepare("UPDATE creators SET pending_payout=pending_payout+?, total_earnings=total_earnings+?, total_sales=total_sales+1 WHERE id=?")->execute([$creatorEarning, $creatorEarning, $material['creator_id']]);
+            $db->prepare("UPDATE study_materials SET total_downloads=total_downloads+1, total_revenue=total_revenue+? WHERE id=?")->execute([$price, $id]);
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
+        }
 
         Response::json([
-            'purchase_id'    => $db->lastInsertId(),
+            'purchase_id'    => $purchaseId,
             'transaction_id' => $txnId,
             'amount_paid'    => $price,
             'access_granted' => true,
@@ -182,17 +225,66 @@ class MarketplaceController {
             Response::json(null,'Purchase required to download','error',403); return;
         }
 
-        $filePath = __DIR__ . '/../../' . $material['file_path'];
-        if (!file_exists($filePath)) {
+        if (!self::resolveMaterialFile($material['file_path'])) {
             Response::json(null,'File not found on server','error',404); return;
         }
 
-        // Return signed download URL (in prod) — for now return the path info
+        // Issue a short-lived, single-material download grant instead of
+        // handing out a public path (which would make the paywall bypassable).
+        $expires = time() + 300;
+        $signature = hash_hmac('sha256', $material['id'] . '|' . $userId . '|' . $expires, Config::appKey());
+
         Response::json([
-            'download_url' => '/EXAMVERSE/' . $material['file_path'],
-            'title' => $material['title'],
+            'download_url' => '/EXAMVERSE/api/v1/marketplace/' . $material['id'] . '/file?expires=' . $expires . '&sig=' . $signature,
+            'expires_at'   => date('Y-m-d H:i:s', $expires),
+            'title'        => $material['title'],
             'file_size_kb' => $material['file_size_kb'],
         ], 'Download ready');
+    }
+
+    /**
+     * Streams the material bytes. Requires both a valid bearer token and the
+     * signed grant issued by download(); files themselves are not web-reachable.
+     */
+    public static function serveFile($id) {
+        $user = AuthMiddleware::getAuthenticatedUser('student');
+        $userId = $user['sub'];
+
+        $expires = intval($_GET['expires'] ?? 0);
+        $sig     = (string)($_GET['sig'] ?? '');
+
+        if ($expires < time()) {
+            Response::error('Download link has expired', 403);
+        }
+        $expected = hash_hmac('sha256', intval($id) . '|' . $userId . '|' . $expires, Config::appKey());
+        if (!hash_equals($expected, $sig)) {
+            Response::error('Invalid download link', 403);
+        }
+
+        $db = Database::getConnection();
+        $stmt = $db->prepare("SELECT sm.*, mp.payment_status
+                               FROM study_materials sm
+                               LEFT JOIN material_purchases mp ON sm.id=mp.material_id AND mp.user_id=? AND mp.payment_status='completed'
+                               WHERE sm.id=? AND sm.status='approved'");
+        $stmt->execute([$userId, $id]);
+        $material = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$material) Response::error('Material not found', 404);
+        if (!$material['is_free'] && $material['payment_status'] !== 'completed') {
+            Response::error('Purchase required to download', 403);
+        }
+
+        $absolute = self::resolveMaterialFile($material['file_path']);
+        if (!$absolute) {
+            Response::error('File not found on server', 404);
+        }
+
+        header('Content-Type: application/octet-stream');
+        header('Content-Length: ' . filesize($absolute));
+        header('Content-Disposition: attachment; filename="' . preg_replace('/[^A-Za-z0-9._-]/', '_', $material['title']) . '.' . pathinfo($absolute, PATHINFO_EXTENSION) . '"');
+        header('X-Content-Type-Options: nosniff');
+        readfile($absolute);
+        exit;
     }
 
     // ─── MY PURCHASES ─────────────────────────────────────────────────

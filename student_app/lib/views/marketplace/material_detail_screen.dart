@@ -25,8 +25,8 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
 
   Future<void> _loadDetail() async {
     try {
-      final data = await ApiService.get('/marketplace/${widget.materialId}');
-      if (mounted) setState(() { _material = data['data']; _loading = false; });
+      final data = await ApiService.get('/v1/marketplace/${widget.materialId}');
+      if (mounted) setState(() { _material = data as Map<String, dynamic>?; _loading = false; });
     } catch (e) {
       if (mounted) setState(() => _loading = false);
     }
@@ -34,8 +34,8 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
 
   Future<void> _checkPurchased() async {
     try {
-      final data = await ApiService.getAuth('/marketplace/my-purchases');
-      final purchases = data['data'] as List? ?? [];
+      final data = await ApiService.getAuth('/v1/marketplace/my-purchases');
+      final purchases = data as List? ?? [];
       if (mounted) {
         setState(() => _isPurchased = purchases.any((p) => p['material_id'] == widget.materialId));
       }
@@ -96,9 +96,9 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF6366f1).withOpacity(0.2),
+                            color: const Color(0xFF6366f1).withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: const Color(0xFF818cf8).withOpacity(0.3)),
+                            border: Border.all(color: const Color(0xFF818cf8).withValues(alpha: 0.3)),
                           ),
                           child: Text(m['exam_title'] ?? m['subject_name'] ?? 'Study Material',
                               style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF818cf8))),
@@ -153,9 +153,9 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF818cf8).withOpacity(0.08),
+                    color: const Color(0xFF818cf8).withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFF818cf8).withOpacity(0.2)),
+                    border: Border.all(color: const Color(0xFF818cf8).withValues(alpha: 0.2)),
                   ),
                   child: Row(children: [
                     const Icon(Icons.preview_outlined, color: Color(0xFF818cf8), size: 22),
@@ -184,7 +184,7 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
                     children: (m['tags'] as String).split(',').map((tag) => Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.06),
+                          color: Colors.white.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(20)),
                       child: Text(tag.trim(), style: GoogleFonts.inter(fontSize: 11, color: Colors.white54)),
                     )).toList(),
@@ -202,7 +202,7 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.04),
+                          color: Colors.white.withValues(alpha: 0.04),
                           borderRadius: BorderRadius.circular(12)),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Row(children: [
@@ -235,7 +235,7 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         decoration: BoxDecoration(
           color: const Color(0xFF1a1a2e),
-          border: Border(top: BorderSide(color: Colors.white.withOpacity(0.08))),
+          border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
         ),
         child: Row(children: [
           // Price
@@ -287,7 +287,7 @@ class _StatChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(8)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, size: 12, color: Colors.white38),

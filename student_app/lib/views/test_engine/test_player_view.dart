@@ -23,14 +23,22 @@ class TestPlayerView extends StatefulWidget {
 
 class _TestPlayerViewState extends State<TestPlayerView> {
   bool isLoading = true;
+  String? loadError;
   int attemptId = 0;
   List<QuestionItem> questions = [];
   int currentIndex = 0;
   String selectedLanguage = 'en';
+  bool isSubmitting = false;
 
   // Timer
   int remainingSeconds = 3600;
   Timer? _timer;
+
+  // Per-question time tracking and answer autosave.
+  Timer? _autosaveTimer;
+  DateTime _questionEnteredAt = DateTime.now();
+  final Set<int> _dirtyQuestionIds = <int>{};
+  bool _isFlushing = false;
 
   @override
   void initState() {
@@ -41,21 +49,34 @@ class _TestPlayerViewState extends State<TestPlayerView> {
   @override
   void dispose() {
     _timer?.cancel();
+    _autosaveTimer?.cancel();
     super.dispose();
   }
 
   void _startAttempt() async {
     try {
       final res = await ApiService.post('/v1/tests/${widget.testId}/attempts', {});
+      if (!mounted) return;
       setState(() {
-        attemptId = res['attempt_id'];
+        attemptId = res['attempt_id'] as int;
         questions = (res['questions'] as List? ?? []).map((q) => QuestionItem.fromJson(q)).toList();
-        remainingSeconds = res['test']['total_duration_seconds'] ?? 3600;
+        // The server computes remaining time from the attempt's start, so
+        // reopening a test cannot hand back a fresh full-length timer.
+        remainingSeconds = (res['remaining_seconds'] as int?)
+            ?? (res['test']?['total_duration_seconds'] as int?)
+            ?? 3600;
         isLoading = false;
+        loadError = null;
       });
+      _questionEnteredAt = DateTime.now();
       _initTimer();
-    } catch (_) {
-      setState(() => isLoading = false);
+      _initAutosave();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        isLoading = false;
+        loadError = e.toString().replaceAll('Exception: ', '');
+      });
     }
   }
 
@@ -70,6 +91,55 @@ class _TestPlayerViewState extends State<TestPlayerView> {
     });
   }
 
+  /// Answers previously lived only in memory and were never sent to the server,
+  /// so every submitted attempt scored zero. Flush pending changes periodically.
+  void _initAutosave() {
+    _autosaveTimer = Timer.periodic(const Duration(seconds: 15), (_) => _flushPendingAnswers());
+  }
+
+  /// Charges elapsed time to the question currently on screen.
+  void _accrueTimeOnCurrentQuestion() {
+    if (currentIndex >= questions.length) return;
+    final now = DateTime.now();
+    final elapsed = now.difference(_questionEnteredAt).inSeconds;
+    if (elapsed > 0) {
+      questions[currentIndex].timeSpentSeconds += elapsed;
+      _dirtyQuestionIds.add(questions[currentIndex].id);
+    }
+    _questionEnteredAt = now;
+  }
+
+  Map<String, dynamic> _payloadFor(QuestionItem q) => {
+    'question_id': q.id,
+    'selected_option_key': q.selectedOption,
+    'is_marked_for_review': q.isMarkedForReview ? 1 : 0,
+    'time_spent_seconds': q.pendingTimeSeconds,
+  };
+
+  /// Sends changed answers to the server. Time is only cleared once the write
+  /// succeeds, so a failed autosave is retried rather than lost.
+  Future<void> _flushPendingAnswers() async {
+    if (_isFlushing || attemptId == 0) return;
+    _accrueTimeOnCurrentQuestion();
+    if (_dirtyQuestionIds.isEmpty) return;
+
+    _isFlushing = true;
+    final batch = questions.where((q) => _dirtyQuestionIds.contains(q.id)).toList();
+    try {
+      await ApiService.put('/v1/attempts/$attemptId/answers', {
+        'responses': batch.map(_payloadFor).toList(),
+      });
+      for (final q in batch) {
+        q.commitPendingTime();
+      }
+      _dirtyQuestionIds.removeAll(batch.map((q) => q.id));
+    } catch (_) {
+      // Left dirty on purpose: the next autosave tick or the final submit retries.
+    } finally {
+      _isFlushing = false;
+    }
+  }
+
   String _formatTimer(int seconds) {
     final m = seconds ~/ 60;
     final s = seconds % 60;
@@ -77,50 +147,80 @@ class _TestPlayerViewState extends State<TestPlayerView> {
   }
 
   void _onOptionSelected(String optionKey) {
+    _accrueTimeOnCurrentQuestion();
     setState(() {
       questions[currentIndex].selectedOption = optionKey;
       questions[currentIndex].isAnswered = true;
+      _dirtyQuestionIds.add(questions[currentIndex].id);
     });
   }
 
   void _onMarkForReview() {
+    _accrueTimeOnCurrentQuestion();
     setState(() {
       questions[currentIndex].isMarkedForReview = !questions[currentIndex].isMarkedForReview;
+      _dirtyQuestionIds.add(questions[currentIndex].id);
     });
   }
 
   void _onClearResponse() {
+    _accrueTimeOnCurrentQuestion();
     setState(() {
       questions[currentIndex].selectedOption = null;
       questions[currentIndex].isAnswered = false;
+      _dirtyQuestionIds.add(questions[currentIndex].id);
     });
+  }
+
+  void _goToQuestion(int index) {
+    if (index < 0 || index >= questions.length) return;
+    _accrueTimeOnCurrentQuestion();
+    setState(() => currentIndex = index);
+    _questionEnteredAt = DateTime.now();
+    _flushPendingAnswers();
   }
 
   void _onSaveAndNext() {
     if (currentIndex < questions.length - 1) {
-      setState(() => currentIndex++);
+      _goToQuestion(currentIndex + 1);
     } else {
+      _flushPendingAnswers();
       _showSubmitDialog(context);
     }
   }
 
   void _submitFinalAttempt() async {
-    try {
-      final responses = questions.map((q) {
-        return {
-          'question_id': q.id,
-          'selected_option': q.selectedOption,
-          'is_marked_review': q.isMarkedForReview ? 1 : 0,
-        };
-      }).toList();
+    if (isSubmitting) return;
+    setState(() => isSubmitting = true);
 
+    _timer?.cancel();
+    _autosaveTimer?.cancel();
+    _accrueTimeOnCurrentQuestion();
+
+    try {
+      // Send every answer with the submission. The server persists these before
+      // scoring, so an autosave that never landed cannot cost the candidate marks.
       await ApiService.post('/v1/attempts/$attemptId/submit', {
-        'responses': responses,
+        'responses': questions.map(_payloadFor).toList(),
       });
 
       if (mounted) widget.onTestSubmitted(attemptId);
-    } catch (_) {
-      if (mounted) widget.onTestSubmitted(attemptId);
+    } catch (e) {
+      if (!mounted) return;
+      // Do not navigate to a result that was never recorded.
+      setState(() => isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not submit: ${e.toString().replaceAll('Exception: ', '')}'),
+          backgroundColor: AppConstants.accentRose,
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'Retry',
+            textColor: Colors.white,
+            onPressed: _submitFinalAttempt,
+          ),
+        ),
+      );
     }
   }
 
@@ -352,7 +452,7 @@ class _TestPlayerViewState extends State<TestPlayerView> {
                     return GestureDetector(
                       onTap: () {
                         Navigator.pop(context);
-                        setState(() => currentIndex = i);
+                        _goToQuestion(i);
                       },
                       child: Container(
                         decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppConstants.cardBorder)),

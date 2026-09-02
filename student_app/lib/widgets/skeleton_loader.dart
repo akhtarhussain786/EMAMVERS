@@ -48,9 +48,9 @@ class _SkeletonCardState extends State<SkeletonCard> with SingleTickerProviderSt
           height: widget.height,
           width: widget.width ?? double.infinity,
           decoration: BoxDecoration(
-            color: AppConstants.cardDark.withOpacity(_animation.value),
+            color: AppConstants.cardDark.withValues(alpha: _animation.value),
             borderRadius: BorderRadius.circular(widget.borderRadius),
-            border: Border.all(color: AppConstants.cardBorder.withOpacity(0.5)),
+            border: Border.all(color: AppConstants.cardBorder.withValues(alpha: 0.5)),
           ),
         );
       },
@@ -74,8 +74,8 @@ class SkeletonListLoader extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: count,
-      separatorBuilder: (_, __) => const SizedBox(height: AppConstants.space12),
-      itemBuilder: (_, __) => SkeletonCard(height: itemHeight),
+      separatorBuilder: (_, _) => const SizedBox(height: AppConstants.space12),
+      itemBuilder: (_, _) => SkeletonCard(height: itemHeight),
     );
   }
 }

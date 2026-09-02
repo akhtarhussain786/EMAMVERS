@@ -85,7 +85,7 @@ class _ExamDetailViewState extends State<ExamDetailView> {
               decoration: BoxDecoration(
                 gradient: AppConstants.darkCardGradient,
                 borderRadius: BorderRadius.circular(AppConstants.radiusHero),
-                border: Border.all(color: AppConstants.accentIndigo.withOpacity(0.5)),
+                border: Border.all(color: AppConstants.accentIndigo.withValues(alpha: 0.5)),
                 boxShadow: AppConstants.cardShadow,
               ),
               child: Column(
@@ -97,7 +97,7 @@ class _ExamDetailViewState extends State<ExamDetailView> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppConstants.accentIndigo.withOpacity(0.25),
+                          color: AppConstants.accentIndigo.withValues(alpha: 0.25),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
@@ -107,7 +107,7 @@ class _ExamDetailViewState extends State<ExamDetailView> {
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(color: AppConstants.accentEmerald.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                        decoration: BoxDecoration(color: AppConstants.accentEmerald.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
                         child: const Text('VERIFIED SYLLABUS', style: TextStyle(color: AppConstants.accentEmerald, fontSize: 10, fontWeight: FontWeight.bold)),
                       ),
                     ],
@@ -155,14 +155,14 @@ class _ExamDetailViewState extends State<ExamDetailView> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: tests.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
               itemBuilder: (context, i) {
                 final test = tests[i];
                 return TestCard(
                   title: test.title,
                   category: exam?['title'] ?? 'MOCK TEST',
-                  totalQuestions: test.totalQuestions ?? 100,
-                  totalMarks: (test.totalQuestions ?? 100) * 2,
+                  totalQuestions: test.totalQuestions ?? 0,
+                  totalMarks: (test.totalQuestions ?? 0) * 2,
                   durationMinutes: test.totalDurationSeconds != null ? (test.totalDurationSeconds! / 60).round() : 60,
                   totalAttempts: 1240 + (i * 350),
                   isFree: !test.isPaid,

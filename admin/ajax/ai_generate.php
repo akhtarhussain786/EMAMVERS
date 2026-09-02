@@ -6,6 +6,8 @@
  */
 require_once __DIR__ . '/_guard.php';
 require_once __DIR__ . '/../../api/config/db.php';
+require_once __DIR__ . '/../../api/utils/crypto.php';
+require_once __DIR__ . '/../../api/config/config.php';
 
 $db     = Database::getConnection();
 $action = $_GET['action'] ?? 'generate';
@@ -28,7 +30,7 @@ switch ($action) {
             ajaxErr('No active AI API key found. Please add one in the API Key Manager above.', 400);
         }
 
-        $apiKey   = base64_decode($keyRow['api_key_encrypted']);
+        $apiKey   = Crypto::decrypt($keyRow['api_key_encrypted']);
         $provider = $keyRow['provider'];
 
         // Resolve exam/subject names
@@ -134,7 +136,8 @@ Generate {$count} questions now:";
 
         } catch (Exception $e) {
             $db->prepare("UPDATE ai_question_batches SET status='error', error_message=?, raw_response=? WHERE id=?")->execute([$e->getMessage(), $rawResponse, $batchId]);
-            ajaxErr('AI Generation failed: ' . $e->getMessage(), 500);
+            error_log('EXAMVERSE admin AI generation failed (batch ' . $batchId . '): ' . $e->getMessage());
+            ajaxErr('AI Generation failed: ' . (Config::isDebug() ? $e->getMessage() : 'see server log for details'), 502);
         }
         break;
 
@@ -163,17 +166,19 @@ Generate {$count} questions now:";
 
             $subjectId = $aiQ['subject_id'] ?: 1;
 
+            $db->beginTransaction();
             $db->prepare("INSERT INTO questions (subject_id, question_type, difficulty, status) VALUES (?,'MCQ',?,'published')")->execute([$subjectId, $aiQ['difficulty']]);
             $newQId = $db->lastInsertId();
 
             $db->prepare("INSERT INTO question_translations (question_id, language, question_text, solution_text) VALUES (?,'en',?,?)")->execute([$newQId, $aiQ['question_text'], $aiQ['explanation']]);
 
+            $optStmt = $db->prepare("INSERT INTO question_options (question_id, option_key, language, option_text, is_correct) VALUES (?,?,'en',?,?)");
             foreach (['A' => 'option_a', 'B' => 'option_b', 'C' => 'option_c', 'D' => 'option_d'] as $key => $col) {
-                $db->prepare("INSERT INTO question_options (question_id, option_key, language, option_text, is_correct) VALUES (?,'en',?,?,?)")
-                   ->execute([$newQId, $key, '', $aiQ[$col], ($key === strtoupper($aiQ['correct_option'])) ? 1 : 0]);
+                $optStmt->execute([$newQId, $key, $aiQ[$col], ($key === strtoupper($aiQ['correct_option'])) ? 1 : 0]);
             }
 
             $db->prepare("UPDATE ai_generated_questions SET review_status='approved', approved_question_id=? WHERE id=?")->execute([$newQId, $aiQId]);
+            $db->commit();
             $saved++;
         }
 

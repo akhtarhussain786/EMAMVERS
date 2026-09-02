@@ -12,6 +12,7 @@ class TestHistoryView extends StatefulWidget {
 
 class _TestHistoryViewState extends State<TestHistoryView> {
   bool isLoading = true;
+  String? loadError;
   List<dynamic> history = [];
 
   @override
@@ -23,25 +24,23 @@ class _TestHistoryViewState extends State<TestHistoryView> {
   void _loadHistory() async {
     try {
       final res = await ApiService.get('/v1/passport');
+      if (!mounted) return;
       setState(() {
-        history = res['recent_attempts'] as List? ?? _getFallbackHistory();
+        // The passport payload exposes history under 'recent_attempts'.
+        history = (res is Map ? res['recent_attempts'] : null) as List? ?? [];
         isLoading = false;
+        loadError = null;
       });
-    } catch (_) {
+    } catch (e) {
+      if (!mounted) return;
+      // Showing invented scores and ranks here would be worse than showing
+      // nothing — a candidate must never see a fabricated rank.
       setState(() {
-        history = _getFallbackHistory();
+        history = [];
         isLoading = false;
+        loadError = e.toString().replaceAll('Exception: ', '');
       });
     }
-  }
-
-  List<dynamic> _getFallbackHistory() {
-    return [
-      {'test_title': 'SSC CGL Full Mock Test 04', 'started_at': '24 Aug 2026', 'score': '156/200', 'rank': '#124', 'accuracy_percentage': '83%'},
-      {'test_title': 'Quant Sectional Quiz 12', 'started_at': '21 Aug 2026', 'score': '44/50', 'rank': '#89', 'accuracy_percentage': '88%'},
-      {'test_title': 'Reasoning Speed Test 08', 'started_at': '18 Aug 2026', 'score': '48/50', 'rank': '#45', 'accuracy_percentage': '96%'},
-      {'test_title': 'General Awareness PYP 2023', 'started_at': '15 Aug 2026', 'score': '32/50', 'rank': '#210', 'accuracy_percentage': '64%'},
-    ];
   }
 
   @override
@@ -57,11 +56,15 @@ class _TestHistoryViewState extends State<TestHistoryView> {
         child: isLoading
             ? const Center(child: CircularProgressIndicator(color: AppConstants.accentCyan))
             : history.isEmpty
-                ? const EmptyStateWidget(icon: Icons.history, title: 'No Test History Yet', description: 'Attempt mock tests to track your exam performance history here.')
+                ? EmptyStateWidget(
+                    icon: loadError != null ? Icons.cloud_off : Icons.history,
+                    title: loadError != null ? 'Could not load history' : 'No Test History Yet',
+                    description: loadError ?? 'Attempt mock tests to track your exam performance history here.',
+                  )
                 : ListView.separated(
                     padding: const EdgeInsets.all(AppConstants.space16),
                     itemCount: history.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: AppConstants.space12),
+                    separatorBuilder: (_, _) => const SizedBox(height: AppConstants.space12),
                     itemBuilder: (context, index) {
                       final item = history[index];
                       final title = item['test_title'] ?? item['title'] ?? 'Mock Test';

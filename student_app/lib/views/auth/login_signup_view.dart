@@ -6,7 +6,9 @@ import '../../widgets/design_system_widgets.dart';
 import 'forgot_password_view.dart';
 
 class LoginSignupView extends StatefulWidget {
-  final VoidCallback onAuthenticated;
+  /// Receives the account type returned by the API ('student' or 'teacher'),
+  /// so the shell can open the right home screen.
+  final void Function(String accountType) onAuthenticated;
   const LoginSignupView({super.key, required this.onAuthenticated});
 
   @override
@@ -46,7 +48,7 @@ class _LoginSignupViewState extends State<LoginSignupView> {
     });
   }
 
-  void _savePreferences(String identity) async {
+  Future<void> _savePreferences(String identity) async {
     final prefs = await SharedPreferences.getInstance();
     if (rememberMe) {
       await prefs.setString('remembered_identity', identity);
@@ -84,9 +86,11 @@ class _LoginSignupViewState extends State<LoginSignupView> {
         'identity': identity,
         'password': password,
       });
-      ApiService.authToken = res['token'];
-      _savePreferences(identity);
-      widget.onAuthenticated();
+      final accountType = (res['account_type'] as String?) ?? 'student';
+      await ApiService.setSession(res['token'] as String?, remember: rememberMe, type: accountType);
+      await _savePreferences(identity);
+      if (!mounted) return;
+      widget.onAuthenticated(accountType);
     } catch (e) {
       _showSnackBar(e.toString().replaceAll('Exception: ', ''));
     } finally {
@@ -108,15 +112,16 @@ class _LoginSignupViewState extends State<LoginSignupView> {
     try {
       final res = await ApiService.post('/v1/auth/signup', {
         'full_name': fullName,
-        'email': identity.contains('@') ? identity : '$identity@examverse.com',
-        'mobile': identity.contains('@') ? '9876543210' : identity,
+        'email': identity.contains('@') ? identity : '',
+        'mobile': identity.contains('@') ? '' : identity,
         'password': password,
         'state_id': selectedStateId,
         'qualification_id': selectedQualId,
       });
-      ApiService.authToken = res['token'];
-      _savePreferences(identity);
-      widget.onAuthenticated();
+      await ApiService.setSession(res['token'] as String?, remember: rememberMe, type: 'student');
+      await _savePreferences(identity);
+      if (!mounted) return;
+      widget.onAuthenticated('student');
     } catch (e) {
       _showSnackBar(e.toString().replaceAll('Exception: ', ''));
     } finally {
@@ -256,8 +261,11 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                   const SizedBox(height: AppConstants.space24),
 
                   // TOGGLE LOGIN / SIGNUP
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  // Wrap rather than Row: on narrow screens the prompt and the
+                  // action button together exceed one line and a Row overflows.
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
                         isSignUp ? 'Already have an account?' : 'New candidate on ExamVerse?',

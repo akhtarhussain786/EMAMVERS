@@ -12,6 +12,7 @@ class MistakeNotebookView extends StatefulWidget {
 
 class _MistakeNotebookViewState extends State<MistakeNotebookView> {
   bool isLoading = true;
+  String? loadError;
   List<dynamic> notebook = [];
 
   @override
@@ -24,23 +25,39 @@ class _MistakeNotebookViewState extends State<MistakeNotebookView> {
     setState(() => isLoading = true);
     try {
       final res = await ApiService.get('/v1/notebook');
+      if (!mounted) return;
       setState(() {
-        notebook = res['notebook'] ?? [];
+        notebook = (res is Map ? res['notebook'] : null) as List? ?? [];
         isLoading = false;
+        loadError = null;
       });
-    } catch (_) {
-      setState(() => isLoading = false);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        notebook = [];
+        isLoading = false;
+        loadError = e.toString().replaceAll('Exception: ', '');
+      });
     }
   }
 
   void _markAsMastered(int id) async {
     try {
       await ApiService.put('/v1/notebook/$id/master', {});
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Question marked as Mastered! 🎉'), backgroundColor: AppConstants.accentEmerald),
       );
       _loadNotebook();
-    } catch (_) {}
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          backgroundColor: AppConstants.accentRose,
+        ),
+      );
+    }
   }
 
   @override
@@ -93,10 +110,16 @@ class _MistakeNotebookViewState extends State<MistakeNotebookView> {
                 child: isLoading
                     ? const Center(child: CircularProgressIndicator(color: AppConstants.accentCyan))
                     : notebook.isEmpty
-                        ? const EmptyStateWidget(icon: Icons.check_circle_outline, title: 'No Weak Questions', description: 'Great job! You have no pending mistake questions in your log.')
+                        ? EmptyStateWidget(
+                            icon: loadError != null ? Icons.cloud_off : Icons.check_circle_outline,
+                            title: loadError != null ? 'Could not load notebook' : 'No Weak Questions',
+                            description: loadError ?? 'Great job! You have no pending mistake questions in your log.',
+                            buttonLabel: loadError != null ? 'Try again' : null,
+                            onButtonPressed: loadError != null ? _loadNotebook : null,
+                          )
                         : ListView.separated(
                             itemCount: notebook.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: AppConstants.space16),
+                            separatorBuilder: (_, _) => const SizedBox(height: AppConstants.space16),
                             itemBuilder: (context, i) {
                               final item = notebook[i];
                               final isMastered = (item['is_mastered'] ?? 0) == 1;

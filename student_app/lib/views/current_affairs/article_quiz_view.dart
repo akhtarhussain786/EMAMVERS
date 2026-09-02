@@ -45,14 +45,14 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
 
     try {
       final res = await ApiService.postAuth(
-        '/current-affairs/${widget.articleId}/generate-quiz${forceNew ? '?force=1' : ''}',
+        '/v1/current-affairs/${widget.articleId}/generate-quiz${forceNew ? '?force=1' : ''}',
         {},
       );
 
       if (mounted) {
-        if (res['status'] == 'success') {
+        if (res != null) {
           setState(() {
-            _questions = res['data']?['questions'] ?? [];
+            _questions = (res is Map ? res['questions'] : null) as List? ?? [];
             _loading = false;
           });
         } else {
@@ -222,7 +222,7 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF6366f1).withOpacity(0.2),
+                  color: const Color(0xFF6366f1).withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -233,7 +233,7 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.06),
+                  color: Colors.white.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -250,7 +250,7 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: progress,
-              backgroundColor: Colors.white.withOpacity(0.08),
+              backgroundColor: Colors.white.withValues(alpha: 0.08),
               valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF6366f1)),
               minHeight: 6,
             ),
@@ -267,7 +267,7 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
             ),
             child: Text(
               q['question_text'] ?? '',
@@ -297,10 +297,10 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: (_selectedOption == correct ? Colors.green : Colors.amber).withOpacity(0.12),
+                color: (_selectedOption == correct ? Colors.green : Colors.amber).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: (_selectedOption == correct ? Colors.green : Colors.amber).withOpacity(0.3),
+                  color: (_selectedOption == correct ? Colors.green : Colors.amber).withValues(alpha: 0.3),
                 ),
               ),
               child: Column(
@@ -362,18 +362,18 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
     required String optionText,
     required String correctKey,
   }) {
-    Color borderColor = Colors.white.withOpacity(0.08);
-    Color bgColor = Colors.white.withOpacity(0.03);
+    Color borderColor = Colors.white.withValues(alpha: 0.08);
+    Color bgColor = Colors.white.withValues(alpha: 0.03);
     Color textColor = Colors.white70;
 
     if (_hasAnswered) {
       if (optionKey == correctKey) {
         borderColor = Colors.greenAccent;
-        bgColor = Colors.green.withOpacity(0.15);
+        bgColor = Colors.green.withValues(alpha: 0.15);
         textColor = Colors.greenAccent;
       } else if (optionKey == _selectedOption) {
         borderColor = Colors.redAccent;
-        bgColor = Colors.red.withOpacity(0.15);
+        bgColor = Colors.red.withValues(alpha: 0.15);
         textColor = Colors.redAccent;
       }
     }
@@ -395,7 +395,7 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
               height: 32,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.06),
+                color: Colors.white.withValues(alpha: 0.06),
               ),
               child: Center(
                 child: Text(
@@ -441,7 +441,7 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
               height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: (passed ? Colors.green : const Color(0xFF6366f1)).withOpacity(0.15),
+                color: (passed ? Colors.green : const Color(0xFF6366f1)).withValues(alpha: 0.15),
                 border: Border.all(
                   color: passed ? Colors.greenAccent : const Color(0xFF818cf8),
                   width: 2.5,
@@ -475,9 +475,9 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.04),
+                color: Colors.white.withValues(alpha: 0.04),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.06)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
               ),
               child: Column(
                 children: [
@@ -510,7 +510,7 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
                     label: Text('New Quiz', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                      side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),

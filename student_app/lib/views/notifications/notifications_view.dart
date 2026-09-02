@@ -12,6 +12,8 @@ class NotificationsView extends StatefulWidget {
 
 class _NotificationsViewState extends State<NotificationsView> {
   bool isLoading = true;
+  String? loadError;
+  int unreadCount = 0;
   List<dynamic> notifications = [];
 
   @override
@@ -23,25 +25,37 @@ class _NotificationsViewState extends State<NotificationsView> {
   void _loadNotifications() async {
     try {
       final res = await ApiService.get('/v1/notifications');
+      if (!mounted) return;
       setState(() {
-        notifications = res['notifications'] as List? ?? _getFallbackNotifications();
+        notifications = (res is Map ? res['notifications'] : null) as List? ?? [];
+        unreadCount = (res is Map ? res['unread_count'] as int? : null) ?? 0;
         isLoading = false;
+        loadError = null;
       });
-    } catch (_) {
+    } catch (e) {
+      if (!mounted) return;
       setState(() {
-        notifications = _getFallbackNotifications();
+        notifications = [];
         isLoading = false;
+        loadError = e.toString().replaceAll('Exception: ', '');
       });
     }
   }
 
-  List<dynamic> _getFallbackNotifications() {
-    return [
-      {'title': 'Rank Improvement Alert! 🚀', 'desc': 'Your All India Rank improved by 18 positions this week to #124!', 'time': '2 hours ago', 'icon': Icons.trending_up, 'color': AppConstants.accentEmerald},
-      {'title': 'Daily Goal Reminder ⏱️', 'desc': 'Solve 18 more questions to maintain your 7-day streak.', 'time': '5 hours ago', 'icon': Icons.local_fire_department, 'color': AppConstants.accentAmber},
-      {'title': 'SSC CGL Tier-1 Mock 05 Live! 📝', 'desc': 'New full-length mock test is now available. 128K+ aspirants registered.', 'time': '1 day ago', 'icon': Icons.assignment, 'color': AppConstants.accentCyan},
-      {'title': 'Achievement Unlocked 🏆', 'desc': 'Congratulations! You unlocked the "1,000 Questions Solved" badge.', 'time': '2 days ago', 'icon': Icons.emoji_events, 'color': AppConstants.accentPurple},
-    ];
+  /// Marks a notification read on the server, then reflects it locally.
+  Future<void> _markRead(dynamic notification) async {
+    final id = notification is Map ? notification['id'] : null;
+    if (id == null || (notification is Map && notification['is_read'] == 1)) return;
+    try {
+      await ApiService.post('/v1/notifications/$id/read', {});
+      if (!mounted) return;
+      setState(() {
+        notification['is_read'] = 1;
+        if (unreadCount > 0) unreadCount--;
+      });
+    } catch (_) {
+      // Non-critical: the badge will correct itself on the next load.
+    }
   }
 
   @override
@@ -57,11 +71,17 @@ class _NotificationsViewState extends State<NotificationsView> {
         child: isLoading
             ? const Center(child: CircularProgressIndicator(color: AppConstants.accentCyan))
             : notifications.isEmpty
-                ? const EmptyStateWidget(icon: Icons.notifications_off_outlined, title: 'No Notifications Yet', description: 'Important updates regarding tests, rankings, and daily goals will appear here.')
+                ? EmptyStateWidget(
+                    icon: loadError != null ? Icons.cloud_off : Icons.notifications_off_outlined,
+                    title: loadError != null ? 'Could not load notifications' : 'No Notifications Yet',
+                    description: loadError ?? 'Important updates regarding tests, rankings, and daily goals will appear here.',
+                    buttonLabel: loadError != null ? 'Try again' : null,
+                    onButtonPressed: loadError != null ? _loadNotifications : null,
+                  )
                 : ListView.separated(
                     padding: const EdgeInsets.all(AppConstants.space16),
                     itemCount: notifications.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: AppConstants.space12),
+                    separatorBuilder: (_, _) => const SizedBox(height: AppConstants.space12),
                     itemBuilder: (context, i) {
                       final item = notifications[i];
                       final title = item['title'] ?? item['message'] ?? 'Notification';
@@ -69,7 +89,13 @@ class _NotificationsViewState extends State<NotificationsView> {
                       final time = item['time'] ?? item['created_at'] ?? 'Today';
                       final color = item['color'] is Color ? item['color'] as Color : AppConstants.accentCyan;
 
-                      return ExamVerseCard(
+                      final isRead = item['is_read'] == 1 || item['is_read'] == true;
+
+                      return GestureDetector(
+                        onTap: () => _markRead(item),
+                        child: Opacity(
+                          opacity: isRead ? 0.6 : 1.0,
+                          child: ExamVerseCard(
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -100,6 +126,8 @@ class _NotificationsViewState extends State<NotificationsView> {
                               ),
                             ),
                           ],
+                        ),
+                          ),
                         ),
                       );
                     },

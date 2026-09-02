@@ -65,7 +65,7 @@ class _WrongQuestionsViewState extends State<WrongQuestionsView> {
               : ListView.separated(
                   padding: const EdgeInsets.all(16),
                   itemCount: wrongQuestions.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 14),
+                  separatorBuilder: (_, _) => const SizedBox(height: 14),
                   itemBuilder: (context, i) {
                     final item = wrongQuestions[i];
                     final isExpanded = expandedIndex == i;

@@ -1,6 +1,22 @@
 <?php
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    exit("This maintenance script can only be run from the command line.\n");
+}
+
+require_once __DIR__ . '/../api/config/config.php';
+
 mysqli_report(MYSQLI_REPORT_OFF);
-$m = new mysqli('127.0.0.1','root','','examverse_db');
+$m = new mysqli(
+    Config::get('DB_HOST', '127.0.0.1'),
+    Config::get('DB_USER', 'root'),
+    Config::get('DB_PASS', ''),
+    Config::get('DB_NAME', 'examverse_db')
+);
+if ($m->connect_errno) {
+    fwrite(STDERR, "Connection failed: {$m->connect_error}\n");
+    exit(1);
+}
 $r = $m->query('SELECT COUNT(*) as cnt FROM exams');
 $row = $r->fetch_assoc();
 echo 'Total exams: '.$row['cnt']."\n";

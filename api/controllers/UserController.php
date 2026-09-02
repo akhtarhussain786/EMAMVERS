@@ -58,6 +58,10 @@ class UserController {
             Response::error('full_name cannot be empty', 422);
         }
 
+        if (mb_strlen($fullName) > 150) {
+            Response::error('full_name is too long', 422);
+        }
+
         $db = Database::getConnection();
         $stmt = $db->prepare("
             UPDATE users 
@@ -166,10 +170,21 @@ class UserController {
         $stmt->execute([$userId]);
         $wrong = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        foreach ($wrong as &$q) {
-            $optsStmt = $db->prepare("SELECT option_key, option_text, is_correct FROM question_options WHERE question_id = ? AND language = 'en'");
-            $optsStmt->execute([$q['question_id']]);
-            $q['options'] = $optsStmt->fetchAll(PDO::FETCH_ASSOC);
+        if (!empty($wrong)) {
+            $questionIds = array_values(array_unique(array_column($wrong, 'question_id')));
+            $ph = implode(',', array_fill(0, count($questionIds), '?'));
+
+            $optsStmt = $db->prepare("SELECT question_id, option_key, option_text, is_correct FROM question_options WHERE question_id IN ($ph) AND language = 'en' ORDER BY option_key ASC");
+            $optsStmt->execute($questionIds);
+
+            $byQuestion = [];
+            foreach ($optsStmt->fetchAll(PDO::FETCH_ASSOC) as $opt) {
+                $byQuestion[$opt['question_id']][] = $opt;
+            }
+            foreach ($wrong as &$q) {
+                $q['options'] = $byQuestion[$q['question_id']] ?? [];
+            }
+            unset($q);
         }
 
         Response::json($wrong, 'Wrong question notebook loaded');

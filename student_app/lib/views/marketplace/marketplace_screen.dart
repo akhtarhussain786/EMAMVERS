@@ -18,6 +18,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
 
   List<dynamic> _materials = [];
   bool _loading = true;
+  String _errorMsg = '';
   String _sort = 'newest';
   bool _freeOnly = false;
   String _searchQuery = '';
@@ -66,15 +67,21 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
         if (_selectedCategory.isNotEmpty) 'exam_category': _selectedCategory,
         'limit': '30',
       };
-      final data = await ApiService.get('/marketplace', params: params);
+      final data = await ApiService.get('/v1/marketplace', params: params);
       if (mounted) {
         setState(() {
-          _materials = data['data']?['materials'] ?? [];
+          _materials = (data is Map ? data['materials'] : null) as List? ?? [];
           _loading = false;
+          _errorMsg = '';
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _errorMsg = e.toString().replaceAll('Exception: ', '');
+        });
+      }
     }
   }
 
@@ -152,7 +159,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
                                 })
                             : null,
                         filled: true,
-                        fillColor: Colors.white.withOpacity(0.07),
+                        fillColor: Colors.white.withValues(alpha: 0.07),
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none),
@@ -183,7 +190,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
         body: _loading
             ? _buildShimmer()
             : _materials.isEmpty
-                ? _buildEmpty()
+                ? (_errorMsg.isNotEmpty ? _buildLoadError() : _buildEmpty())
                 : RefreshIndicator(
                     onRefresh: _loadMaterials,
                     color: const Color(0xFF818cf8),
@@ -227,8 +234,36 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.72),
         itemCount: 8,
-        itemBuilder: (_, __) => Container(
+        itemBuilder: (_, _) => Container(
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14))),
+      ),
+    );
+  }
+
+  /// Distinguishes "nothing published yet" from "we could not reach the server".
+  Widget _buildLoadError() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off, size: 48, color: Colors.white38),
+            const SizedBox(height: 16),
+            const Text('Could not load the marketplace',
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(_errorMsg,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white54, fontSize: 13)),
+            const SizedBox(height: 20),
+            OutlinedButton.icon(
+              onPressed: _loadMaterials,
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Try again'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -273,7 +308,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
             ]),
             const SizedBox(height: 16),
             Row(children: [
-              Switch(value: _freeOnly, onChanged: (v) => setS(() => _freeOnly = v), activeColor: const Color(0xFF818cf8)),
+              Switch(value: _freeOnly, onChanged: (v) => setS(() => _freeOnly = v), activeThumbColor: const Color(0xFF818cf8)),
               const SizedBox(width: 8),
               Text('Free materials only', style: GoogleFonts.inter(color: Colors.white70)),
             ]),
@@ -317,7 +352,7 @@ class _MaterialCard extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: [Color(0xFF1a1a2e), Color(0xFF16213e)],
           ),
-          border: Border.all(color: Colors.white.withOpacity(0.07)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,7 +368,7 @@ class _MaterialCard extends StatelessWidget {
               ),
               child: Stack(children: [
                 Center(child: Icon(_getIcon(material['subject_name'] ?? ''),
-                    size: 40, color: Colors.white.withOpacity(0.3))),
+                    size: 40, color: Colors.white.withValues(alpha: 0.3))),
                 Positioned(top: 8, right: 8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

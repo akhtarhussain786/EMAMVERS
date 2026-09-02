@@ -1,28 +1,56 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/session.php';
 require_once __DIR__ . '/../api/config/db.php';
+require_once __DIR__ . '/../api/utils/rate_limit.php';
+
+adminSessionStart();
 
 $error = '';
 if (isset($_GET['action']) && $_GET['action'] === 'logout') {
-    unset($_SESSION['admin_logged_in']);
-    unset($_SESSION['admin_user']);
+    $_SESSION = [];
+    if (ini_get('session.use_cookies')) {
+        $p = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
+    }
     session_destroy();
     header('Location: login.php');
     exit;
 }
 
+if (adminIsLoggedIn()) {
+    header('Location: index.php');
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
-    $password = trim($_POST['password'] ?? '');
+    $password = (string)($_POST['password'] ?? '');
 
-    if ($username && $password) {
+    // Login form posts are CSRF-protected too, so a third-party page cannot
+    // silently sign an admin into an attacker-controlled account.
+    if (!adminCsrfValid($_POST['csrf_token'] ?? null)) {
+        $error = 'Your session expired. Please try again.';
+    } elseif ($username && $password) {
+        RateLimit::enforceOrFlag($limited, 'panel_login_ip', RateLimit::clientIp(), 10, 900);
+        RateLimit::enforceOrFlag($limitedUser, 'panel_login_user', $username, 5, 900);
+
+        if ($limited || $limitedUser) {
+            $error = 'Too many failed sign-in attempts. Please wait a few minutes and try again.';
+        } else {
         $db = Database::getConnection();
         $stmt = $db->prepare("SELECT * FROM admins WHERE (username = :u1 OR email = :u2) AND status = 'active'");
         $stmt->execute(['u1' => $username, 'u2' => $username]);
         $admin = $stmt->fetch();
 
         if ($admin && password_verify($password, $admin['password_hash'])) {
+            RateLimit::clear('panel_login_ip', RateLimit::clientIp());
+            RateLimit::clear('panel_login_user', $username);
+
+            // New session id on privilege change, to defeat session fixation.
+            session_regenerate_id(true);
+
             $_SESSION['admin_logged_in'] = true;
+            $_SESSION['admin_last_seen'] = time();
             $_SESSION['admin_user'] = [
                 'id' => $admin['id'],
                 'username' => $admin['username'],
@@ -39,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         } else {
             $error = 'Invalid username/email or password';
+        }
         }
     } else {
         $error = 'Please enter both username and password';
@@ -86,15 +115,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 0.85rem;
             margin-bottom: 2rem;
         }
-        .demo-box {
-            background: rgba(56, 189, 248, 0.1);
-            border: 1px solid rgba(56, 189, 248, 0.3);
-            border-radius: var(--radius-sm);
-            padding: 0.85rem;
-            margin-bottom: 1.5rem;
-            font-size: 0.8rem;
-            color: var(--accent-blue);
-        }
     </style>
 </head>
 <body>
@@ -104,26 +124,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <div class="login-sub">Admin Control Center Portal</div>
 
-        <div class="demo-box">
-            <strong>Default Super Admin Credentials:</strong><br>
-            Username: <code style="color:#fff;">admin</code> | Password: <code style="color:#fff;">password123</code>
-        </div>
-
         <?php if ($error): ?>
             <div style="background:rgba(239, 68, 68, 0.2); color:#fca5a5; padding:0.75rem; border-radius:var(--radius-sm); margin-bottom:1rem; font-size:0.85rem; font-weight:600; border:1px solid rgba(239,68,68,0.4);">
                 <?php echo htmlspecialchars($error); ?>
             </div>
         <?php endif; ?>
 
-        <form method="POST" action="login.php">
+        <form method="POST" action="login.php" autocomplete="off">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(adminCsrfToken(), ENT_QUOTES); ?>">
             <div class="form-group">
                 <label class="form-label">Username or Admin Email</label>
-                <input type="text" name="username" class="form-control" placeholder="admin" value="admin" required autofocus>
+                <input type="text" name="username" class="form-control" placeholder="Username or email" value="" required autofocus autocomplete="username">
             </div>
 
             <div class="form-group" style="margin-bottom: 1.5rem;">
                 <label class="form-label">Password</label>
-                <input type="password" name="password" class="form-control" placeholder="••••••••" value="password123" required>
+                <input type="password" name="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
             </div>
 
             <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:0.8rem; font-size:0.95rem;">

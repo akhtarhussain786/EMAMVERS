@@ -61,8 +61,8 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
     final title = instructionsData?['title'] ?? 'Test Instructions';
     final examTitle = instructionsData?['exam_title'] ?? '';
     final durationMins = instructionsData?['total_duration_seconds'] != null ? (instructionsData!['total_duration_seconds'] / 60).round() : 60;
-    final totalQs = instructionsData?['total_questions'] ?? 100;
-    final totalMarks = instructionsData?['total_marks'] ?? 200;
+    final totalQs = instructionsData?['total_questions'] ?? 0;
+    final totalMarks = instructionsData?['total_marks'] ?? 0;
     final posMarks = instructionsData?['default_positive_marks'] ?? 2.0;
     final negMarks = instructionsData?['default_negative_marks'] ?? 0.5;
 
@@ -91,7 +91,7 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
               decoration: BoxDecoration(
                 gradient: AppConstants.darkCardGradient,
                 borderRadius: BorderRadius.circular(AppConstants.radiusCard),
-                border: Border.all(color: AppConstants.accentIndigo.withOpacity(0.4)),
+                border: Border.all(color: AppConstants.accentIndigo.withValues(alpha: 0.4)),
                 boxShadow: AppConstants.cardShadow,
               ),
               child: Row(

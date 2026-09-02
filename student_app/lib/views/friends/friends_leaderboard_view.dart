@@ -12,6 +12,7 @@ class FriendsLeaderboardView extends StatefulWidget {
 
 class _FriendsLeaderboardViewState extends State<FriendsLeaderboardView> {
   bool isLoading = true;
+  String? loadError;
   int myFriendsRank = 2;
   int totalFriends = 18;
   List<dynamic> friendsLeaderboard = [];
@@ -26,28 +27,24 @@ class _FriendsLeaderboardViewState extends State<FriendsLeaderboardView> {
     setState(() => isLoading = true);
     try {
       final res = await ApiService.get('/v1/friends/leaderboard');
+      if (!mounted) return;
       setState(() {
-        myFriendsRank = res['friends_rank'] ?? 2;
-        totalFriends = res['total_friends'] ?? 18;
-        friendsLeaderboard = res['leaderboard'] ?? _getFallbackFriends();
+        myFriendsRank = (res is Map ? res['friends_rank'] as int? : null) ?? 0;
+        totalFriends = (res is Map ? res['total_friends'] as int? : null) ?? 0;
+        friendsLeaderboard = (res is Map ? res['leaderboard'] : null) as List? ?? [];
         isLoading = false;
+        loadError = null;
       });
-    } catch (_) {
+    } catch (e) {
+      if (!mounted) return;
       setState(() {
-        friendsLeaderboard = _getFallbackFriends();
+        friendsLeaderboard = [];
+        myFriendsRank = 0;
+        totalFriends = 0;
         isLoading = false;
+        loadError = e.toString().replaceAll('Exception: ', '');
       });
     }
-  }
-
-  List<dynamic> _getFallbackFriends() {
-    return [
-      {'rank': 1, 'full_name': 'Arman Khan', 'score': 5840, 'accuracy': 94.2, 'solved_questions': 1420},
-      {'rank': 2, 'full_name': 'Rahul Kumar (You)', 'score': 5320, 'accuracy': 81.6, 'solved_questions': 1248},
-      {'rank': 3, 'full_name': 'Akhtar Hussain', 'score': 4910, 'accuracy': 88.5, 'solved_questions': 1180},
-      {'rank': 4, 'full_name': 'Sameer Sheikh', 'score': 4200, 'accuracy': 85.0, 'solved_questions': 990},
-      {'rank': 5, 'full_name': 'Imran Ansari', 'score': 3720, 'accuracy': 79.4, 'solved_questions': 850},
-    ];
   }
 
   void _syncContactsModal() {
@@ -164,9 +161,17 @@ class _FriendsLeaderboardViewState extends State<FriendsLeaderboardView> {
               Expanded(
                 child: isLoading
                     ? const Center(child: CircularProgressIndicator(color: AppConstants.accentCyan))
+                    : friendsLeaderboard.isEmpty
+                    ? EmptyStateWidget(
+                        icon: loadError != null ? Icons.cloud_off : Icons.group_outlined,
+                        title: loadError != null ? 'Could not load friends' : 'No Friends Yet',
+                        description: loadError ?? 'Sync your contacts to see how you rank against friends preparing with EXAMVERSE.',
+                        buttonLabel: loadError != null ? 'Try again' : null,
+                        onButtonPressed: loadError != null ? _loadFriendsLeaderboard : null,
+                      )
                     : ListView.separated(
                         itemCount: friendsLeaderboard.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        separatorBuilder: (_, _) => const SizedBox(height: 10),
                         itemBuilder: (context, i) {
                           final friend = friendsLeaderboard[i];
                           final rank = friend['rank'] ?? (i + 1);

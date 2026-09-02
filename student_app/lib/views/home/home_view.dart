@@ -6,7 +6,6 @@ import '../../models/ranking_model.dart';
 import '../../widgets/design_system_widgets.dart';
 import '../../widgets/skeleton_loader.dart';
 import '../current_affairs/current_affairs_view.dart';
-import '../current_affairs/current_affairs_article_view.dart';
 import '../notifications/notifications_view.dart';
 import '../map_learning/map_learning_home_view.dart';
 import '../friends/friends_leaderboard_view.dart';
@@ -257,7 +256,7 @@ class _HomeViewState extends State<HomeView> {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: categories.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  separatorBuilder: (_, _) => const SizedBox(width: 12),
                   itemBuilder: (context, i) {
                     final cat = categories[i];
                     return GestureDetector(
@@ -297,7 +296,7 @@ class _HomeViewState extends State<HomeView> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: featuredExams.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
                 itemBuilder: (context, i) {
                   final exam = featuredExams[i];
                   return ExamVerseCard(

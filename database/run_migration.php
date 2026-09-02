@@ -1,4 +1,9 @@
 <?php
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    exit("This maintenance script can only be run from the command line.\n");
+}
+
 // Graceful migration runner — skips duplicate column/table errors and continues
 mysqli_report(MYSQLI_REPORT_OFF); // Disable exceptions
 $m = new mysqli('127.0.0.1','root','','examverse_db');

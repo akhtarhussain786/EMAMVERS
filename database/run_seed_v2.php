@@ -1,4 +1,9 @@
 <?php
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    exit("This maintenance script can only be run from the command line.\n");
+}
+
 mysqli_report(MYSQLI_REPORT_OFF);
 $m = new mysqli('127.0.0.1','root','','examverse_db');
 $m->set_charset('utf8mb4');

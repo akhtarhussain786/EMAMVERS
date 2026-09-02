@@ -1,15 +1,19 @@
 <?php
 // EXAMVERSE REST API Router v1
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+require_once __DIR__ . '/config/config.php';
+require_once __DIR__ . '/utils/response.php';
+
+// Never render PHP notices/warnings into the JSON body.
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+
+Response::sendCorsHeaders();
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
+    http_response_code(204);
     exit(0);
 }
 
-require_once __DIR__ . '/utils/response.php';
 require_once __DIR__ . '/controllers/AuthController.php';
 require_once __DIR__ . '/controllers/DiscoveryController.php';
 require_once __DIR__ . '/controllers/TestEngineController.php';
@@ -24,6 +28,8 @@ require_once __DIR__ . '/controllers/UserController.php';
 require_once __DIR__ . '/controllers/MapController.php';
 require_once __DIR__ . '/controllers/FriendsController.php';
 require_once __DIR__ . '/controllers/NotebookController.php';
+require_once __DIR__ . '/controllers/TeacherController.php';
+require_once __DIR__ . '/controllers/QuestionReviewController.php';
 
 // Extract URI path
 $requestUri = $_SERVER['REQUEST_URI'];
@@ -122,6 +128,8 @@ if (($path === '/v1/health' || $path === '/health') && $method === 'GET') {
     MapController::getMapQuiz();
 } elseif ($path === '/v1/map/progress' && $method === 'GET') {
     MapController::getProgress();
+} elseif ($path === '/v1/map/progress' && $method === 'POST') {
+    MapController::recordProgress();
 } elseif ($path === '/v1/friends/sync-contacts' && $method === 'POST') {
     FriendsController::syncContacts();
 } elseif ($path === '/v1/friends/leaderboard' && $method === 'GET') {
@@ -132,6 +140,32 @@ if (($path === '/v1/health' || $path === '/health') && $method === 'GET') {
     NotebookController::addMistake();
 } elseif (matchRoute('/v1/notebook/{id}/master', $path, $params) && $method === 'PUT') {
     NotebookController::markMastered($params['id']);
+// ── TEACHER: QUESTION AUTHORING ───────────────────────────────────────────
+} elseif ($path === '/v1/teacher/dashboard' && $method === 'GET') {
+    TeacherController::dashboard();
+} elseif ($path === '/v1/teacher/taxonomy' && $method === 'GET') {
+    TeacherController::getTaxonomy();
+} elseif ($path === '/v1/teacher/questions' && $method === 'POST') {
+    TeacherController::submitQuestion();
+} elseif ($path === '/v1/teacher/questions' && $method === 'GET') {
+    TeacherController::myQuestions();
+
+// ── ADMIN: TEACHER QUESTION REVIEW ────────────────────────────────────────
+} elseif ($path === '/v1/admin/question-submissions' && $method === 'GET') {
+    QuestionReviewController::listSubmissions();
+} elseif (matchRoute('/v1/admin/question-submissions/{id}/approve', $path, $params) && $method === 'POST') {
+    QuestionReviewController::approve($params['id']);
+} elseif (matchRoute('/v1/admin/question-submissions/{id}/reject', $path, $params) && $method === 'POST') {
+    QuestionReviewController::reject($params['id']);
+
+// ── ADMIN: TEACHER ACCOUNTS ───────────────────────────────────────────────
+} elseif ($path === '/v1/admin/teachers' && $method === 'GET') {
+    QuestionReviewController::listTeachers();
+} elseif ($path === '/v1/admin/teachers' && $method === 'POST') {
+    QuestionReviewController::createTeacher();
+} elseif (matchRoute('/v1/admin/teachers/{id}/status', $path, $params) && $method === 'POST') {
+    QuestionReviewController::setTeacherStatus($params['id']);
+
 } elseif ($path === '/v1/admin/login' && $method === 'POST') {
     AdminController::login();
 } elseif ($path === '/v1/admin/dashboard' && $method === 'GET') {
@@ -208,16 +242,18 @@ if (($path === '/v1/health' || $path === '/health') && $method === 'GET') {
 // ── MARKETPLACE ───────────────────────────────────────────────────────────
 } elseif ($path === '/v1/marketplace' && $method === 'GET') {
     MarketplaceController::list();
+} elseif ($path === '/v1/marketplace/my-purchases' && $method === 'GET') {
+    MarketplaceController::myPurchases();
 } elseif (matchRoute('/v1/marketplace/{id}', $path, $params) && $method === 'GET') {
     MarketplaceController::detail($params['id']);
 } elseif (matchRoute('/v1/marketplace/{id}/purchase', $path, $params) && $method === 'POST') {
     MarketplaceController::purchase($params['id']);
 } elseif (matchRoute('/v1/marketplace/{id}/download', $path, $params) && $method === 'GET') {
     MarketplaceController::download($params['id']);
+} elseif (matchRoute('/v1/marketplace/{id}/file', $path, $params) && $method === 'GET') {
+    MarketplaceController::serveFile($params['id']);
 } elseif (matchRoute('/v1/marketplace/{id}/rate', $path, $params) && $method === 'POST') {
     MarketplaceController::rate($params['id']);
-} elseif ($path === '/v1/marketplace/my-purchases' && $method === 'GET') {
-    MarketplaceController::myPurchases();
 
 // ── ADMIN: MARKETPLACE MANAGEMENT ────────────────────────────────────────
 } elseif ($path === '/v1/admin/marketplace' && $method === 'GET') {
@@ -254,12 +290,20 @@ if (($path === '/v1/health' || $path === '/health') && $method === 'GET') {
 }
 
 } catch (Throwable $e) {
-    // Global safety net: always return JSON, never HTML
+    // Global safety net: always return JSON, never HTML.
+    // Details go to the error log; clients get them only in debug mode.
+    error_log(sprintf(
+        'EXAMVERSE API error [%s %s]: %s in %s:%d',
+        $method, $path, $e->getMessage(), $e->getFile(), $e->getLine()
+    ));
+
     http_response_code(500);
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode([
         'status' => 'error',
-        'message' => 'Internal server error: ' . $e->getMessage(),
+        'message' => Config::isDebug()
+            ? 'Internal server error: ' . $e->getMessage()
+            : 'Internal server error. Please try again later.',
         'data' => null,
         'errors' => [],
         'timestamp' => date('Y-m-d H:i:s')

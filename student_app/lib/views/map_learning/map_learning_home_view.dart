@@ -178,7 +178,7 @@ class _MapLearningHomeViewState extends State<MapLearningHomeView> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: locations.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: AppConstants.space12),
+                          separatorBuilder: (_, _) => const SizedBox(height: AppConstants.space12),
                           itemBuilder: (context, i) {
                             final loc = locations[i];
                             return ExamVerseCard(
@@ -274,7 +274,7 @@ class _MapLearningHomeViewState extends State<MapLearningHomeView> {
             ),
             const SizedBox(height: 8),
             Text(loc.name, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
-            Text('${loc.state.isNotEmpty ? loc.state + ', ' : ''}${loc.country}', style: const TextStyle(color: AppConstants.textSecondary, fontSize: 13)),
+            Text('${loc.state.isNotEmpty ? '${loc.state}, ' : ''}${loc.country}', style: const TextStyle(color: AppConstants.textSecondary, fontSize: 13)),
             const SizedBox(height: AppConstants.space16),
 
             Text(loc.shortDescription, style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4)),

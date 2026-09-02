@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'core/api_service.dart';
 import 'core/constants.dart';
 import 'widgets/premium_nav_bar.dart';
 import 'views/auth/login_signup_view.dart';
@@ -15,20 +16,27 @@ import 'views/marketplace/marketplace_screen.dart';
 import 'views/creator/become_creator_view.dart';
 import 'views/creator/creator_dashboard_view.dart';
 import 'views/current_affairs/current_affairs_view.dart';
+import 'views/teacher/teacher_dashboard_view.dart';
 
-void main() {
-  runApp(const ExamVerseApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Resume a stored session so "Remember me" survives an app restart.
+  final hasSession = await ApiService.restoreSession();
+  runApp(ExamVerseApp(initiallyAuthenticated: hasSession));
 }
 
 class ExamVerseApp extends StatefulWidget {
-  const ExamVerseApp({super.key});
+  final bool initiallyAuthenticated;
+  const ExamVerseApp({super.key, this.initiallyAuthenticated = false});
 
   @override
   State<ExamVerseApp> createState() => _ExamVerseAppState();
 }
 
 class _ExamVerseAppState extends State<ExamVerseApp> {
-  bool isAuthenticated = false;
+  late bool isAuthenticated = widget.initiallyAuthenticated;
+  // Teachers author questions and never take tests, so they get their own shell.
+  late String accountType = ApiService.accountType;
   int currentTabIndex = 0;
 
   // Active sub-routes
@@ -38,6 +46,35 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
   bool isPlayingTest = false;
   bool isViewingResult = false;
   bool isViewingInstructions = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // A rejected token anywhere in the app returns the user to the login screen
+    // instead of surfacing repeated "Unauthorized" errors.
+    ApiService.onUnauthorized = _handleSessionExpired;
+  }
+
+  @override
+  void dispose() {
+    ApiService.onUnauthorized = null;
+    super.dispose();
+  }
+
+  void _handleSessionExpired() {
+    if (!mounted || !isAuthenticated) return;
+    ApiService.clearSession();
+    setState(() {
+      isAuthenticated = false;
+      accountType = 'student';
+      isPlayingTest = false;
+      isViewingResult = false;
+      isViewingInstructions = false;
+      selectedExamId = null;
+      selectedTestId = null;
+      activeAttemptId = null;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +91,6 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
           primary: AppConstants.accentIndigo,
           secondary: AppConstants.accentPurple,
           surface: AppConstants.cardDark,
-          background: AppConstants.primaryDark,
         ),
         useMaterial3: true,
       ),
@@ -65,8 +101,15 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
         '/current-affairs': (_) => const CurrentAffairsView(),
       },
       home: !isAuthenticated
-          ? LoginSignupView(onAuthenticated: () => setState(() => isAuthenticated = true))
-          : _buildAuthenticatedShell(),
+          ? LoginSignupView(
+              onAuthenticated: (type) => setState(() {
+                isAuthenticated = true;
+                accountType = type;
+              }),
+            )
+          : accountType == 'teacher'
+              ? TeacherDashboardView(onLogout: _handleSessionExpired)
+              : _buildAuthenticatedShell(),
     );
   }
 

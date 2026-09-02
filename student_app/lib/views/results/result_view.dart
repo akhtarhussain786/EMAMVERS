@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants.dart';
 import '../../core/api_service.dart';
+import '../../widgets/design_system_widgets.dart';
 import '../../widgets/premium_cards.dart';
 import '../../widgets/skeleton_loader.dart';
 
@@ -16,6 +17,7 @@ class ResultView extends StatefulWidget {
 
 class _ResultViewState extends State<ResultView> {
   bool isLoading = true;
+  String? loadError;
   Map<String, dynamic>? summary;
   List<dynamic> sections = [];
   List<dynamic> solutions = [];
@@ -31,14 +33,21 @@ class _ResultViewState extends State<ResultView> {
     try {
       final res = await ApiService.get('/v1/attempts/${widget.attemptId}/result');
       final solRes = await ApiService.get('/v1/attempts/${widget.attemptId}/solutions');
+      if (!mounted) return;
       setState(() {
-        summary = res['summary'];
-        sections = res['section_breakdown'] ?? [];
-        solutions = solRes ?? [];
+        summary = (res is Map ? res['summary'] : null) as Map<String, dynamic>?;
+        sections = (res is Map ? res['section_breakdown'] : null) as List? ?? [];
+        // The solutions endpoint returns a bare list.
+        solutions = solRes as List? ?? [];
         isLoading = false;
+        loadError = null;
       });
-    } catch (_) {
-      setState(() => isLoading = false);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        isLoading = false;
+        loadError = e.toString().replaceAll('Exception: ', '');
+      });
     }
   }
 
@@ -59,12 +68,39 @@ class _ResultViewState extends State<ResultView> {
       );
     }
 
-    final score = double.parse((summary?['score'] ?? 154.0).toString());
-    final accuracy = double.parse((summary?['accuracy_percentage'] ?? 82.0).toString());
-    final centralRank = summary?['central_rank'] ?? 4821;
-    final stateRank = summary?['state_rank'] ?? 312;
-    final percentile = double.parse((summary?['percentile'] ?? 96.4).toString());
-    final testTitle = summary?['test_title'] ?? 'Full Length National Mock';
+    // A scorecard must never invent numbers. If the summary did not load, say so.
+    if (summary == null) {
+      return Scaffold(
+        backgroundColor: AppConstants.primaryDark,
+        appBar: AppBar(
+          backgroundColor: AppConstants.cardDark,
+          elevation: 0,
+          title: const Text('Result', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          leading: IconButton(icon: const Icon(Icons.home, color: Colors.white), onPressed: widget.onHome),
+        ),
+        body: SafeArea(
+          child: EmptyStateWidget(
+            icon: Icons.cloud_off,
+            title: 'Could not load your result',
+            description: loadError ?? 'This attempt has no scorecard yet.',
+            buttonLabel: 'Try again',
+            onButtonPressed: () {
+              setState(() => isLoading = true);
+              _loadResult();
+            },
+          ),
+        ),
+      );
+    }
+
+    double asDouble(dynamic v) => double.tryParse('${v ?? 0}') ?? 0.0;
+
+    final score = asDouble(summary?['score']);
+    final accuracy = asDouble(summary?['accuracy_percentage']);
+    final centralRank = summary?['central_rank'] ?? '—';
+    final stateRank = summary?['state_rank'] ?? '—';
+    final percentile = asDouble(summary?['percentile']);
+    final testTitle = summary?['test_title'] ?? 'Test Result';
 
     return Scaffold(
       backgroundColor: AppConstants.primaryDark,
@@ -95,8 +131,8 @@ class _ResultViewState extends State<ResultView> {
                       const Text('TEST PERFORMANCE SUMMARY', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
-                        child: const Text('↑ 12 marks from last mock', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
+                        child: Text('Percentile ${summary?['percentile'] ?? '—'}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
@@ -140,7 +176,7 @@ class _ResultViewState extends State<ResultView> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: sections.length,
-                separatorBuilder: (_, __) => const Divider(color: AppConstants.cardBorder, height: 1),
+                separatorBuilder: (_, _) => const Divider(color: AppConstants.cardBorder, height: 1),
                 itemBuilder: (context, i) {
                   final sec = sections[i];
                   return Padding(
@@ -189,7 +225,7 @@ class _ResultViewState extends State<ResultView> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: solutions.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 16),
+                separatorBuilder: (_, _) => const SizedBox(height: 16),
                 itemBuilder: (context, i) {
                   final sol = solutions[i];
                   final isCorr = sol['is_correct'] == 1;
@@ -198,7 +234,7 @@ class _ResultViewState extends State<ResultView> {
                     decoration: BoxDecoration(
                       color: AppConstants.cardDark,
                       borderRadius: BorderRadius.circular(AppConstants.radiusCard),
-                      border: Border.all(color: isCorr ? AppConstants.accentEmerald : AppConstants.accentRose.withOpacity(0.5)),
+                      border: Border.all(color: isCorr ? AppConstants.accentEmerald : AppConstants.accentRose.withValues(alpha: 0.5)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -209,7 +245,7 @@ class _ResultViewState extends State<ResultView> {
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(color: isCorr ? AppConstants.accentEmerald.withOpacity(0.2) : AppConstants.accentRose.withOpacity(0.2), borderRadius: BorderRadius.circular(6)),
+                              decoration: BoxDecoration(color: isCorr ? AppConstants.accentEmerald.withValues(alpha: 0.2) : AppConstants.accentRose.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
                               child: Text(isCorr ? 'CORRECT (+${sol['positive_marks']})' : 'WRONG (-${sol['negative_marks']})', style: TextStyle(color: isCorr ? AppConstants.accentEmerald : AppConstants.accentRose, fontSize: 10.5, fontWeight: FontWeight.w800)),
                             ),
                           ],
@@ -230,7 +266,7 @@ class _ResultViewState extends State<ResultView> {
                           const SizedBox(height: 10),
                           Container(
                             padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(color: AppConstants.accentAmber.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+                            decoration: BoxDecoration(color: AppConstants.accentAmber.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
                             child: Row(
                               children: [
                                 const Icon(Icons.bolt, color: AppConstants.accentAmber, size: 16),

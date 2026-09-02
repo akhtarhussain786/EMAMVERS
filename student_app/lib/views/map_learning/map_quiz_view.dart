@@ -12,11 +12,20 @@ class MapQuizView extends StatefulWidget {
 
 class _MapQuizViewState extends State<MapQuizView> {
   bool isLoading = true;
+  String? loadError;
   List<dynamic> questions = [];
   int currentIndex = 0;
   int score = 0;
+  int correctCount = 0;
   int? selectedOptionIndex;
   bool isSubmitted = false;
+
+  /// Options for the current question, shuffled exactly once when the question
+  /// is shown. Building them inside build() re-shuffled on every setState, so
+  /// the tapped option no longer matched the highlighted one.
+  List<String> _currentOptions = const [];
+
+  static const int _pointsPerCorrectAnswer = 10;
 
   @override
   void initState() {
@@ -27,28 +36,88 @@ class _MapQuizViewState extends State<MapQuizView> {
   void _loadQuiz() async {
     try {
       final res = await ApiService.get('/v1/map/quiz');
+      if (!mounted) return;
+      final loaded = (res is Map ? res['quiz_questions'] : null) as List? ?? [];
       setState(() {
-        questions = res['quiz_questions'] ?? [];
+        questions = loaded;
         isLoading = false;
+        loadError = null;
       });
-    } catch (_) {
-      setState(() => isLoading = false);
+      if (loaded.isNotEmpty) _prepareOptionsForCurrent();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        isLoading = false;
+        loadError = e.toString().replaceAll('Exception: ', '');
+      });
     }
   }
 
+  /// Server-supplied options are already real, distinct place names. The local
+  /// fallback only kicks in for an older API that does not send them.
+  void _prepareOptionsForCurrent() {
+    if (currentIndex >= questions.length) return;
+    final q = questions[currentIndex];
+
+    final provided = (q['options'] as List?)?.map((e) => e.toString()).toList();
+    final List<String> options;
+    if (provided != null && provided.length > 1) {
+      options = provided;
+    } else {
+      final answer = _correctAnswerFor(q);
+      final pool = questions
+          .map((other) => (other['state'] ?? '').toString())
+          .where((s) => s.isNotEmpty && s != answer)
+          .toSet()
+          .toList()
+        ..shuffle();
+      options = <String>[answer, ...pool.take(3)].where((s) => s.isNotEmpty).toSet().toList();
+    }
+
+    final shuffled = List<String>.from(options)..shuffle();
+    setState(() => _currentOptions = shuffled);
+  }
+
+  String _correctAnswerFor(dynamic q) =>
+      (q['correct_answer'] ?? q['state'] ?? '').toString();
+
   void _handleOptionSelect(int index) {
     if (isSubmitted) return;
-    setState(() {
-      selectedOptionIndex = index;
-    });
+    setState(() => selectedOptionIndex = index);
   }
 
   void _submitAnswer() {
     if (selectedOptionIndex == null || isSubmitted) return;
+
+    final q = questions[currentIndex];
+    final chosen = _currentOptions[selectedOptionIndex!];
+    // Previously score was incremented unconditionally, so every answer scored.
+    final wasCorrect = chosen == _correctAnswerFor(q);
+
     setState(() {
       isSubmitted = true;
-      score += 10;
+      if (wasCorrect) {
+        score += _pointsPerCorrectAnswer;
+        correctCount++;
+      }
     });
+
+    _recordProgress(q, wasCorrect);
+  }
+
+  /// Persists the attempt so map mastery reflects real activity rather than a
+  /// dialog that claimed progress was saved without ever calling the server.
+  Future<void> _recordProgress(dynamic q, bool wasCorrect) async {
+    final locationId = q['location_id'] ?? q['id'];
+    if (locationId == null) return;
+    try {
+      await ApiService.post('/v1/map/progress', {
+        'location_id': locationId,
+        'is_correct': wasCorrect,
+      });
+    } catch (_) {
+      // Progress is best-effort; never block the quiz on a failed write.
+    }
   }
 
   void _nextQuestion() {
@@ -58,6 +127,7 @@ class _MapQuizViewState extends State<MapQuizView> {
         selectedOptionIndex = null;
         isSubmitted = false;
       });
+      _prepareOptionsForCurrent();
     } else {
       _showResultDialog();
     }
@@ -73,9 +143,14 @@ class _MapQuizViewState extends State<MapQuizView> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Your Total Score: $score Points', style: const TextStyle(color: AppConstants.accentCyan, fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Your Total Score: $score Points',
+                style: const TextStyle(color: AppConstants.accentCyan, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            const Text('Map learning mastery points added to your candidate profile.', style: TextStyle(color: AppConstants.textSecondary, fontSize: 12.5)),
+            Text('$correctCount of ${questions.length} correct',
+                style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            const Text('Map learning progress saved to your candidate profile.',
+                style: TextStyle(color: AppConstants.textSecondary, fontSize: 12.5), textAlign: TextAlign.center),
           ],
         ),
         actions: [
@@ -101,21 +176,21 @@ class _MapQuizViewState extends State<MapQuizView> {
       return Scaffold(
         backgroundColor: AppConstants.primaryDark,
         appBar: AppBar(backgroundColor: AppConstants.scaffoldDark, title: const Text('Map Quiz Mode')),
-        body: const EmptyStateWidget(icon: Icons.map, title: 'No Map Questions Available', description: 'Map quiz question bank is currently loading.'),
+        body: EmptyStateWidget(
+          icon: loadError != null ? Icons.cloud_off : Icons.map,
+          title: loadError != null ? 'Could not load the quiz' : 'No Map Questions Available',
+          description: loadError ?? 'No map locations have been published yet.',
+          buttonLabel: loadError != null ? 'Try again' : null,
+          onButtonPressed: loadError != null ? _loadQuiz : null,
+        ),
       );
     }
 
     final currentQ = questions[currentIndex];
     final locationName = currentQ['name'] ?? 'Location';
-    final stateName = currentQ['state'] ?? 'State';
     final categoryName = currentQ['category_name'] ?? 'Geography';
-
-    final dummyOptions = [
-      stateName,
-      'Rajasthan',
-      'Madhya Pradesh',
-      'Tamil Nadu',
-    ]..shuffle();
+    final correctAnswer = _correctAnswerFor(currentQ);
+    final options = _currentOptions;
 
     return Scaffold(
       backgroundColor: AppConstants.primaryDark,
@@ -162,10 +237,10 @@ class _MapQuizViewState extends State<MapQuizView> {
               const SizedBox(height: AppConstants.space24),
 
               // OPTION CARDS
-              ...List.generate(dummyOptions.length, (index) {
-                final optionText = dummyOptions[index];
+              ...List.generate(options.length, (index) {
+                final optionText = options[index];
                 final isSelected = selectedOptionIndex == index;
-                final isCorrect = optionText == stateName;
+                final isCorrect = optionText == correctAnswer;
 
                 Color optionColor = AppConstants.cardDark;
                 BorderSide borderSide = const BorderSide(color: AppConstants.cardBorder);

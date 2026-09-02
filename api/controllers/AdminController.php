@@ -3,6 +3,7 @@ require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../utils/response.php';
 require_once __DIR__ . '/../utils/auth_token.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../utils/rate_limit.php';
 
 class AdminController {
     public static function login() {
@@ -12,6 +13,9 @@ class AdminController {
 
         if (!$username || !$password) Response::error('Username and password required', 400);
 
+        RateLimit::enforce('admin_login_ip', RateLimit::clientIp(), 10, 900);
+        RateLimit::enforce('admin_login_user', $username, 5, 900);
+
         $db = Database::getConnection();
         $stmt = $db->prepare("SELECT * FROM admins WHERE (username = :u1 OR email = :u2) AND status = 'active'");
         $stmt->execute(['u1' => $username, 'u2' => $username]);
@@ -20,6 +24,9 @@ class AdminController {
         if (!$admin || !password_verify($password, $admin['password_hash'])) {
             Response::error('Invalid admin credentials', 401);
         }
+
+        RateLimit::clear('admin_login_ip', RateLimit::clientIp());
+        RateLimit::clear('admin_login_user', $username);
 
         unset($admin['password_hash']);
         $token = AuthToken::generate($admin['id'], $admin['role'], ['username' => $admin['username'], 'name' => $admin['full_name']]);
@@ -35,6 +42,7 @@ class AdminController {
     }
 
     public static function getDashboardMetrics() {
+        AuthMiddleware::getAuthenticatedUser('admin');
         $db = Database::getConnection();
 
         $usersCount = $db->query("SELECT COUNT(*) FROM users")->fetchColumn();
@@ -65,6 +73,7 @@ class AdminController {
 
     // TAXONOMY API
     public static function getExams() {
+        AuthMiddleware::getAuthenticatedUser('admin');
         $db = Database::getConnection();
         $exams = $db->query("
             SELECT e.*, c.name as category_name, o.short_name as org_name 
@@ -77,6 +86,7 @@ class AdminController {
     }
 
     public static function createExam() {
+        AuthMiddleware::getAuthenticatedUser('admin');
         $input = json_decode(file_get_contents('php://input'), true);
         $title = trim($input['title'] ?? '');
         $categoryId = intval($input['category_id'] ?? 1);
@@ -94,6 +104,7 @@ class AdminController {
 
     // PATTERNS API
     public static function getPatterns() {
+        AuthMiddleware::getAuthenticatedUser('admin');
         $db = Database::getConnection();
         $patterns = $db->query("
             SELECT ep.*, e.title as exam_title 
@@ -106,18 +117,23 @@ class AdminController {
 
     // QUESTIONS & BULK IMPORT API
     public static function getQuestions() {
+        AuthMiddleware::getAuthenticatedUser('admin');
         $db = Database::getConnection();
         $questions = $db->query("
-            SELECT q.*, s.name as subject_name, qt.question_text 
+            SELECT q.*, s.name as subject_name, qt.question_text,
+                   u.full_name AS author_name,
+                   CASE WHEN q.author_user_id IS NULL THEN 'staff/ai' ELSE 'teacher' END AS source
             FROM questions q 
             JOIN subjects s ON q.subject_id = s.id 
             LEFT JOIN question_translations qt ON q.id = qt.question_id AND qt.language = 'en'
+            LEFT JOIN users u ON q.author_user_id = u.id
             ORDER BY q.id DESC
         ")->fetchAll();
         Response::json($questions, 'Question bank loaded');
     }
 
     public static function bulkImportQuestions() {
+        AuthMiddleware::getAuthenticatedUser('admin');
         $input = json_decode(file_get_contents('php://input'), true);
         $questions = $input['questions'] ?? [];
 
@@ -162,6 +178,7 @@ class AdminController {
 
     // AUDIT LOGS
     public static function getAuditLogs() {
+        AuthMiddleware::getAuthenticatedUser('admin');
         $db = Database::getConnection();
         $logs = $db->query("
             SELECT al.*, a.username, a.full_name 
@@ -220,6 +237,11 @@ class AdminController {
         $db->prepare("DELETE FROM test_questions WHERE test_id = ?")->execute([$testId]);
 
         $assignedCount = 0;
+        $skipped = [];
+        // Only approved questions may enter a live test. Without this an admin
+        // could assign a teacher submission that is still awaiting review.
+        $statusCheck = $db->prepare("SELECT status FROM questions WHERE id = ?");
+
         foreach ($questionAssignments as $idx => $assign) {
             $qId = intval($assign['question_id'] ?? 0);
             $secId = isset($assign['section_id']) ? intval($assign['section_id']) : null;
@@ -229,6 +251,13 @@ class AdminController {
 
             if (!$qId) continue;
 
+            $statusCheck->execute([$qId]);
+            $status = $statusCheck->fetchColumn();
+            if ($status !== 'published') {
+                $skipped[] = ['question_id' => $qId, 'reason' => $status === false ? 'not found' : "status is '$status'"];
+                continue;
+            }
+
             $stmt = $db->prepare("
                 INSERT INTO test_questions (test_id, question_id, section_id, question_order, positive_marks, negative_marks)
                 VALUES (?, ?, ?, ?, ?, ?)
@@ -237,7 +266,14 @@ class AdminController {
             $assignedCount++;
         }
 
-        Response::json(['test_id' => $testId, 'assigned_count' => $assignedCount], "$assignedCount questions assigned to test");
+        $message = "$assignedCount questions assigned to test";
+        if ($skipped) $message .= '; ' . count($skipped) . ' skipped (not approved for publication)';
+
+        Response::json([
+            'test_id'        => $testId,
+            'assigned_count' => $assignedCount,
+            'skipped'        => $skipped,
+        ], $message);
     }
 
     // ─── TAXONOMY MANAGEMENT ──────────────────────────────────────────

@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../utils/response.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../utils/auth_token.php';
 
 class CreatorController {
@@ -100,7 +101,7 @@ class CreatorController {
     // ─── UPLOAD STUDY MATERIAL ────────────────────────────────────────
 
     public static function uploadMaterial() {
-        $user = AuthMiddleware::getAuthenticatedUser();
+        $user = AuthMiddleware::getAuthenticatedUser('student');
         $userId = $user['sub'] ?? ($user['id'] ?? null);
         $db = Database::getConnection();
 
@@ -130,20 +131,48 @@ class CreatorController {
         if (empty($title)) { Response::json(null,'title is required','error',422); return; }
         if ($price < 0)    { Response::json(null,'price cannot be negative','error',422); return; }
 
-        // Save file
-        $uploadDir = __DIR__ . '/../../uploads/materials/';
-        if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+        if (!isset($file['error']) || $file['error'] !== UPLOAD_ERR_OK) {
+            Response::json(null,'File upload failed. Check the server upload size limits.','error',422); return;
+        }
+        if (!is_uploaded_file($file['tmp_name'])) {
+            Response::json(null,'Invalid upload','error',422); return;
+        }
+
+        $maxBytes = 50 * 1024 * 1024; // 50 MB
+        if ($file['size'] <= 0 || $file['size'] > $maxBytes) {
+            Response::json(null,'File must be between 1 byte and 50 MB','error',422); return;
+        }
 
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        if (!in_array($ext, ['pdf', 'pptx', 'docx', 'zip'])) {
+        $allowedTypes = [
+            'pdf'  => ['application/pdf'],
+            'pptx' => ['application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/zip'],
+            'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip'],
+            'zip'  => ['application/zip', 'application/x-zip-compressed'],
+        ];
+        if (!isset($allowedTypes[$ext])) {
             Response::json(null,'Only PDF, PPTX, DOCX, ZIP files allowed','error',422); return;
         }
 
-        $fileName = uniqid('mat_', true) . '.' . $ext;
+        // Trust the sniffed type, not the client-supplied extension or header.
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $detected = $finfo->file($file['tmp_name']);
+        if (!in_array($detected, $allowedTypes[$ext], true)) {
+            Response::json(null,'File contents do not match the .' . $ext . ' extension','error',422); return;
+        }
+
+        // Stored outside the document root; served only via the entitlement-checked
+        // MarketplaceController::serveFile endpoint.
+        $configuredRoot = trim((string)Config::get('MATERIAL_STORAGE_PATH', ''));
+        $uploadDir = ($configuredRoot !== '' ? rtrim($configuredRoot, '/') : __DIR__ . '/../../storage/materials') . '/';
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0770, true);
+
+        $fileName = bin2hex(random_bytes(16)) . '.' . $ext;
         $filePath = $uploadDir . $fileName;
         if (!move_uploaded_file($file['tmp_name'], $filePath)) {
             Response::json(null,'File upload failed','error',500); return;
         }
+        chmod($filePath, 0640);
 
         $fileSizeKb = round($file['size'] / 1024);
         $slug = preg_replace('/[^a-z0-9]+/', '-', strtolower($title)) . '-' . uniqid();
@@ -151,7 +180,7 @@ class CreatorController {
 
         $stmt = $db->prepare("INSERT INTO study_materials (creator_id, exam_id, subject_id, title, slug, description, tags, file_path, file_size_kb, preview_pages, language, price, is_free, status)
                               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,'pending_review')");
-        $stmt->execute([$creator['id'], $examId, $subjectId, $title, $slug, $description, $tags, 'uploads/materials/'.$fileName, $fileSizeKb, $previewPages, $language, $price, $isFree]);
+        $stmt->execute([$creator['id'], $examId, $subjectId, $title, $slug, $description, $tags, $fileName, $fileSizeKb, $previewPages, $language, $price, $isFree]);
 
         Response::json(['material_id' => $db->lastInsertId()], 'Material submitted for review!', 'success', 201);
     }

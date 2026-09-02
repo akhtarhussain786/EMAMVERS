@@ -112,7 +112,7 @@ class _BookmarksViewState extends State<BookmarksView> {
                       : ListView.separated(
                           padding: const EdgeInsets.all(16),
                           itemCount: filtered.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 12),
+                          separatorBuilder: (_, _) => const SizedBox(height: 12),
                           itemBuilder: (context, i) {
                             final b = filtered[i];
                             final itemType = b['item_type'] ?? 'question';

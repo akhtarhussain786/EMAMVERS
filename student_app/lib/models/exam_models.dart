@@ -107,6 +107,18 @@ class QuestionItem {
   bool isMarkedForReview;
   int timeSpentSeconds;
 
+  /// Seconds already accepted by the server. The autosave endpoint *adds* the
+  /// value it receives, so only the un-synced delta may be sent.
+  int _syncedTimeSeconds = 0;
+
+  int get pendingTimeSeconds {
+    final delta = timeSpentSeconds - _syncedTimeSeconds;
+    return delta > 0 ? delta : 0;
+  }
+
+  /// Marks the current elapsed time as persisted. Call only after a successful save.
+  void commitPendingTime() => _syncedTimeSeconds = timeSpentSeconds;
+
   int get id => questionId;
   String? get selectedOption => selectedOptionKey;
   set selectedOption(String? val) => selectedOptionKey = val;

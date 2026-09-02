@@ -14,6 +14,7 @@ class LeaderboardView extends StatefulWidget {
 
 class _LeaderboardViewState extends State<LeaderboardView> {
   bool isLoading = true;
+  String? loadError;
   String currentTab = 'weekly';
   List<dynamic> leaderboard = [];
   UserRanking userRanking = const UserRanking();
@@ -28,28 +29,23 @@ class _LeaderboardViewState extends State<LeaderboardView> {
     setState(() => isLoading = true);
     try {
       final res = await ApiService.get('/v1/leaderboards/$currentTab');
+      if (!mounted) return;
       setState(() {
-        leaderboard = res['leaderboard'] ?? _getFallbackLeaderboard();
-        userRanking = UserRanking.fromJson(res['user_ranking'] ?? {});
+        leaderboard = (res is Map ? res['leaderboard'] : null) as List? ?? [];
+        userRanking = UserRanking.fromJson((res is Map ? res['user_ranking'] : null) ?? {});
         isLoading = false;
+        loadError = null;
       });
-    } catch (_) {
+    } catch (e) {
+      if (!mounted) return;
+      // No invented ranks: a fabricated leaderboard misleads candidates about
+      // where they actually stand.
       setState(() {
-        leaderboard = _getFallbackLeaderboard();
+        leaderboard = [];
         isLoading = false;
+        loadError = e.toString().replaceAll('Exception: ', '');
       });
     }
-  }
-
-  List<dynamic> _getFallbackLeaderboard() {
-    return [
-      {'rank': 1, 'full_name': 'Amit Sharma', 'state_name': 'Delhi', 'score': 192.5, 'accuracy': 98.2, 'xp': 2850},
-      {'rank': 2, 'full_name': 'Priya Patel', 'state_name': 'Gujarat', 'score': 188.0, 'accuracy': 96.5, 'xp': 2710},
-      {'rank': 3, 'full_name': 'Rohan Verma', 'state_name': 'UP', 'score': 184.5, 'accuracy': 94.8, 'xp': 2620},
-      {'rank': 4, 'full_name': 'Ananya Singh', 'state_name': 'Bihar', 'score': 178.0, 'accuracy': 92.1, 'xp': 2450},
-      {'rank': 5, 'full_name': 'Vikram Rathore', 'state_name': 'Rajasthan', 'score': 172.5, 'accuracy': 89.4, 'xp': 2310},
-      {'rank': 124, 'full_name': 'Rahul Kumar (You)', 'state_name': 'Delhi', 'score': 156.0, 'accuracy': 81.6, 'xp': 1050},
-    ];
   }
 
   @override
@@ -158,9 +154,17 @@ class _LeaderboardViewState extends State<LeaderboardView> {
               Expanded(
                 child: isLoading
                     ? const SkeletonListLoader(count: 6, itemHeight: 65)
+                    : leaderboard.isEmpty
+                    ? EmptyStateWidget(
+                        icon: loadError != null ? Icons.cloud_off : Icons.leaderboard_outlined,
+                        title: loadError != null ? 'Could not load rankings' : 'No Rankings Yet',
+                        description: loadError ?? 'Rankings appear once candidates have completed this test.',
+                        buttonLabel: loadError != null ? 'Try again' : null,
+                        onButtonPressed: loadError != null ? _loadLeaderboard : null,
+                      )
                     : ListView.separated(
                         itemCount: leaderboard.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        separatorBuilder: (_, _) => const SizedBox(height: 10),
                         itemBuilder: (context, i) {
                           final item = leaderboard[i];
                           final rank = item['rank'] ?? (i + 1);

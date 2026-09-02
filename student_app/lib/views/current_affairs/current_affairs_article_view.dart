@@ -33,11 +33,11 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
     });
 
     try {
-      final res = await ApiService.get('/current-affairs/${widget.articleId}');
+      final res = await ApiService.get('/v1/current-affairs/${widget.articleId}');
       if (mounted) {
-        if (res['status'] == 'success') {
+        if (res != null) {
           setState(() {
-            _article = res['data'];
+            _article = res as Map<String, dynamic>;
             _loading = false;
           });
         } else {
@@ -159,7 +159,7 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        const Color(0xFF0F0F1A).withOpacity(0.8),
+                        const Color(0xFF0F0F1A).withValues(alpha: 0.8),
                         const Color(0xFF0F0F1A),
                       ],
                     ),
@@ -174,9 +174,9 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
+                          color: Colors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withOpacity(0.2)),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                         ),
                         child: Text(
                           category,
@@ -245,14 +245,14 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFF818cf8).withOpacity(0.4)),
+                      border: Border.all(color: const Color(0xFF818cf8).withValues(alpha: 0.4)),
                     ),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.12),
+                            color: Colors.white.withValues(alpha: 0.12),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(Icons.psychology_outlined, color: Colors.white, size: 24),
@@ -290,9 +290,9 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF818cf8).withOpacity(0.08),
+                      color: const Color(0xFF818cf8).withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFF818cf8).withOpacity(0.2)),
+                      border: Border.all(color: const Color(0xFF818cf8).withValues(alpha: 0.2)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,7 +317,7 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                           summary,
                           style: GoogleFonts.inter(
                             fontSize: 13,
-                            color: Colors.white.withOpacity(0.85),
+                            color: Colors.white.withValues(alpha: 0.85),
                             height: 1.6,
                           ),
                         ),
@@ -341,9 +341,9 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                       return Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
+                          color: Colors.white.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withOpacity(0.1)),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                         ),
                         child: Text(
                           tag.trim(),
@@ -365,7 +365,7 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                   content,
                   style: GoogleFonts.inter(
                     fontSize: 14.5,
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                     height: 1.7,
                   ),
                 ),
@@ -391,9 +391,9 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                           margin: const EdgeInsets.only(bottom: 10),
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.04),
+                            color: Colors.white.withValues(alpha: 0.04),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white.withOpacity(0.06)),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
                           ),
                           child: Row(
                             children: [
@@ -401,7 +401,7 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                                 width: 36,
                                 height: 36,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF6366f1).withOpacity(0.15),
+                                  color: const Color(0xFF6366f1).withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Icon(Icons.article_outlined, color: Color(0xFF818cf8), size: 18),
@@ -444,7 +444,7 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
       decoration: BoxDecoration(
         color: const Color(0xFF1a1a2e),
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.08))),
+        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
       ),
       child: SizedBox(
         width: double.infinity,

@@ -38,7 +38,7 @@ class _BecomeCreatorViewState extends State<BecomeCreatorView> {
     setState(() => _loading = true);
 
     try {
-      final res = await ApiService.postAuth('/creator/register', {
+      await ApiService.postAuth('/v1/creator/register', {
         'display_name': _nameCtrl.text.trim(),
         'about': _aboutCtrl.text.trim(),
         'upi_id': _upiCtrl.text.trim(),
@@ -48,20 +48,10 @@ class _BecomeCreatorViewState extends State<BecomeCreatorView> {
       });
 
       if (mounted) {
-        if (res['status'] == 'success') {
-          setState(() {
-            _loading = false;
-            _submitted = true;
-          });
-        } else {
-          setState(() => _loading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(res['message'] ?? 'Registration failed'),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
-        }
+        setState(() {
+          _loading = false;
+          _submitted = true;
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -103,7 +93,7 @@ class _BecomeCreatorViewState extends State<BecomeCreatorView> {
               width: 90,
               height: 90,
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.15),
+                color: Colors.green.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.green.shade400, width: 2),
               ),
@@ -173,7 +163,7 @@ class _BecomeCreatorViewState extends State<BecomeCreatorView> {
                         const SizedBox(height: 2),
                         Text(
                           'Upload PDFs, notes & mock test papers. Keep 80% of every sale directly to your UPI/Bank.',
-                          style: GoogleFonts.inter(fontSize: 11, color: Colors.white.withOpacity(0.85)),
+                          style: GoogleFonts.inter(fontSize: 11, color: Colors.white.withValues(alpha: 0.85)),
                         ),
                       ],
                     ),
@@ -283,14 +273,14 @@ class _BecomeCreatorViewState extends State<BecomeCreatorView> {
       labelStyle: GoogleFonts.inter(color: Colors.white54, fontSize: 13),
       prefixIcon: Icon(icon, color: Colors.white38, size: 20),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.05),
+      fillColor: Colors.white.withValues(alpha: 0.05),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

@@ -65,12 +65,14 @@ class ResultController {
                    aa.selected_option_key, aa.numerical_answer, aa.is_correct, aa.marks_awarded, aa.time_spent_seconds, aa.is_marked_for_review
             FROM attempt_answers aa
             JOIN questions q ON aa.question_id = q.id
-            JOIN test_questions tq ON q.id = tq.question_id AND tq.test_id = (SELECT test_id FROM test_attempts WHERE id = :att_id)
+            JOIN test_questions tq ON q.id = tq.question_id AND tq.test_id = (SELECT test_id FROM test_attempts WHERE id = :att_id_sub)
             LEFT JOIN question_translations qt ON q.id = qt.question_id AND qt.language = 'en'
             WHERE aa.attempt_id = :att_id
             ORDER BY tq.question_order ASC
         ");
-        $stmt->execute(['att_id' => $attemptId]);
+        // Native prepared statements reject a named placeholder used twice,
+        // so the subquery gets its own name.
+        $stmt->execute(['att_id_sub' => $attemptId, 'att_id' => $attemptId]);
         $solutions = $stmt->fetchAll();
 
         foreach ($solutions as &$sol) {

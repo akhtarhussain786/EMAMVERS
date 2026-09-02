@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants.dart';
 import '../../core/api_service.dart';
 import '../../widgets/premium_cards.dart';
+import '../../widgets/design_system_widgets.dart';
 import '../../widgets/skeleton_loader.dart';
 
 class AiCoachView extends StatefulWidget {
@@ -13,6 +14,7 @@ class AiCoachView extends StatefulWidget {
 
 class _AiCoachViewState extends State<AiCoachView> {
   bool isLoading = true;
+  String? loadError;
   Map<String, dynamic>? twin;
   Map<String, dynamic>? mission;
   List<dynamic> simulatedStrategies = [];
@@ -23,17 +25,44 @@ class _AiCoachViewState extends State<AiCoachView> {
     _loadAiData();
   }
 
+  /// Primary target exam for the signed-in user, rather than a pinned id of 1.
+  Future<int> _resolveTargetExamId() async {
+    try {
+      final profile = await ApiService.get('/v1/user/profile');
+      final targets = (profile is Map ? profile['target_exams'] : null) as List? ?? [];
+      if (targets.isNotEmpty) {
+        final primary = targets.firstWhere(
+          (t) => t['is_primary'] == 1 || t['is_primary'] == true,
+          orElse: () => targets.first,
+        );
+        final id = primary['exam_id'];
+        if (id is int) return id;
+        if (id != null) return int.tryParse(id.toString()) ?? 1;
+      }
+    } catch (_) {
+      // Fall through to the default below.
+    }
+    return 1;
+  }
+
   void _loadAiData() async {
     try {
-      final twinRes = await ApiService.get('/v1/ai/exam-twin/1');
+      final examId = await _resolveTargetExamId();
+      final twinRes = await ApiService.get('/v1/ai/exam-twin/$examId');
       final missionRes = await ApiService.get('/v1/ai/daily-mission');
+      if (!mounted) return;
       setState(() {
-        twin = twinRes;
-        mission = missionRes;
+        twin = twinRes as Map<String, dynamic>?;
+        mission = missionRes as Map<String, dynamic>?;
         isLoading = false;
+        loadError = null;
       });
-    } catch (_) {
-      setState(() => isLoading = false);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        isLoading = false;
+        loadError = e.toString().replaceAll('Exception: ', '');
+      });
     }
   }
 
@@ -41,13 +70,31 @@ class _AiCoachViewState extends State<AiCoachView> {
     try {
       final res = await ApiService.post('/v1/ai/strategy-simulations', {});
       setState(() {
-        simulatedStrategies = res['simulated_strategies'] ?? [];
+        simulatedStrategies = (res is Map ? res['simulated_strategies'] : null) as List? ?? [];
       });
     } catch (_) {}
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!isLoading && loadError != null && twin == null) {
+      return Scaffold(
+        backgroundColor: AppConstants.primaryDark,
+        body: SafeArea(
+          child: EmptyStateWidget(
+            icon: Icons.cloud_off,
+            title: 'Could not load AI Coach',
+            description: loadError!,
+            buttonLabel: 'Try again',
+            onButtonPressed: () {
+              setState(() => isLoading = true);
+              _loadAiData();
+            },
+          ),
+        ),
+      );
+    }
+
     if (isLoading) {
       return Scaffold(
         backgroundColor: AppConstants.primaryDark,
@@ -71,11 +118,15 @@ class _AiCoachViewState extends State<AiCoachView> {
       );
     }
 
-    final readiness = double.parse((twin?['overall_readiness'] ?? 74.0).toString());
-    final kScore = double.parse((twin?['knowledge_score'] ?? 74.0).toString());
-    final accScore = double.parse((twin?['accuracy_score'] ?? 81.0).toString());
-    final spScore = double.parse((twin?['speed_score'] ?? 68.0).toString());
-    final csScore = double.parse((twin?['consistency_score'] ?? 64.0).toString());
+    // Zero, not a plausible-looking placeholder: an unearned readiness score
+    // would misrepresent the candidate's actual preparation.
+    double asDouble(dynamic v) => double.tryParse('${v ?? 0}') ?? 0.0;
+
+    final readiness = asDouble(twin?['overall_readiness']);
+    final kScore = asDouble(twin?['knowledge_score']);
+    final accScore = asDouble(twin?['accuracy_score']);
+    final spScore = asDouble(twin?['speed_score']);
+    final csScore = asDouble(twin?['consistency_score']);
     final revScore = 59.0;
     final stratScore = 71.0;
 
@@ -127,9 +178,9 @@ class _AiCoachViewState extends State<AiCoachView> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: AppConstants.accentPurple.withOpacity(0.2),
+                      color: AppConstants.accentPurple.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppConstants.accentPurple.withOpacity(0.4)),
+                      border: Border.all(color: AppConstants.accentPurple.withValues(alpha: 0.4)),
                     ),
                     child: Row(
                       children: const [
@@ -149,7 +200,7 @@ class _AiCoachViewState extends State<AiCoachView> {
                 decoration: BoxDecoration(
                   gradient: AppConstants.darkCardGradient,
                   borderRadius: BorderRadius.circular(AppConstants.radiusHero),
-                  border: Border.all(color: AppConstants.accentPurple.withOpacity(0.5), width: 1.5),
+                  border: Border.all(color: AppConstants.accentPurple.withValues(alpha: 0.5), width: 1.5),
                   boxShadow: AppConstants.glowShadow(AppConstants.accentPurple),
                 ),
                 child: Column(
@@ -164,7 +215,7 @@ class _AiCoachViewState extends State<AiCoachView> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: AppConstants.accentEmerald.withOpacity(0.2),
+                            color: AppConstants.accentEmerald.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Text('Top 4% Aspirants', style: TextStyle(color: AppConstants.accentEmerald, fontSize: 11, fontWeight: FontWeight.bold)),
@@ -195,7 +246,7 @@ class _AiCoachViewState extends State<AiCoachView> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                '${readiness.toStringAsFixed(0)}',
+                                readiness.toStringAsFixed(0),
                                 style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w800, height: 1.0),
                               ),
                               const Text(
@@ -256,7 +307,7 @@ class _AiCoachViewState extends State<AiCoachView> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('${mission?['total_planned_minutes'] ?? 47} Mins Planned Today', style: const TextStyle(color: AppConstants.accentPurple, fontWeight: FontWeight.bold, fontSize: 14)),
+                        Text('${mission?['total_planned_minutes'] ?? 0} Mins Planned Today', style: const TextStyle(color: AppConstants.accentPurple, fontWeight: FontWeight.bold, fontSize: 14)),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(color: AppConstants.primaryDark, borderRadius: BorderRadius.circular(8)),
@@ -272,7 +323,7 @@ class _AiCoachViewState extends State<AiCoachView> {
                             decoration: BoxDecoration(
                               color: AppConstants.primaryDark,
                               borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-                              border: Border.all(color: AppConstants.cardBorder.withOpacity(0.5)),
+                              border: Border.all(color: AppConstants.cardBorder.withValues(alpha: 0.5)),
                             ),
                             child: Row(
                               children: [
@@ -283,7 +334,7 @@ class _AiCoachViewState extends State<AiCoachView> {
                                 ),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(color: AppConstants.accentIndigo.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                                  decoration: BoxDecoration(color: AppConstants.accentIndigo.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
                                   child: Text('${item['duration_minutes']}m', style: const TextStyle(color: AppConstants.accentIndigo, fontSize: 11, fontWeight: FontWeight.bold)),
                                 ),
                               ],
@@ -328,7 +379,7 @@ class _AiCoachViewState extends State<AiCoachView> {
                       decoration: BoxDecoration(
                         color: AppConstants.cardDark,
                         borderRadius: BorderRadius.circular(AppConstants.radiusCard),
-                        border: Border.all(color: AppConstants.accentBlue.withOpacity(0.5)),
+                        border: Border.all(color: AppConstants.accentBlue.withValues(alpha: 0.5)),
                         boxShadow: AppConstants.cardShadow,
                       ),
                       child: Column(
@@ -354,9 +405,9 @@ class _AiCoachViewState extends State<AiCoachView> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: AppConstants.primaryDark.withOpacity(0.8),
+        color: AppConstants.primaryDark.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(AppConstants.radiusSmall),
-        border: Border.all(color: AppConstants.cardBorder.withOpacity(0.6)),
+        border: Border.all(color: AppConstants.cardBorder.withValues(alpha: 0.6)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

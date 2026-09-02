@@ -39,18 +39,21 @@ class _PurchaseFlowScreenState extends State<PurchaseFlowScreen>
       await Future.delayed(const Duration(seconds: 2));
 
       final m = widget.material;
-      final res = await ApiService.postAuth('/marketplace/${m['id']}/purchase', {
+      // A non-2xx response throws, so reaching the next line means the server
+      // recorded the purchase.
+      await ApiService.postAuth('/v1/marketplace/${m['id']}/purchase', {
         'payment_method': _selectedMethod,
       });
 
-      if (res['status'] == 'success') {
-        setState(() => _step = 2);
-        _successCtrl.forward();
-      } else {
-        setState(() { _step = 3; _errorMsg = res['message'] ?? 'Payment failed'; });
-      }
+      if (!mounted) return;
+      setState(() => _step = 2);
+      _successCtrl.forward();
     } catch (e) {
-      setState(() { _step = 3; _errorMsg = e.toString(); });
+      if (!mounted) return;
+      setState(() {
+        _step = 3;
+        _errorMsg = e.toString().replaceAll('Exception: ', '');
+      });
     }
   }
 
@@ -87,7 +90,7 @@ class _PurchaseFlowScreenState extends State<PurchaseFlowScreen>
           decoration: BoxDecoration(
             gradient: const LinearGradient(colors: [Color(0xFF1a1a2e), Color(0xFF16213e)]),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.07)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
           ),
           child: Column(children: [
             Row(children: [
@@ -178,7 +181,7 @@ class _PurchaseFlowScreenState extends State<PurchaseFlowScreen>
           child: Container(
             width: 100, height: 100,
             decoration: BoxDecoration(
-                color: Colors.green.shade700.withOpacity(0.2),
+                color: Colors.green.shade700.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.green.shade400, width: 2)),
             child: Icon(Icons.check_rounded, size: 54, color: Colors.green.shade400),
@@ -219,7 +222,7 @@ class _PurchaseFlowScreenState extends State<PurchaseFlowScreen>
       padding: const EdgeInsets.all(32),
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         Container(width: 100, height: 100, decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.1), shape: BoxShape.circle,
+            color: Colors.red.withValues(alpha: 0.1), shape: BoxShape.circle,
             border: Border.all(color: Colors.red.shade400, width: 2)),
             child: Icon(Icons.close_rounded, size: 54, color: Colors.red.shade400)),
         const SizedBox(height: 24),
@@ -270,7 +273,7 @@ class _PaymentOption extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: selected ? const Color(0xFF818cf8) : Colors.white12, width: selected ? 1.5 : 1),
-        color: selected ? const Color(0xFF6366f1).withOpacity(0.1) : Colors.white.withOpacity(0.03),
+        color: selected ? const Color(0xFF6366f1).withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.03),
       ),
       child: Row(children: [
         Icon(method['icon'] as IconData, size: 20, color: selected ? const Color(0xFF818cf8) : Colors.white38),
@@ -292,7 +295,7 @@ class _InfoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(color: Colors.white.withOpacity(0.04), borderRadius: BorderRadius.circular(14)),
+    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.04), borderRadius: BorderRadius.circular(14)),
     child: Row(children: [
       Icon(icon, color: const Color(0xFF818cf8), size: 22),
       const SizedBox(width: 14),
