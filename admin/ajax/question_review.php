@@ -11,25 +11,7 @@ $db     = Database::getConnection();
 $action = $_GET['action'] ?? '';
 $adminId = $_SESSION['admin_user']['id'] ?? null;
 
-function auditLog($db, $adminId, $action, $entityId, $details) {
-    if (!$adminId) return;
-    try {
-        $db->prepare("INSERT INTO admin_audit_logs (admin_id, action, entity_type, entity_id, details) VALUES (?,?,'QUESTION',?,?)")
-           ->execute([$adminId, $action, $entityId, $details]);
-    } catch (PDOException $e) {
-        error_log('EXAMVERSE audit log failed: ' . $e->getMessage());
-    }
-}
 
-function notifyTeacher($db, $userId, $title, $message) {
-    if (!$userId) return;
-    try {
-        $db->prepare("INSERT INTO user_notifications (user_id, title, message, type) VALUES (?,?,?,'system')")
-           ->execute([$userId, $title, $message]);
-    } catch (PDOException $e) {
-        error_log('EXAMVERSE teacher notification failed: ' . $e->getMessage());
-    }
-}
 
 switch ($action) {
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants.dart';
+import '../results/result_view.dart';
 import '../../core/api_service.dart';
 import '../../widgets/design_system_widgets.dart';
 
@@ -41,6 +42,27 @@ class _TestHistoryViewState extends State<TestHistoryView> {
         loadError = e.toString().replaceAll('Exception: ', '');
       });
     }
+  }
+
+  /// Opens the scorecard for a past attempt.
+  void _openResult(dynamic item) {
+    final id = item is Map ? (item['attempt_id'] ?? item['id']) : null;
+    if (id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('This attempt has no scorecard to open.'),
+        backgroundColor: AppConstants.accentAmber,
+      ));
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ResultView(
+          attemptId: id is int ? id : int.tryParse(id.toString()) ?? 0,
+          onHome: () => Navigator.pop(context),
+        ),
+      ),
+    );
   }
 
   @override
@@ -93,7 +115,7 @@ class _TestHistoryViewState extends State<TestHistoryView> {
                                 _buildMetric('Score', scoreStr, AppConstants.accentCyan),
                                 _buildMetric('Rank', rankStr, AppConstants.accentPurple),
                                 _buildMetric('Accuracy', accStr, AppConstants.accentEmerald),
-                                SecondaryButton(label: 'View', onPressed: () {}),
+                                SecondaryButton(label: 'View', onPressed: () => _openResult(item)),
                               ],
                             ),
                           ],

@@ -8,7 +8,7 @@
  * adding questions by hand.
  *
  * Usage:
- *   php api/jobs/topup_questions.php [--exam=ID] [--subject=ID] [--limit=N] [--dry-run]
+ *   php api/jobs/topup_questions.php [--exam=ID] [--subject=ID] [--difficulty=D] [--limit=N] [--dry-run]
  *
  * Cron (nightly at 2am):
  *   0 2 * * * /usr/bin/php /path/to/api/jobs/topup_questions.php >> /var/log/examverse-topup.log 2>&1
@@ -24,9 +24,11 @@ require_once __DIR__ . '/../utils/crypto.php';
 require_once __DIR__ . '/../utils/question_fingerprint.php';
 
 // ── options ──────────────────────────────────────────────────────────────
-$opts       = getopt('', ['exam::', 'subject::', 'limit::', 'dry-run', 'verbose']);
+$opts       = getopt('', ['exam::', 'subject::', 'difficulty::', 'limit::', 'dry-run', 'verbose']);
 $onlyExam   = isset($opts['exam']) ? (int)$opts['exam'] : null;
 $onlySubj   = isset($opts['subject']) ? (int)$opts['subject'] : null;
+$onlyDiff   = isset($opts['difficulty']) && in_array($opts['difficulty'], ['easy','medium','hard'], true)
+              ? $opts['difficulty'] : null;
 $maxInserts = isset($opts['limit']) ? max(1, (int)$opts['limit']) : (int)Config::get('AI_TOPUP_NIGHTLY_LIMIT', 100);
 $dryRun     = isset($opts['dry-run']);
 $verbose    = isset($opts['verbose']);
@@ -63,6 +65,7 @@ $sql = "
 $params = [];
 if ($onlyExam) { $sql .= " AND t.exam_id = ?"; $params[] = $onlyExam; }
 if ($onlySubj) { $sql .= " AND t.subject_id = ?"; $params[] = $onlySubj; }
+if ($onlyDiff) { $sql .= " AND d.difficulty = ?"; $params[] = $onlyDiff; }
 // Emptiest buckets first, so a limited run fixes the worst gaps.
 $sql .= " ORDER BY (t.target_per_difficulty - COALESCE(cnt.total,0)) DESC";
 

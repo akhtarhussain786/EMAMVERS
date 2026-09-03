@@ -17,6 +17,7 @@ import 'views/creator/become_creator_view.dart';
 import 'views/creator/creator_dashboard_view.dart';
 import 'views/current_affairs/current_affairs_view.dart';
 import 'views/teacher/teacher_dashboard_view.dart';
+import 'views/practice/build_practice_view.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,6 +45,10 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
   int? selectedTestId;
   int? activeAttemptId;
   bool isPlayingTest = false;
+  bool isBuildingPractice = false;
+  // Set when the player should resume an already-assembled custom paper.
+  int? practiceAttemptId;
+  int? practiceDurationMinutes;
   bool isViewingResult = false;
   bool isViewingInstructions = false;
 
@@ -68,6 +73,8 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
       isAuthenticated = false;
       accountType = 'student';
       isPlayingTest = false;
+      isBuildingPractice = false;
+      practiceAttemptId = null;
       isViewingResult = false;
       isViewingInstructions = false;
       selectedExamId = null;
@@ -114,17 +121,38 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
   }
 
   Widget _buildAuthenticatedShell() {
-    if (isPlayingTest && selectedTestId != null) {
+    if (isPlayingTest && (selectedTestId != null || practiceAttemptId != null)) {
       return TestPlayerView(
-        testId: selectedTestId!,
+        testId: selectedTestId ?? 0,
+        existingAttemptId: practiceAttemptId,
+        existingDurationMinutes: practiceDurationMinutes,
         onTestSubmitted: (attId) {
           setState(() {
             isPlayingTest = false;
+            practiceAttemptId = null;
+            practiceDurationMinutes = null;
             activeAttemptId = attId;
             isViewingResult = true;
           });
         },
-        onExit: () => setState(() => isPlayingTest = false),
+        onExit: () => setState(() {
+          isPlayingTest = false;
+          practiceAttemptId = null;
+          practiceDurationMinutes = null;
+        }),
+      );
+    }
+
+    if (isBuildingPractice) {
+      return BuildPracticeView(
+        onStarted: (attemptId, minutes) {
+          setState(() {
+            isBuildingPractice = false;
+            practiceAttemptId = attemptId;
+            practiceDurationMinutes = minutes;
+            isPlayingTest = true;
+          });
+        },
       );
     }
 
@@ -185,6 +213,7 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
             },
             onOpenAiCoach: () => setState(() => currentTabIndex = 2),
             onOpenLeaderboard: () => setState(() => currentTabIndex = 3),
+            onBuildPractice: () => setState(() => isBuildingPractice = true),
           ),
           const MarketplaceScreen(),
           const AiCoachView(),

@@ -10,11 +10,18 @@ class TestPlayerView extends StatefulWidget {
   final Function(int attemptId) onTestSubmitted;
   final VoidCallback onExit;
 
+  /// Set when the attempt already exists (a custom practice test built by the
+  /// student). The player then resumes it instead of starting a new one.
+  final int? existingAttemptId;
+  final int? existingDurationMinutes;
+
   const TestPlayerView({
     super.key,
     required this.testId,
     required this.onTestSubmitted,
     required this.onExit,
+    this.existingAttemptId,
+    this.existingDurationMinutes,
   });
 
   @override
@@ -55,7 +62,10 @@ class _TestPlayerViewState extends State<TestPlayerView> {
 
   void _startAttempt() async {
     try {
-      final res = await ApiService.post('/v1/tests/${widget.testId}/attempts', {});
+      // A custom practice attempt is already assembled; resume it by id.
+      final res = widget.existingAttemptId != null
+          ? await ApiService.get('/v1/attempts/${widget.existingAttemptId}/paper')
+          : await ApiService.post('/v1/tests/${widget.testId}/attempts', {});
       if (!mounted) return;
       setState(() {
         attemptId = res['attempt_id'] as int;
@@ -63,6 +73,9 @@ class _TestPlayerViewState extends State<TestPlayerView> {
         // The server computes remaining time from the attempt's start, so
         // reopening a test cannot hand back a fresh full-length timer.
         remainingSeconds = (res['remaining_seconds'] as int?)
+            ?? (widget.existingDurationMinutes != null
+                ? widget.existingDurationMinutes! * 60
+                : null)
             ?? (res['test']?['total_duration_seconds'] as int?)
             ?? 3600;
         isLoading = false;

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../core/constants.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/api_service.dart';
 
@@ -54,6 +56,32 @@ class _PurchaseFlowScreenState extends State<PurchaseFlowScreen>
         _step = 3;
         _errorMsg = e.toString().replaceAll('Exception: ', '');
       });
+    }
+  }
+
+  bool _downloading = false;
+
+  /// Requests a signed, short-lived download grant and opens it.
+  Future<void> _download() async {
+    setState(() => _downloading = true);
+    try {
+      final id = widget.material['id'];
+      final res = await ApiService.getAuth('/v1/marketplace/$id/download');
+      final url = (res is Map ? res['download_url'] : null)?.toString();
+      if (url == null || url.isEmpty) throw Exception('No download link was returned');
+
+      final uri = Uri.parse('${AppConstants.apiBaseUrl.replaceFirst(RegExp(r'/api/?$'), '')}$url');
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        throw Exception('Could not open the download');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString().replaceAll('Exception: ', '')),
+        backgroundColor: Colors.redAccent,
+      ));
+    } finally {
+      if (mounted) setState(() => _downloading = false);
     }
   }
 
@@ -205,12 +233,13 @@ class _PurchaseFlowScreenState extends State<PurchaseFlowScreen>
           )),
           const SizedBox(width: 12),
           Expanded(child: ElevatedButton(
-            onPressed: () {},
+            onPressed: _downloading ? null : _download,
             style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF6366f1),
                 padding: const EdgeInsets.symmetric(vertical: 13),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-            child: Text('Download', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+            child: Text(_downloading ? 'Preparing…' : 'Download',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
           )),
         ]),
       ]),

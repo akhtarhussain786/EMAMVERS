@@ -96,6 +96,70 @@ switch ($action) {
         ajaxOk(null, 'Target removed');
         break;
 
+    // ── FILL ONE BUCKET NOW ────────────────────────────────────────────
+    // Generation takes minutes, so the CLI job is spawned detached and the
+    // page polls run status rather than holding the request open.
+    case 'fill_bucket':
+        $body       = getBody();
+        $examId     = intval($body['exam_id'] ?? 0);
+        $subjectId  = intval($body['subject_id'] ?? 0);
+        $difficulty = $body['difficulty'] ?? '';
+        $limit      = max(1, min(50, intval($body['limit'] ?? 10)));
+
+        if (!$examId || !$subjectId) ajaxErr('exam_id and subject_id are required', 422);
+        if ($difficulty !== '' && !in_array($difficulty, ['easy','medium','hard'], true)) {
+            ajaxErr('difficulty must be easy, medium or hard', 422);
+        }
+
+        // Refuse to stack runs on the same bucket.
+        $busy = $db->prepare("
+            SELECT COUNT(*) FROM question_topup_runs
+            WHERE status = 'running' AND exam_id = ? AND subject_id = ?
+              AND started_at > (NOW() - INTERVAL 1 HOUR)
+        ");
+        $busy->execute([$examId, $subjectId]);
+        if ($busy->fetchColumn() > 0) ajaxErr('A top-up is already running for this bucket.', 409);
+
+        $php = PHP_BINARY ?: 'php';
+        $job = realpath(__DIR__ . '/../../api/jobs/topup_questions.php');
+        if (!$job) ajaxErr('Top-up job not found on disk', 500);
+
+        $cmd = escapeshellcmd($php) . ' ' . escapeshellarg($job)
+             . ' --exam=' . escapeshellarg((string)$examId)
+             . ' --subject=' . escapeshellarg((string)$subjectId)
+             . ' --limit=' . escapeshellarg((string)$limit);
+        if ($difficulty !== '') $cmd .= ' --difficulty=' . escapeshellarg($difficulty);
+
+        $logDir = __DIR__ . '/../../api/storage/logs';
+        if (!is_dir($logDir)) @mkdir($logDir, 0770, true);
+        $logFile = $logDir . '/topup-' . date('Ymd') . '.log';
+
+        // Detach so the HTTP request returns immediately.
+        @exec($cmd . ' >> ' . escapeshellarg($logFile) . ' 2>&1 &');
+
+        auditLog($db, $adminId, 'BANK_TOPUP', $examId, sprintf(
+            'Manual top-up: exam %d, subject %d, difficulty %s, limit %d',
+            $examId, $subjectId, $difficulty ?: 'all', $limit
+        ));
+
+        ajaxOk(['started' => true], 'Top-up started in the background. Refresh in a minute to see new questions.', 202);
+        break;
+
+    // ── POLL RUN STATUS ────────────────────────────────────────────────
+    case 'run_status':
+        $rows = $db->query("
+            SELECT r.id, r.difficulty, r.requested, r.generated_count, r.duplicates_rejected,
+                   r.inserted, r.status, r.started_at, r.finished_at,
+                   LEFT(COALESCE(r.error_message,''), 160) AS error_message,
+                   e.title AS exam_title, s.name AS subject_name
+            FROM question_topup_runs r
+            LEFT JOIN exams e ON r.exam_id = e.id
+            LEFT JOIN subjects s ON r.subject_id = s.id
+            ORDER BY r.id DESC LIMIT 12
+        ")->fetchAll(PDO::FETCH_ASSOC);
+        ajaxOk($rows, 'Run status');
+        break;
+
     default:
         ajaxErr("Unknown action: $action", 400);
 }

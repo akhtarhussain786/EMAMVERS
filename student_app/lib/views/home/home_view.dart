@@ -16,6 +16,7 @@ class HomeView extends StatefulWidget {
   final Function(int testId) onSelectTest;
   final VoidCallback onOpenAiCoach;
   final VoidCallback onOpenLeaderboard;
+  final VoidCallback onBuildPractice;
 
   const HomeView({
     super.key,
@@ -23,6 +24,7 @@ class HomeView extends StatefulWidget {
     required this.onSelectTest,
     required this.onOpenAiCoach,
     required this.onOpenLeaderboard,
+    required this.onBuildPractice,
   });
 
   @override
@@ -238,7 +240,7 @@ class _HomeViewState extends State<HomeView> {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const MistakeNotebookView()));
                   }),
                   _buildQuickAction('AI Coach', Icons.auto_awesome, AppConstants.accentPurple, widget.onOpenAiCoach),
-                  _buildQuickAction('Practice', Icons.edit_note, AppConstants.accentBlue, widget.onOpenAiCoach),
+                  _buildQuickAction('Practice', Icons.edit_note, AppConstants.accentBlue, widget.onBuildPractice),
                   _buildQuickAction('Leaderboard', Icons.emoji_events_outlined, AppConstants.accentEmerald, widget.onOpenLeaderboard),
                   _buildQuickAction('Daily Quiz', Icons.timer_outlined, AppConstants.accentCyan, widget.onOpenAiCoach),
                   _buildQuickAction('Affairs', Icons.newspaper, AppConstants.accentRose, () {

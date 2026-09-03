@@ -89,7 +89,7 @@ async function loadLevels() {
     const rows = r.data.levels;
     if (!rows.length) { body.innerHTML = '<tr><td style="padding:2rem;text-align:center;">No targets set yet — add one below.</td></tr>'; }
     else {
-      body.innerHTML = `<thead><tr><th>Department</th><th>Subject</th><th>Difficulty</th><th>Have</th><th>Target</th><th style="min-width:130px;">Fill</th><th>Auto</th></tr></thead><tbody>` +
+      body.innerHTML = `<thead><tr><th>Department</th><th>Subject</th><th>Difficulty</th><th>Have</th><th>Target</th><th style="min-width:130px;">Fill</th><th>Auto</th><th>Action</th></tr></thead><tbody>` +
         rows.map(l => {
           const pct = l.target_per_difficulty > 0 ? Math.min(100, Math.round(l.current_total / l.target_per_difficulty * 100)) : 100;
           const cls = pct >= 90 ? 'ok' : pct >= 50 ? 'warn' : 'low';
@@ -102,24 +102,78 @@ async function loadLevels() {
             <td><div class="meter"><span class="${cls}" style="width:${pct}%"></span></div>
                 <span style="font-size:.7rem;color:var(--text-muted);">${pct}%</span></td>
             <td>${Number(l.auto_topup) ? '✓' : '—'}</td>
+            <td><button class="btn btn-xs" id="fill-${l.exam_id}-${l.subject_id}-${esc(l.difficulty)}"
+                  onclick="fillBucket(${l.exam_id}, ${l.subject_id}, '${esc(l.difficulty)}')"
+                  ${pct >= 100 ? 'disabled style="opacity:.4;cursor:default;"' : ''}>Fill now</button></td>
           </tr>`;
         }).join('') + '</tbody>';
     }
 
-    const runs = r.data.recent_runs || [];
-    document.getElementById('runsTable').innerHTML = runs.length
-      ? `<thead><tr><th>When</th><th>Department</th><th>Subject</th><th>Diff</th><th>Generated</th><th>Dupes</th><th>Inserted</th><th>Status</th></tr></thead><tbody>` +
-        runs.map(x => `<tr>
+    renderRuns(r.data.recent_runs || []);
+  } catch (e) {
+    body.innerHTML = `<tr><td style="padding:2rem;">Could not load: ${esc(e.message)}</td></tr>`;
+  }
+}
+
+/** Kicks off a background top-up for one bucket and polls until it settles. */
+async function fillBucket(examId, subjectId, difficulty) {
+  const btn = document.getElementById(`fill-${examId}-${subjectId}-${difficulty}`);
+  const howMany = prompt('How many questions to generate for this bucket?', '10');
+  if (howMany === null) return;
+  const limit = parseInt(howMany, 10);
+  if (!Number.isFinite(limit) || limit < 1 || limit > 50) { alert('Enter a number between 1 and 50.'); return; }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Starting…'; }
+  try {
+    const r = await (await fetch(`${QB}?action=fill_bucket`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({exam_id: examId, subject_id: subjectId, difficulty, limit})
+    })).json();
+    if (r.status !== 'success') throw new Error(r.message);
+    if (btn) btn.textContent = 'Generating…';
+    pollRuns(btn);
+  } catch (e) {
+    alert('Could not start: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = 'Fill now'; }
+  }
+}
+
+/** Generation takes minutes, so poll the run table rather than blocking. */
+let pollTimer = null;
+async function pollRuns(btn) {
+  clearInterval(pollTimer);
+  let ticks = 0;
+  pollTimer = setInterval(async () => {
+    ticks++;
+    try {
+      const r = await (await fetch(`${QB}?action=run_status`)).json();
+      if (r.status !== 'success') return;
+      renderRuns(r.data);
+      const active = r.data.some(x => x.status === 'running');
+      if (!active || ticks > 60) {
+        clearInterval(pollTimer);
+        if (btn) { btn.disabled = false; btn.textContent = 'Fill now'; }
+        loadLevels();
+      }
+    } catch (_) { /* transient; keep polling */ }
+  }, 5000);
+}
+
+function renderRuns(runs) {
+  document.getElementById('runsTable').innerHTML = runs.length
+    ? `<thead><tr><th>When</th><th>Department</th><th>Subject</th><th>Diff</th><th>Generated</th><th>Dupes</th><th>Inserted</th><th>Status</th></tr></thead><tbody>` +
+      runs.map(x => {
+        const colour = x.status === 'completed' ? '#86efac' : x.status === 'error' ? '#fca5a5' : '#fcd34d';
+        return `<tr>
           <td>${esc((x.started_at||'').slice(0,16))}</td>
           <td>${esc(x.exam_title||'—')}</td><td>${esc(x.subject_name||'—')}</td>
           <td>${esc(x.difficulty||'—')}</td><td>${x.generated_count}</td>
           <td style="color:#fcd34d;">${x.duplicates_rejected}</td>
           <td style="color:#86efac;font-weight:700;">${x.inserted}</td>
-          <td>${esc(x.status)}</td></tr>`).join('') + '</tbody>'
-      : '<tr><td style="padding:1.5rem;text-align:center;">No top-up runs yet.</td></tr>';
-  } catch (e) {
-    body.innerHTML = `<tr><td style="padding:2rem;">Could not load: ${esc(e.message)}</td></tr>`;
-  }
+          <td style="color:${colour};">${esc(x.status)}${x.error_message ? ' — ' + esc(x.error_message.slice(0,44)) : ''}</td>
+        </tr>`;
+      }).join('') + '</tbody>'
+    : '<tr><td style="padding:1.5rem;text-align:center;">No top-up runs yet.</td></tr>';
 }
 
 async function saveTarget() {

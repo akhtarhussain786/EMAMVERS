@@ -40,12 +40,37 @@ function getBody(): array {
 }
 
 /**
+ * Shared admin-AJAX helpers. Defined here because every ajax entry point
+ * includes this guard; duplicating them per file caused a fatal when one
+ * script called a helper defined in another.
+ */
+function auditLog($db, $adminId, string $action, $entityId, string $details): void {
+    if (!$adminId) return;
+    try {
+        $db->prepare("INSERT INTO admin_audit_logs (admin_id, action, entity_type, entity_id, details) VALUES (?,?,'QUESTION',?,?)")
+           ->execute([$adminId, $action, $entityId, $details]);
+    } catch (PDOException $e) {
+        error_log('EXAMVERSE audit log failed: ' . $e->getMessage());
+    }
+}
+
+function notifyTeacher($db, $userId, string $title, string $message): void {
+    if (!$userId) return;
+    try {
+        $db->prepare("INSERT INTO user_notifications (user_id, title, message, type) VALUES (?,?,?,'system')")
+           ->execute([$userId, $title, $message]);
+    } catch (PDOException $e) {
+        error_log('EXAMVERSE teacher notification failed: ' . $e->getMessage());
+    }
+}
+
+/**
  * Anything that mutates state needs a CSRF token. These endpoints are driven by
  * the session cookie, so without this a third-party page could approve payouts
  * or delete keys on behalf of a logged-in admin.
  */
 $adminAjaxAction = $_GET['action'] ?? '';
-$readOnlyActions = ['list', 'batches', 'batch_questions', 'marketplace_stats', 'stats', 'teachers', 'levels', 'meta'];
+$readOnlyActions = ['list', 'batches', 'batch_questions', 'marketplace_stats', 'stats', 'teachers', 'levels', 'meta', 'run_status'];
 
 if (!in_array($adminAjaxAction, $readOnlyActions, true)) {
     if (!adminCsrfValid(adminCsrfFromRequest(getBody()))) {

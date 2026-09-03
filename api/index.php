@@ -30,6 +30,7 @@ require_once __DIR__ . '/controllers/FriendsController.php';
 require_once __DIR__ . '/controllers/NotebookController.php';
 require_once __DIR__ . '/controllers/TeacherController.php';
 require_once __DIR__ . '/controllers/QuestionReviewController.php';
+require_once __DIR__ . '/controllers/PracticeController.php';
 
 // Extract URI path
 $requestUri = $_SERVER['REQUEST_URI'];
@@ -82,6 +83,8 @@ if (($path === '/v1/health' || $path === '/health') && $method === 'GET') {
     TestEngineController::getInstructions($params['id']);
 } elseif (matchRoute('/v1/tests/{id}/attempts', $path, $params) && $method === 'POST') {
     TestEngineController::startAttempt($params['id']);
+} elseif (matchRoute('/v1/attempts/{id}/paper', $path, $params) && $method === 'GET') {
+    TestEngineController::getAttemptPaper($params['id']);
 } elseif (matchRoute('/v1/attempts/{id}/answers', $path, $params) && ($method === 'PUT' || $method === 'POST')) {
     TestEngineController::saveAnswerState($params['id']);
 } elseif (matchRoute('/v1/attempts/{id}/submit', $path, $params) && $method === 'POST') {
@@ -140,6 +143,12 @@ if (($path === '/v1/health' || $path === '/health') && $method === 'GET') {
     NotebookController::addMistake();
 } elseif (matchRoute('/v1/notebook/{id}/master', $path, $params) && $method === 'PUT') {
     NotebookController::markMastered($params['id']);
+// ── STUDENT: CUSTOM PRACTICE MOCKS ────────────────────────────────────────
+} elseif ($path === '/v1/practice/options' && $method === 'GET') {
+    PracticeController::options();
+} elseif ($path === '/v1/practice/start' && $method === 'POST') {
+    PracticeController::start();
+
 // ── TEACHER: QUESTION AUTHORING ───────────────────────────────────────────
 } elseif ($path === '/v1/teacher/dashboard' && $method === 'GET') {
     TeacherController::dashboard();

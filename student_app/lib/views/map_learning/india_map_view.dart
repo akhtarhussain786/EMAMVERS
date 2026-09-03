@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants.dart';
+import '../../core/api_service.dart';
 import '../../models/map_models.dart';
 import '../../widgets/design_system_widgets.dart';
 
@@ -13,6 +14,61 @@ class IndiaMapView extends StatefulWidget {
 
 class _IndiaMapViewState extends State<IndiaMapView> {
   MapLocation? selectedLocation;
+
+  /// Loads the full fact list for a location and shows it in a sheet.
+  Future<void> _showFacts(MapLocation location) async {
+    List<dynamic> facts = [];
+    String? error;
+    try {
+      final res = await ApiService.get('/v1/map/locations/${location.id}');
+      final loc = (res is Map ? res['location'] : null) as Map<String, dynamic>?;
+      facts = (loc?['facts'] as List?) ?? [];
+    } catch (e) {
+      error = e.toString().replaceAll('Exception: ', '');
+    }
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppConstants.cardDark,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(AppConstants.space20),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(location.name,
+              style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text('${location.state}, ${location.country}',
+              style: const TextStyle(color: AppConstants.accentCyan, fontSize: 12.5)),
+          const SizedBox(height: 14),
+          if (error != null)
+            Text(error, style: const TextStyle(color: AppConstants.accentRose, fontSize: 13))
+          else if (facts.isEmpty)
+            const Text('No facts have been added for this location yet.',
+                style: TextStyle(color: AppConstants.textMuted, fontSize: 13))
+          else
+            ...facts.map((f) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Text('•  ', style: TextStyle(color: AppConstants.accentEmerald, fontSize: 14)),
+                    Expanded(
+                      child: Text(f.toString(),
+                          style: const TextStyle(
+                              color: AppConstants.textSecondary, fontSize: 13, height: 1.45)),
+                    ),
+                  ]),
+                )),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: PrimaryButton(label: 'Close', onPressed: () => Navigator.pop(ctx)),
+          ),
+        ]),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -139,7 +195,7 @@ class _IndiaMapViewState extends State<IndiaMapView> {
                         Text('PYQs: ${selectedLocation!.pyqCount}', style: const TextStyle(color: AppConstants.accentEmerald, fontSize: 12, fontWeight: FontWeight.bold)),
                         SecondaryButton(
                           label: 'View Facts →',
-                          onPressed: () {},
+                          onPressed: () => _showFacts(selectedLocation!),
                         ),
                       ],
                     ),

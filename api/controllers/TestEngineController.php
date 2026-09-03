@@ -194,6 +194,80 @@ class TestEngineController {
     }
 
     /**
+     * Returns the paper for an attempt that already exists.
+     * Used by custom practice tests, which are assembled before the player opens.
+     */
+    public static function getAttemptPaper($attemptId) {
+        $authUser = AuthMiddleware::getAuthenticatedUser('student');
+        $userId = $authUser['sub'];
+
+        $db = Database::getConnection();
+        $attempt = self::requireOwnedAttempt($db, $attemptId, $userId);
+
+        $stmt = $db->prepare("
+            SELECT aq.question_id, aq.question_order, aq.positive_marks, aq.negative_marks, aq.section_id,
+                   aq.option_order, q.question_type, q.difficulty, s.name AS section_name
+            FROM attempt_questions aq
+            JOIN questions q ON aq.question_id = q.id
+            LEFT JOIN subjects s ON q.subject_id = s.id
+            WHERE aq.attempt_id = ?
+            ORDER BY aq.question_order ASC
+        ");
+        $stmt->execute([$attemptId]);
+        $questions = $stmt->fetchAll();
+
+        if ($questions) {
+            $ids = array_column($questions, 'question_id');
+            $ph  = implode(',', array_fill(0, count($ids), '?'));
+
+            $tr = $db->prepare("SELECT question_id, language, question_text FROM question_translations WHERE question_id IN ($ph)");
+            $tr->execute($ids);
+            $translations = [];
+            foreach ($tr->fetchAll() as $r) $translations[$r['question_id']][] = $r;
+
+            // is_correct is withheld while the test is live.
+            $op = $db->prepare("SELECT id, question_id, option_key, language, option_text FROM question_options WHERE question_id IN ($ph) ORDER BY option_key");
+            $op->execute($ids);
+            $options = [];
+            foreach ($op->fetchAll() as $r) $options[$r['question_id']][] = $r;
+
+            $st = $db->prepare("SELECT question_id, selected_option_key, numerical_answer, is_marked_for_review, time_spent_seconds FROM attempt_answers WHERE attempt_id = ?");
+            $st->execute([$attemptId]);
+            $states = [];
+            foreach ($st->fetchAll() as $r) $states[$r['question_id']] = $r;
+
+            foreach ($questions as &$q) {
+                $qId = $q['question_id'];
+                $q['translations'] = $translations[$qId] ?? [];
+                $q['user_state']   = $states[$qId] ?? null;
+
+                $opts = $options[$qId] ?? [];
+                if (!empty($q['option_order'])) {
+                    $wanted = explode(',', $q['option_order']);
+                    $byKey = [];
+                    foreach ($opts as $o) $byKey[$o['option_key']][] = $o;
+                    $ordered = [];
+                    foreach ($wanted as $key) {
+                        foreach ($byKey[$key] ?? [] as $o) $ordered[] = $o;
+                        unset($byKey[$key]);
+                    }
+                    foreach ($byKey as $rest) foreach ($rest as $o) $ordered[] = $o;
+                    $opts = $ordered;
+                }
+                $q['options'] = $opts;
+                unset($q['option_order']);
+            }
+            unset($q);
+        }
+
+        Response::json([
+            'attempt_id' => (int)$attemptId,
+            'questions'  => $questions,
+            'test'       => ['title' => 'Custom Practice'],
+        ], 'Attempt paper loaded');
+    }
+
+    /**
      * Loads an attempt that belongs to the caller, or terminates.
      * $requireOpen rejects attempts that have already been finalised.
      */
