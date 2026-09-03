@@ -9,13 +9,34 @@ import 'package:student_app/views/practice/build_practice_view.dart';
 import 'package:student_app/views/teacher/teacher_dashboard_view.dart';
 import 'package:student_app/views/teacher/submit_question_view.dart';
 
+import '../test/contrast_util.dart';
+
 /// Drives the real UI against the live local API.
 ///
 /// Run with:
 ///   flutter test integration_test/app_ui_test.dart -d chrome \
 ///     --dart-define=API_BASE_URL=http://127.0.0.1:8911/EXAMVERSE/api
+/// Test-account credentials come from --dart-define so no password is
+/// committed. Supply them when running:
+///   flutter test integration_test/app_ui_test.dart -d linux \
+///     --dart-define=API_BASE_URL=http://127.0.0.1:8911/EXAMVERSE/api \
+///     --dart-define=TEST_STUDENT_EMAIL=... --dart-define=TEST_STUDENT_PASSWORD=... \
+///     --dart-define=TEST_TEACHER_EMAIL=... --dart-define=TEST_TEACHER_PASSWORD=...
+const studentEmail = String.fromEnvironment('TEST_STUDENT_EMAIL',
+    defaultValue: 'student1@examverse.com');
+const studentPassword = String.fromEnvironment('TEST_STUDENT_PASSWORD');
+const teacherEmail = String.fromEnvironment('TEST_TEACHER_EMAIL',
+    defaultValue: 'ramesh.teacher@examverse.com');
+const teacherPassword = String.fromEnvironment('TEST_TEACHER_PASSWORD');
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() {
+    if (studentPassword.isEmpty || teacherPassword.isEmpty) {
+      fail('Pass TEST_STUDENT_PASSWORD and TEST_TEACHER_PASSWORD via --dart-define.');
+    }
+  });
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -67,13 +88,13 @@ void main() {
 
   group('STUDENT', () {
     testWidgets('logs in and lands on the home dashboard', (tester) async {
-      await login(tester, 'student1@examverse.com', 'NewStudentPass9');
+      await login(tester, studentEmail, studentPassword);
       expect(await waitFor(tester, find.text('Practice')), isTrue,
           reason: 'home quick actions should render after login');
     });
 
     testWidgets('Practice button opens the mock builder', (tester) async {
-      await login(tester, 'student1@examverse.com', 'NewStudentPass9');
+      await login(tester, studentEmail, studentPassword);
       expect(await waitFor(tester, find.text('Practice')), isTrue);
 
       await scrollAndTap(tester, find.text('Practice'));
@@ -84,7 +105,7 @@ void main() {
     });
 
     testWidgets('builder: selecting a subject and starting produces a test', (tester) async {
-      await login(tester, 'student1@examverse.com', 'NewStudentPass9');
+      await login(tester, studentEmail, studentPassword);
       expect(await waitFor(tester, find.text('Practice')), isTrue);
       await scrollAndTap(tester, find.text('Practice'));
       expect(await waitFor(tester, find.byKey(const Key('practice_form'))), isTrue);
@@ -119,7 +140,7 @@ void main() {
     });
 
     testWidgets('difficulty chips are all selectable', (tester) async {
-      await login(tester, 'student1@examverse.com', 'NewStudentPass9');
+      await login(tester, studentEmail, studentPassword);
       expect(await waitFor(tester, find.text('Practice')), isTrue);
       await scrollAndTap(tester, find.text('Practice'));
       expect(await waitFor(tester, find.byKey(const Key('practice_form'))), isTrue);
@@ -132,14 +153,14 @@ void main() {
 
   group('TEACHER', () {
     testWidgets('logs in and sees the teacher panel, not the student shell', (tester) async {
-      await login(tester, 'ramesh.teacher@examverse.com', 'TeacherPass#1');
+      await login(tester, teacherEmail, teacherPassword);
       expect(await waitFor(tester, find.byType(TeacherDashboardView)), isTrue,
           reason: 'a teacher must land on the teacher panel');
       expect(await waitFor(tester, find.text('Teacher Panel')), isTrue);
     });
 
     testWidgets('New Question opens the authoring form with a department picker', (tester) async {
-      await login(tester, 'ramesh.teacher@examverse.com', 'TeacherPass#1');
+      await login(tester, teacherEmail, teacherPassword);
       expect(await waitFor(tester, find.text('New Question')), isTrue);
 
       await tester.tap(find.text('New Question'));
@@ -152,7 +173,7 @@ void main() {
     });
 
     testWidgets('submitting an empty form surfaces validation, not a crash', (tester) async {
-      await login(tester, 'ramesh.teacher@examverse.com', 'TeacherPass#1');
+      await login(tester, teacherEmail, teacherPassword);
       expect(await waitFor(tester, find.text('New Question')), isTrue);
       await tester.tap(find.text('New Question'));
       await tester.pump();
@@ -166,7 +187,7 @@ void main() {
     });
 
     testWidgets('My Submissions opens and filters', (tester) async {
-      await login(tester, 'ramesh.teacher@examverse.com', 'TeacherPass#1');
+      await login(tester, teacherEmail, teacherPassword);
       expect(await waitFor(tester, find.text('My Submissions')), isTrue);
 
       await scrollAndTap(tester, find.text('My Submissions'));
@@ -185,9 +206,90 @@ void main() {
     });
   });
 
+  /// Fails when any visible Text on the current screen is unreadable against
+  /// the background actually painted behind it.
+  Future<void> expectReadable(WidgetTester tester, String screen) async {
+    final failures = await auditContrast(tester, screen);
+    expect(failures, isEmpty, reason: 'unreadable text on $screen:\n${failures.join('\n')}');
+  }
+
+  group('READABILITY (light theme, real data)', () {
+    testWidgets('login screen', (tester) async {
+      await tester.pumpWidget(const ExamVerseApp(initiallyAuthenticated: false));
+      expect(await waitFor(tester, find.byType(TextField)), isTrue);
+      await expectReadable(tester, 'login');
+    });
+
+    testWidgets('student home', (tester) async {
+      await login(tester, studentEmail, studentPassword);
+      expect(await waitFor(tester, find.text('Practice')), isTrue);
+      await expectReadable(tester, 'student home');
+    });
+
+    testWidgets('practice builder', (tester) async {
+      await login(tester, studentEmail, studentPassword);
+      expect(await waitFor(tester, find.text('Practice')), isTrue);
+      await scrollAndTap(tester, find.text('Practice'));
+      expect(await waitFor(tester, find.byKey(const Key('practice_form'))), isTrue);
+      await expectReadable(tester, 'practice builder');
+    });
+
+    testWidgets('teacher panel', (tester) async {
+      await login(tester, teacherEmail, teacherPassword);
+      expect(await waitFor(tester, find.byType(TeacherDashboardView)), isTrue);
+      await expectReadable(tester, 'teacher panel');
+    });
+
+    testWidgets('teacher authoring form', (tester) async {
+      await login(tester, teacherEmail, teacherPassword);
+      expect(await waitFor(tester, find.text('New Question')), isTrue);
+      await tester.tap(find.text('New Question'));
+      await tester.pump();
+      expect(await waitFor(tester, find.byType(SubmitQuestionView)), isTrue);
+      await expectReadable(tester, 'teacher authoring');
+    });
+
+    testWidgets('my submissions', (tester) async {
+      await login(tester, teacherEmail, teacherPassword);
+      expect(await waitFor(tester, find.text('My Submissions')), isTrue);
+      await scrollAndTap(tester, find.text('My Submissions'));
+      expect(await waitFor(tester, find.text('In review')), isTrue);
+      await expectReadable(tester, 'my submissions');
+    });
+  });
+
+  group('READABILITY: deeper screens', () {
+    /// Opens a home quick action and audits whatever it pushes.
+    Future<void> auditQuickAction(WidgetTester tester, String label, String screen) async {
+      await login(tester, studentEmail, studentPassword);
+      expect(await waitFor(tester, find.text('Practice')), isTrue);
+      await scrollAndTap(tester, find.text(label));
+      await tester.pump(const Duration(seconds: 3));
+      await expectReadable(tester, screen);
+    }
+
+    testWidgets('map learning', (t) => auditQuickAction(t, 'Map Learn', 'map learning'));
+    testWidgets('friends rank', (t) => auditQuickAction(t, 'Friends Rank', 'friends rank'));
+    testWidgets('mistake notebook', (t) => auditQuickAction(t, 'Mistakes', 'mistake notebook'));
+    testWidgets('current affairs', (t) => auditQuickAction(t, 'Affairs', 'current affairs'));
+
+    testWidgets('bottom tabs: marketplace, coach, leaderboard, profile', (tester) async {
+      await login(tester, studentEmail, studentPassword);
+      expect(await waitFor(tester, find.text('Practice')), isTrue);
+
+      for (final tab in ['Market', 'AI Twin', 'Ranks', 'Passport']) {
+        final target = find.text(tab);
+        if (target.evaluate().isEmpty) continue;
+        await tester.tap(target.first);
+        await tester.pump(const Duration(seconds: 3));
+        await expectReadable(tester, 'tab: $tab');
+      }
+    });
+  });
+
   group('SESSION', () {
     testWidgets('a wrong password is reported and does not sign the user in', (tester) async {
-      await login(tester, 'student1@examverse.com', 'definitely-wrong');
+      await login(tester, studentEmail, 'definitely-wrong');
       await tester.pump(const Duration(seconds: 3));
       expect(find.byType(TextField), findsWidgets,
           reason: 'a failed login must stay on the login screen');

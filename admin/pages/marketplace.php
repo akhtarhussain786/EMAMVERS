@@ -174,7 +174,7 @@ $counts = $db->query("
 .stats-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; }
 .stat-card { padding:18px; border-radius:14px; text-align:center; }
 .stat-purple { background:linear-gradient(135deg,rgba(99,102,241,.2),rgba(168,85,247,.1)); border:1px solid rgba(99,102,241,.3); }
-.stat-green  { background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(16,185,129,.1)); border:1px solid rgba(34,197,94,.25); }
+.stat-green  { background:linear-gradient(135deg,rgba(21,128,61,.15),rgba(16,185,129,.1)); border:1px solid rgba(21,128,61,.25); }
 .stat-blue   { background:linear-gradient(135deg,rgba(59,130,246,.15),rgba(99,102,241,.1)); border:1px solid rgba(59,130,246,.25); }
 .stat-orange { background:linear-gradient(135deg,rgba(249,115,22,.15),rgba(251,191,36,.1)); border:1px solid rgba(249,115,22,.25); }
 .stat-red    { background:linear-gradient(135deg,rgba(239,68,68,.15),rgba(239,68,68,.05)); border:1px solid rgba(239,68,68,.2); }
@@ -182,7 +182,7 @@ $counts = $db->query("
 .stat-lbl { font-size:11px; color:rgba(255,255,255,.5); text-transform:uppercase; letter-spacing:.5px; }
 .filter-tabs { display:flex; gap:8px; flex-wrap:wrap; }
 .filter-tab { padding:7px 16px; border-radius:8px; font-size:13px; font-weight:600; color:rgba(255,255,255,.5); text-decoration:none; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.07); transition:all .2s; }
-.filter-tab.active,.filter-tab:hover { background:rgba(99,102,241,.2); color:#818cf8; border-color:rgba(99,102,241,.4); }
+.filter-tab.active,.filter-tab:hover { background:rgba(99,102,241,.2); color:var(--accent-blue); border-color:rgba(99,102,241,.4); }
 .table-card { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07); border-radius:14px; overflow:hidden; }
 .table-wrap { overflow-x:auto; }
 .admin-table { width:100%; border-collapse:collapse; font-size:13px; }
@@ -196,19 +196,19 @@ $counts = $db->query("
 .price-tag { font-weight:700; color:#4ade80; font-size:14px; }
 .actions-cell { display:flex; gap:6px; align-items:center; }
 .badge { padding:3px 8px; border-radius:5px; font-size:11px; font-weight:600; }
-.badge-success { background:rgba(34,197,94,.15); color:#4ade80; }
+.badge-success { background:rgba(21,128,61,.15); color:#4ade80; }
 .badge-warning { background:rgba(251,191,36,.15); color:#fbbf24; }
 .badge-danger  { background:rgba(239,68,68,.12); color:#f87171; }
 .badge-neutral { background:rgba(255,255,255,.08); color:rgba(255,255,255,.5); }
 .btn-xs { padding:5px 12px; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer; border:none; }
-.btn-activate { background:rgba(34,197,94,.15); color:#4ade80; }
-.btn-activate:hover { background:rgba(34,197,94,.25); }
+.btn-activate { background:rgba(21,128,61,.15); color:#4ade80; }
+.btn-activate:hover { background:rgba(21,128,61,.25); }
 .btn-danger-xs { background:rgba(239,68,68,.1); color:#f87171; }
 .btn-danger-xs:hover { background:rgba(239,68,68,.2); }
 .empty-state { padding:40px; text-align:center; color:rgba(255,255,255,.3); font-size:14px; }
 /* Modal */
 .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:1000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
-.modal-box { background:#1e1e2e; border:1px solid rgba(255,255,255,.1); border-radius:16px; padding:28px; width:400px; max-width:90vw; }
+.modal-box { background:var(--bg-card); border:1px solid rgba(255,255,255,.1); border-radius:16px; padding:28px; width:400px; max-width:90vw; }
 .modal-title { font-size:18px; font-weight:700; margin:0 0 18px; }
 .modal-label { display:block; font-size:12px; font-weight:600; color:rgba(255,255,255,.5); margin-bottom:6px; text-transform:uppercase; }
 .modal-textarea { width:100%; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-radius:8px; padding:10px 12px; color:white; font-size:13px; height:90px; resize:vertical; box-sizing:border-box; }
@@ -263,7 +263,7 @@ function showToast(msg, type = 'success') {
     t.textContent = msg;
     Object.assign(t.style, {
         position:'fixed', bottom:'28px', right:'28px', zIndex:'9999',
-        background: type==='success' ? 'rgba(34,197,94,0.95)' : 'rgba(239,68,68,0.95)',
+        background: type==='success' ? 'rgba(21,128,61,0.95)' : 'rgba(239,68,68,0.95)',
         color:'white', padding:'14px 22px', borderRadius:'12px',
         fontWeight:'600', fontSize:'14px', maxWidth:'380px',
         boxShadow:'0 8px 32px rgba(0,0,0,0.4)'

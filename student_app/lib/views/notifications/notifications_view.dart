@@ -64,7 +64,7 @@ class _NotificationsViewState extends State<NotificationsView> {
       backgroundColor: AppConstants.primaryDark,
       appBar: AppBar(
         backgroundColor: AppConstants.scaffoldDark,
-        title: const Text('Notifications & Alerts', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        title: const Text('Notifications & Alerts', style: TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
         elevation: 0,
       ),
       body: SafeArea(
@@ -113,7 +113,7 @@ class _NotificationsViewState extends State<NotificationsView> {
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Expanded(
-                                        child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                                        child: Text(title, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
                                       ),
                                       Text(time, style: const TextStyle(color: AppConstants.textMuted, fontSize: 11)),
                                     ],

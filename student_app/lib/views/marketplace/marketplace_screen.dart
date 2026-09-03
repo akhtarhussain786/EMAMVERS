@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../core/api_service.dart';
@@ -88,21 +89,21 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F1A),
+      backgroundColor: AppConstants.primaryDark,
       body: NestedScrollView(
         headerSliverBuilder: (ctx, inner) => [
           SliverAppBar(
             expandedHeight: 160,
             floating: false,
             pinned: true,
-            backgroundColor: const Color(0xFF0F0F1A),
+            backgroundColor: AppConstants.primaryDark,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [Color(0xFF1a0533), Color(0xFF0F0F1A)],
+                    colors: [Color(0xFF1a0533), AppConstants.primaryDark],
                   ),
                 ),
                 padding: const EdgeInsets.fromLTRB(20, 60, 20, 0),
@@ -113,12 +114,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
                         style: GoogleFonts.inter(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white)),
+                            color: AppConstants.onAccent)),
                     const SizedBox(height: 4),
                     Text('Quality notes & materials from top creators',
                         style: GoogleFonts.inter(
                             fontSize: 13,
-                            color: Colors.white54)),
+                            color: AppConstants.onAccent)),
                   ],
                 ),
               ),
@@ -126,12 +127,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
                   style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white)),
+                      color: AppConstants.textPrimary)),
               centerTitle: false,
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.filter_list, color: Colors.white70),
+                icon: const Icon(Icons.filter_list, color: AppConstants.textSecondary),
                 onPressed: _showFilterSheet,
               ),
             ],
@@ -144,14 +145,14 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                     child: TextField(
                       controller: _searchCtrl,
-                      style: GoogleFonts.inter(color: Colors.white),
+                      style: GoogleFonts.inter(color: AppConstants.textPrimary),
                       decoration: InputDecoration(
                         hintText: 'Search notes, PDFs, materials...',
-                        hintStyle: GoogleFonts.inter(color: Colors.white38, fontSize: 13),
-                        prefixIcon: const Icon(Icons.search, color: Colors.white38, size: 20),
+                        hintStyle: GoogleFonts.inter(color: AppConstants.textMuted, fontSize: 13),
+                        prefixIcon: const Icon(Icons.search, color: AppConstants.textMuted, size: 20),
                         suffixIcon: _searchQuery.isNotEmpty
                             ? IconButton(
-                                icon: const Icon(Icons.close, color: Colors.white38, size: 18),
+                                icon: const Icon(Icons.close, color: AppConstants.textMuted, size: 18),
                                 onPressed: () {
                                   _searchCtrl.clear();
                                   setState(() => _searchQuery = '');
@@ -159,7 +160,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
                                 })
                             : null,
                         filled: true,
-                        fillColor: Colors.white.withValues(alpha: 0.07),
+                        fillColor: AppConstants.textPrimary.withValues(alpha: 0.07),
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none),
@@ -175,10 +176,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
                   TabBar(
                     controller: _tabCtrl,
                     isScrollable: true,
-                    indicatorColor: const Color(0xFF818cf8),
+                    indicatorColor: AppConstants.accentYellow,
                     indicatorWeight: 2,
-                    labelColor: const Color(0xFF818cf8),
-                    unselectedLabelColor: Colors.white38,
+                    labelColor: AppConstants.accentYellow,
+                    unselectedLabelColor: AppConstants.textMuted,
                     labelStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
                     tabs: _categories.map((c) => Tab(text: c['label'])).toList(),
                   ),
@@ -193,7 +194,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
                 ? (_errorMsg.isNotEmpty ? _buildLoadError() : _buildEmpty())
                 : RefreshIndicator(
                     onRefresh: _loadMaterials,
-                    color: const Color(0xFF818cf8),
+                    color: AppConstants.accentYellow,
                     child: GridView.builder(
                       padding: const EdgeInsets.all(16),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -218,7 +219,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.pushNamed(context, '/become-creator'),
-        backgroundColor: const Color(0xFF6366f1),
+        backgroundColor: AppConstants.accentYellow,
         icon: const Icon(Icons.star, size: 18),
         label: Text('Become Creator', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
       ),
@@ -227,7 +228,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
 
   Widget _buildShimmer() {
     return Shimmer.fromColors(
-      baseColor: const Color(0xFF1e1e2e),
+      baseColor: AppConstants.cardDark,
       highlightColor: const Color(0xFF2a2a3e),
       child: GridView.builder(
         padding: const EdgeInsets.all(16),
@@ -235,7 +236,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
             crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.72),
         itemCount: 8,
         itemBuilder: (_, _) => Container(
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14))),
+            decoration: BoxDecoration(color: AppConstants.textPrimary, borderRadius: BorderRadius.circular(14))),
       ),
     );
   }
@@ -248,14 +249,14 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off, size: 48, color: Colors.white38),
+            const Icon(Icons.cloud_off, size: 48, color: AppConstants.textMuted),
             const SizedBox(height: 16),
             const Text('Could not load the marketplace',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                style: TextStyle(color: AppConstants.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text(_errorMsg,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white54, fontSize: 13)),
+                style: const TextStyle(color: AppConstants.textMuted, fontSize: 13)),
             const SizedBox(height: 20),
             OutlinedButton.icon(
               onPressed: _loadMaterials,
@@ -271,13 +272,13 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
   Widget _buildEmpty() {
     return Center(
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        const Icon(Icons.store_outlined, size: 64, color: Colors.white24),
+        const Icon(Icons.store_outlined, size: 64, color: AppConstants.cardBorder),
         const SizedBox(height: 16),
         Text('No materials found',
-            style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white60)),
+            style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppConstants.textSecondary)),
         const SizedBox(height: 8),
         Text('Be the first to upload study materials!',
-            style: GoogleFonts.inter(fontSize: 13, color: Colors.white38)),
+            style: GoogleFonts.inter(fontSize: 13, color: AppConstants.textMuted)),
       ]),
     );
   }
@@ -285,39 +286,39 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
   void _showFilterSheet() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1e1e2e),
+      backgroundColor: AppConstants.cardDark,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) => Padding(
           padding: const EdgeInsets.all(24),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Filter & Sort', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+            Text('Filter & Sort', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppConstants.textPrimary)),
             const SizedBox(height: 20),
-            Text('Sort By', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white54)),
+            Text('Sort By', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppConstants.textMuted)),
             const SizedBox(height: 8),
             Wrap(spacing: 8, children: [
               for (var s in [['newest','Newest'], ['popular','Popular'], ['price_asc','Price ↑'], ['price_desc','Price ↓'], ['rating','Rating']])
                 ChoiceChip(
                   label: Text(s[1]),
                   selected: _sort == s[0],
-                  selectedColor: const Color(0xFF6366f1),
-                  labelStyle: GoogleFonts.inter(color: _sort == s[0] ? Colors.white : Colors.white60, fontSize: 12),
-                  backgroundColor: Colors.white10,
+                  selectedColor: AppConstants.accentYellow,
+                  labelStyle: GoogleFonts.inter(color: _sort == s[0] ? AppConstants.textPrimary : AppConstants.textSecondary, fontSize: 12),
+                  backgroundColor: AppConstants.cardBorder,
                   onSelected: (_) => setS(() => _sort = s[0]),
                 )
             ]),
             const SizedBox(height: 16),
             Row(children: [
-              Switch(value: _freeOnly, onChanged: (v) => setS(() => _freeOnly = v), activeThumbColor: const Color(0xFF818cf8)),
+              Switch(value: _freeOnly, onChanged: (v) => setS(() => _freeOnly = v), activeThumbColor: AppConstants.accentYellow),
               const SizedBox(width: 8),
-              Text('Free materials only', style: GoogleFonts.inter(color: Colors.white70)),
+              Text('Free materials only', style: GoogleFonts.inter(color: AppConstants.textSecondary)),
             ]),
             const SizedBox(height: 20),
             SizedBox(width: double.infinity,
               child: ElevatedButton(
                 onPressed: () { Navigator.pop(ctx); _loadMaterials(); },
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6366f1),
+                    backgroundColor: AppConstants.accentYellow,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                 child: Text('Apply Filters', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
@@ -350,9 +351,9 @@ class _MaterialCard extends StatelessWidget {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF1a1a2e), Color(0xFF16213e)],
+            colors: [AppConstants.cardDark, AppConstants.cardDark],
           ),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+          border: Border.all(color: AppConstants.textPrimary.withValues(alpha: 0.07)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,7 +369,7 @@ class _MaterialCard extends StatelessWidget {
               ),
               child: Stack(children: [
                 Center(child: Icon(_getIcon(material['subject_name'] ?? ''),
-                    size: 40, color: Colors.white.withValues(alpha: 0.3))),
+                    size: 40, color: AppConstants.onAccent.withValues(alpha: 0.3))),
                 Positioned(top: 8, right: 8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -376,7 +377,7 @@ class _MaterialCard extends StatelessWidget {
                           color: isFree ? Colors.green.shade700 : Colors.black54,
                           borderRadius: BorderRadius.circular(20)),
                       child: Text(isFree ? 'FREE' : '₹${price.toStringAsFixed(0)}',
-                          style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white)),
+                          style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w800, color: AppConstants.onAccent)),
                     )),
               ]),
             ),
@@ -386,23 +387,23 @@ class _MaterialCard extends StatelessWidget {
                 padding: const EdgeInsets.all(10),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(material['title'] ?? '',
-                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppConstants.onAccent),
                       maxLines: 2, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 4),
                   Text(material['creator_name'] ?? '',
-                      style: GoogleFonts.inter(fontSize: 10, color: Colors.white38),
+                      style: GoogleFonts.inter(fontSize: 10, color: AppConstants.textMuted),
                       maxLines: 1, overflow: TextOverflow.ellipsis),
                   const Spacer(),
                   Row(children: [
-                    const Icon(Icons.star, size: 11, color: Color(0xFFfbbf24)),
+                    const Icon(Icons.star, size: 11, color: AppConstants.accentAmber),
                     const SizedBox(width: 3),
                     Text(rating.toStringAsFixed(1),
-                        style: GoogleFonts.inter(fontSize: 10, color: Colors.white60)),
+                        style: GoogleFonts.inter(fontSize: 10, color: AppConstants.textSecondary)),
                     const Spacer(),
-                    Icon(Icons.download_outlined, size: 11, color: Colors.white38),
+                    Icon(Icons.download_outlined, size: 11, color: AppConstants.textMuted),
                     const SizedBox(width: 2),
                     Text('${material['total_downloads'] ?? 0}',
-                        style: GoogleFonts.inter(fontSize: 10, color: Colors.white38)),
+                        style: GoogleFonts.inter(fontSize: 10, color: AppConstants.textMuted)),
                   ]),
                 ]),
               ),
@@ -417,10 +418,10 @@ class _MaterialCard extends StatelessWidget {
     final s = subject.toLowerCase();
     if (s.contains('math') || s.contains('quant')) return [const Color(0xFF1d4ed8), const Color(0xFF3b82f6)];
     if (s.contains('gk') || s.contains('general')) return [const Color(0xFF065f46), const Color(0xFF059669)];
-    if (s.contains('english') || s.contains('reasoning')) return [const Color(0xFF7c2d12), const Color(0xFFea580c)];
+    if (s.contains('english') || s.contains('reasoning')) return [AppConstants.accentAmber, const Color(0xFFea580c)];
     if (s.contains('science') || s.contains('physics') || s.contains('chemistry')) return [const Color(0xFF4c1d95), const Color(0xFF7c3aed)];
     if (s.contains('history') || s.contains('polity')) return [const Color(0xFF7f1d1d), const Color(0xFFdc2626)];
-    return [const Color(0xFF1e1b4b), const Color(0xFF4338ca)];
+    return [AppConstants.surfaceElevated, AppConstants.accentYellowDeep];
   }
 
   IconData _getIcon(String subject) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/api_service.dart';
 
@@ -104,20 +105,20 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F1A),
+      backgroundColor: AppConstants.primaryDark,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F0F1A),
+        backgroundColor: AppConstants.primaryDark,
         title: Text(
           'AI Article Quiz',
-          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
+          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppConstants.textPrimary),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 18),
+          icon: const Icon(Icons.arrow_back_ios, color: AppConstants.textPrimary, size: 18),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white70),
+            icon: const Icon(Icons.refresh_rounded, color: AppConstants.textSecondary),
             tooltip: 'Regenerate Questions',
             onPressed: () => _loadOrGenerateQuiz(forceNew: true),
           ),
@@ -147,20 +148,20 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
               height: 56,
               child: CircularProgressIndicator(
                 strokeWidth: 3,
-                color: Color(0xFF818cf8),
+                color: AppConstants.accentYellow,
                 strokeCap: StrokeCap.round,
               ),
             ),
             const SizedBox(height: 28),
             Text(
               'Analyzing Article with AI...',
-              style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+              style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800, color: AppConstants.textPrimary),
             ),
             const SizedBox(height: 8),
             Text(
               'Formulating exam-standard questions from the facts in:\n"${widget.articleTitle}"',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 12, color: Colors.white54, height: 1.5),
+              style: GoogleFonts.inter(fontSize: 12, color: AppConstants.textMuted, height: 1.5),
             ),
           ],
         ),
@@ -179,18 +180,18 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
             const SizedBox(height: 16),
             Text(
               'Quiz Generation Failed',
-              style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+              style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800, color: AppConstants.textPrimary),
             ),
             const SizedBox(height: 8),
             Text(
               _errorMsg,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(color: Colors.white60, fontSize: 13),
+              style: GoogleFonts.inter(color: AppConstants.textSecondary, fontSize: 13),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () => _loadOrGenerateQuiz(forceNew: true),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366f1)),
+              style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentYellow),
               child: Text('Retry Generation', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
             ),
           ],
@@ -202,7 +203,7 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
   Widget _buildQuestionPlayer() {
     if (_questions.isEmpty) {
       return Center(
-        child: Text('No questions found for this article.', style: GoogleFonts.inter(color: Colors.white54)),
+        child: Text('No questions found for this article.', style: GoogleFonts.inter(color: AppConstants.textMuted)),
       );
     }
 
@@ -222,23 +223,23 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF6366f1).withValues(alpha: 0.2),
+                  color: AppConstants.accentYellow.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   'Question ${_currentIndex + 1} of ${_questions.length}',
-                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF818cf8)),
+                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppConstants.accentYellow),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.06),
+                  color: AppConstants.textPrimary.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   'Score: $_score / ${_questions.length}',
-                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white70),
+                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppConstants.textSecondary),
                 ),
               ),
             ],
@@ -250,8 +251,8 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: progress,
-              backgroundColor: Colors.white.withValues(alpha: 0.08),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF6366f1)),
+              backgroundColor: AppConstants.textPrimary.withValues(alpha: 0.08),
+              valueColor: const AlwaysStoppedAnimation<Color>(AppConstants.accentYellow),
               minHeight: 6,
             ),
           ),
@@ -262,19 +263,19 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF1a1a2e), Color(0xFF16213e)],
+                colors: [AppConstants.cardDark, AppConstants.cardDark],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              border: Border.all(color: AppConstants.textPrimary.withValues(alpha: 0.08)),
             ),
             child: Text(
               q['question_text'] ?? '',
               style: GoogleFonts.inter(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: AppConstants.textPrimary,
                 height: 1.5,
               ),
             ),
@@ -327,7 +328,7 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
                   const SizedBox(height: 8),
                   Text(
                     q['explanation'] ?? 'No explanation available.',
-                    style: GoogleFonts.inter(fontSize: 12, color: Colors.white70, height: 1.5),
+                    style: GoogleFonts.inter(fontSize: 12, color: AppConstants.textSecondary, height: 1.5),
                   ),
                 ],
               ),
@@ -341,7 +342,7 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
               child: ElevatedButton(
                 onPressed: _nextQuestion,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6366f1),
+                  backgroundColor: AppConstants.accentYellow,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
                 child: Text(
@@ -362,9 +363,9 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
     required String optionText,
     required String correctKey,
   }) {
-    Color borderColor = Colors.white.withValues(alpha: 0.08);
-    Color bgColor = Colors.white.withValues(alpha: 0.03);
-    Color textColor = Colors.white70;
+    Color borderColor = AppConstants.textPrimary.withValues(alpha: 0.08);
+    Color bgColor = AppConstants.textPrimary.withValues(alpha: 0.03);
+    Color textColor = AppConstants.textSecondary;
 
     if (_hasAnswered) {
       if (optionKey == correctKey) {
@@ -395,7 +396,7 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
               height: 32,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.06),
+                color: AppConstants.textPrimary.withValues(alpha: 0.06),
               ),
               child: Center(
                 child: Text(
@@ -415,7 +416,7 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
                 style: GoogleFonts.inter(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: AppConstants.textPrimary,
                   height: 1.4,
                 ),
               ),
@@ -441,9 +442,9 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
               height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: (passed ? Colors.green : const Color(0xFF6366f1)).withValues(alpha: 0.15),
+                color: (passed ? Colors.green : AppConstants.accentYellow).withValues(alpha: 0.15),
                 border: Border.all(
-                  color: passed ? Colors.greenAccent : const Color(0xFF818cf8),
+                  color: passed ? Colors.greenAccent : AppConstants.accentYellow,
                   width: 2.5,
                 ),
               ),
@@ -453,7 +454,7 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
                   style: GoogleFonts.inter(
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
-                    color: passed ? Colors.greenAccent : Colors.white,
+                    color: passed ? Colors.greenAccent : AppConstants.textPrimary,
                   ),
                 ),
               ),
@@ -462,12 +463,12 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
 
             Text(
               passed ? 'Outstanding Recall!' : 'Good Effort!',
-              style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white),
+              style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w800, color: AppConstants.textPrimary),
             ),
             const SizedBox(height: 6),
             Text(
               'You answered $_score out of ${_questions.length} questions correctly.',
-              style: GoogleFonts.inter(fontSize: 13, color: Colors.white60),
+              style: GoogleFonts.inter(fontSize: 13, color: AppConstants.textSecondary),
             ),
             const SizedBox(height: 24),
 
@@ -475,23 +476,23 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.04),
+                color: AppConstants.textPrimary.withValues(alpha: 0.04),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                border: Border.all(color: AppConstants.textPrimary.withValues(alpha: 0.06)),
               ),
               child: Column(
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Article Reviewed', style: GoogleFonts.inter(fontSize: 12, color: Colors.white54)),
-                      Text('Current Affairs', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF818cf8))),
+                      Text('Article Reviewed', style: GoogleFonts.inter(fontSize: 12, color: AppConstants.textMuted)),
+                      Text('Current Affairs', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppConstants.accentYellow)),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Text(
                     widget.articleTitle,
-                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white),
+                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppConstants.textPrimary),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -506,11 +507,11 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () => _loadOrGenerateQuiz(forceNew: true),
-                    icon: const Icon(Icons.refresh_rounded, size: 16, color: Colors.white70),
-                    label: Text('New Quiz', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+                    icon: const Icon(Icons.refresh_rounded, size: 16, color: AppConstants.textSecondary),
+                    label: Text('New Quiz', style: GoogleFonts.inter(color: AppConstants.textPrimary, fontWeight: FontWeight.w600)),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                      side: BorderSide(color: AppConstants.textPrimary.withValues(alpha: 0.2)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
@@ -520,7 +521,7 @@ class _ArticleQuizViewState extends State<ArticleQuizView> {
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6366f1),
+                      backgroundColor: AppConstants.accentYellow,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),

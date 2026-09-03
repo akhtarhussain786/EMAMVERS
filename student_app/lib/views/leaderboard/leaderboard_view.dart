@@ -65,7 +65,7 @@ class _LeaderboardViewState extends State<LeaderboardView> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: const [
-                      Text('National Leaderboard', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+                      Text('National Leaderboard', style: TextStyle(color: AppConstants.textPrimary, fontSize: 20, fontWeight: FontWeight.w800)),
                       SizedBox(height: 2),
                       Text('Verified All-India Central AIR & State Ranks', style: TextStyle(color: AppConstants.textSecondary, fontSize: 12)),
                     ],
@@ -109,7 +109,7 @@ class _LeaderboardViewState extends State<LeaderboardView> {
                           child: Center(
                             child: Text(
                               tab[0].toUpperCase() + tab.substring(1),
-                              style: TextStyle(color: isSelected ? Colors.white : AppConstants.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
+                              style: TextStyle(color: isSelected ? AppConstants.textPrimary : AppConstants.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
@@ -129,22 +129,22 @@ class _LeaderboardViewState extends State<LeaderboardView> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('YOUR CURRENT RANK', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                        const Text('YOUR CURRENT RANK', style: TextStyle(color: AppConstants.onAccent, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
                         const SizedBox(height: 2),
-                        Text('#${userRanking.currentRank}', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+                        Text('#${userRanking.currentRank}', style: const TextStyle(color: AppConstants.onAccent, fontSize: 22, fontWeight: FontWeight.w800)),
                       ],
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
-                      child: Text('↑ ${userRanking.rankImprovement} Positions', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                      decoration: BoxDecoration(color: AppConstants.onAccent.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
+                      child: Text('↑ ${userRanking.rankImprovement} Positions', style: const TextStyle(color: AppConstants.onAccent, fontSize: 11, fontWeight: FontWeight.bold)),
                     ),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        const Text('ACCURACY', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                        const Text('ACCURACY', style: TextStyle(color: AppConstants.onAccent, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
                         const SizedBox(height: 2),
-                        Text('${userRanking.accuracy}%', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+                        Text('${userRanking.accuracy}%', style: const TextStyle(color: AppConstants.onAccent, fontSize: 22, fontWeight: FontWeight.w800)),
                       ],
                     ),
                   ],
@@ -198,14 +198,14 @@ class _LeaderboardViewState extends State<LeaderboardView> {
                                 CircleAvatar(
                                   radius: 16,
                                   backgroundColor: AppConstants.primaryDark,
-                                  child: Text((item['full_name'] ?? 'C')[0].toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                  child: Text((item['full_name'] ?? 'C')[0].toUpperCase(), style: const TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 12)),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(item['full_name'] ?? 'Candidate', style: TextStyle(color: isUser ? AppConstants.accentCyan : Colors.white, fontWeight: FontWeight.bold, fontSize: 13.5)),
+                                      Text(item['full_name'] ?? 'Candidate', style: TextStyle(color: isUser ? AppConstants.accentCyan : AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 13.5)),
                                       const SizedBox(height: 2),
                                       Text('${item['state_name'] ?? 'India'} • ${item['accuracy']}% Acc', style: const TextStyle(color: AppConstants.textMuted, fontSize: 11)),
                                     ],

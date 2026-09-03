@@ -6,7 +6,7 @@
 ?>
 <style>
   .bank-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:1rem; margin-bottom:1.5rem; }
-  .bstat { background:var(--bg-card,#151F32); border:1px solid rgba(148,163,184,.15);
+  .bstat { background:var(--bg-card); border:1px solid rgba(148,163,184,.15);
            border-radius:var(--radius-md,12px); padding:1.1rem; }
   .bstat .n { font-size:1.75rem; font-weight:800; color:#fff; line-height:1; }
   .bstat .l { font-size:.75rem; color:var(--text-muted); margin-top:.4rem; }
@@ -18,8 +18,8 @@
   .meter span { display:block; height:100%; border-radius:99px; }
   .ok   { background:#22C55E; } .warn { background:#F59E0B; } .low { background:#EF4444; }
   .dpill { padding:.1rem .5rem; border-radius:99px; font-size:.7rem; font-weight:700; }
-  .d-easy{background:rgba(34,197,94,.15);color:#86efac;} .d-medium{background:rgba(245,158,11,.15);color:#fcd34d;}
-  .d-hard{background:rgba(239,68,68,.15);color:#fca5a5;}
+  .d-easy{background:rgba(21,128,61,.15);color:#86efac;} .d-medium{background:rgba(245,158,11,.15);color:#fcd34d;}
+  .d-hard{background:rgba(239,68,68,.15);color:var(--accent-danger);}
   .runs td { font-size:.78rem; }
 </style>
 
@@ -163,7 +163,7 @@ function renderRuns(runs) {
   document.getElementById('runsTable').innerHTML = runs.length
     ? `<thead><tr><th>When</th><th>Department</th><th>Subject</th><th>Diff</th><th>Generated</th><th>Dupes</th><th>Inserted</th><th>Status</th></tr></thead><tbody>` +
       runs.map(x => {
-        const colour = x.status === 'completed' ? '#86efac' : x.status === 'error' ? '#fca5a5' : '#fcd34d';
+        const colour = x.status === 'completed' ? '#86efac' : x.status === 'error' ? 'var(--accent-danger)' : '#fcd34d';
         return `<tr>
           <td>${esc((x.started_at||'').slice(0,16))}</td>
           <td>${esc(x.exam_title||'—')}</td><td>${esc(x.subject_name||'—')}</td>

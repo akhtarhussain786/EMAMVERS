@@ -32,12 +32,14 @@ class _MapLearningHomeViewState extends State<MapLearningHomeView> {
       final resCats = await ApiService.get('/v1/map/categories');
       final resLocs = await ApiService.get('/v1/map/locations');
 
+      if (!mounted) return;
       setState(() {
         categories = (resCats['categories'] as List? ?? []).map((c) => MapCategory.fromJson(c)).toList();
         locations = (resLocs['locations'] as List? ?? []).map((l) => MapLocation.fromJson(l)).toList();
         isLoading = false;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() => isLoading = false);
     }
   }
@@ -50,11 +52,13 @@ class _MapLearningHomeViewState extends State<MapLearningHomeView> {
         query += '&category=$selectedCatSlug';
       }
       final resLocs = await ApiService.get(query);
+      if (!mounted) return;
       setState(() {
         locations = (resLocs['locations'] as List? ?? []).map((l) => MapLocation.fromJson(l)).toList();
         isLoading = false;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() => isLoading = false);
     }
   }
@@ -65,7 +69,7 @@ class _MapLearningHomeViewState extends State<MapLearningHomeView> {
       backgroundColor: AppConstants.primaryDark,
       appBar: AppBar(
         backgroundColor: AppConstants.scaffoldDark,
-        title: const Text('ExamVerse Map Learning', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        title: const Text('ExamVerse Map Learning', style: TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
         elevation: 0,
         actions: [
           IconButton(
@@ -89,23 +93,23 @@ class _MapLearningHomeViewState extends State<MapLearningHomeView> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('VISUAL MAP LEARNING', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+                        const Text('VISUAL MAP LEARNING', style: TextStyle(color: AppConstants.onAccent, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.25), borderRadius: BorderRadius.circular(10)),
-                          child: const Text('EXPLORE INDIA', style: TextStyle(color: AppConstants.accentCyan, fontSize: 11, fontWeight: FontWeight.bold)),
+                          child: const Text('EXPLORE INDIA', style: TextStyle(color: AppConstants.onAccent, fontSize: 11, fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
                     const SizedBox(height: AppConstants.space12),
                     const Text(
                       'Learn National Parks, Rivers, Dams & Monuments Visually',
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+                      style: TextStyle(color: AppConstants.onAccent, fontSize: 18, fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 6),
                     const Text(
                       'High-frequency Geography & General Awareness PYQs mapped spatially for long-term retention.',
-                      style: TextStyle(color: Colors.white70, fontSize: 12.5),
+                      style: TextStyle(color: AppConstants.onAccent, fontSize: 12.5),
                     ),
                     const SizedBox(height: AppConstants.space16),
                     Row(
@@ -119,6 +123,7 @@ class _MapLearningHomeViewState extends State<MapLearningHomeView> {
                         const SizedBox(width: 10),
                         SecondaryButton(
                           label: 'Map Quiz',
+                          color: AppConstants.onAccent,
                           icon: Icons.sports_esports,
                           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MapQuizView())),
                         ),
@@ -133,7 +138,7 @@ class _MapLearningHomeViewState extends State<MapLearningHomeView> {
               TextField(
                 controller: searchController,
                 onSubmitted: (_) => _filterLocations(),
-                style: const TextStyle(color: Colors.white, fontSize: 14),
+                style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14),
                 decoration: InputDecoration(
                   hintText: 'Search Kaziranga, Narmada, Tehri Dam, Nalanda...',
                   hintStyle: const TextStyle(color: AppConstants.textMuted, fontSize: 13),
@@ -203,7 +208,7 @@ class _MapLearningHomeViewState extends State<MapLearningHomeView> {
                                           ],
                                         ),
                                         const SizedBox(height: 2),
-                                        Text(loc.name, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                                        Text(loc.name, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 15, fontWeight: FontWeight.bold)),
                                         const SizedBox(height: 2),
                                         Text(loc.shortDescription, style: const TextStyle(color: AppConstants.textSecondary, fontSize: 11.5), maxLines: 1, overflow: TextOverflow.ellipsis),
                                       ],
@@ -243,7 +248,7 @@ class _MapLearningHomeViewState extends State<MapLearningHomeView> {
         ),
         child: Text(
           label,
-          style: TextStyle(color: isSelected ? Colors.black : Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+          style: TextStyle(color: isSelected ? Colors.black : AppConstants.textPrimary, fontSize: 12, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -269,18 +274,18 @@ class _MapLearningHomeViewState extends State<MapLearningHomeView> {
                   decoration: BoxDecoration(color: AppConstants.accentCyan.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
                   child: Text(loc.categoryName, style: const TextStyle(color: AppConstants.accentCyan, fontSize: 11, fontWeight: FontWeight.bold)),
                 ),
-                IconButton(icon: const Icon(Icons.close, color: Colors.white70), onPressed: () => Navigator.pop(ctx)),
+                IconButton(icon: const Icon(Icons.close, color: AppConstants.textPrimary), onPressed: () => Navigator.pop(ctx)),
               ],
             ),
             const SizedBox(height: 8),
-            Text(loc.name, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+            Text(loc.name, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 22, fontWeight: FontWeight.w800)),
             Text('${loc.state.isNotEmpty ? '${loc.state}, ' : ''}${loc.country}', style: const TextStyle(color: AppConstants.textSecondary, fontSize: 13)),
             const SizedBox(height: AppConstants.space16),
 
-            Text(loc.shortDescription, style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4)),
+            Text(loc.shortDescription, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14, height: 1.4)),
             const SizedBox(height: AppConstants.space16),
 
-            const Text('Exam Key Facts:', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+            const Text('Exam Key Facts:', style: TextStyle(color: AppConstants.textPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
             ...loc.facts.map((f) => Padding(
               padding: const EdgeInsets.only(bottom: 4),

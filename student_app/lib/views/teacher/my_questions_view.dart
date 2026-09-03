@@ -62,7 +62,7 @@ class _MyQuestionsViewState extends State<MyQuestionsView> {
         backgroundColor: AppConstants.scaffoldDark,
         elevation: 0,
         title: const Text('My Submissions',
-            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
       ),
       body: SafeArea(
         child: Column(children: [
@@ -145,7 +145,7 @@ class _MyQuestionsViewState extends State<MyQuestionsView> {
         const SizedBox(height: 12),
         Text(q['question_text']?.toString() ?? '(no text)',
             style: const TextStyle(
-                color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600, height: 1.45)),
+                color: AppConstants.textPrimary, fontSize: 14, fontWeight: FontWeight.w600, height: 1.45)),
         const SizedBox(height: 10),
         ...options.map((o) {
           final correct = o['is_correct'] == 1 || o['is_correct'] == true;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/api_service.dart';
 import 'article_quiz_view.dart';
@@ -73,9 +74,9 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F1A),
+      backgroundColor: AppConstants.primaryDark,
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF818cf8)))
+          ? const Center(child: CircularProgressIndicator(color: AppConstants.accentYellow))
           : _errorMsg.isNotEmpty
               ? _buildErrorView()
               : _buildArticleContent(),
@@ -94,13 +95,13 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
             const SizedBox(height: 16),
             Text(
               _errorMsg,
-              style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+              style: GoogleFonts.inter(color: AppConstants.textSecondary, fontSize: 14),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _loadArticle,
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366f1)),
+              style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentYellow),
               child: Text('Retry', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
             ),
           ],
@@ -127,14 +128,14 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
         SliverAppBar(
           expandedHeight: 220,
           pinned: true,
-          backgroundColor: const Color(0xFF0F0F1A),
+          backgroundColor: AppConstants.primaryDark,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 18),
+            icon: const Icon(Icons.arrow_back_ios, color: AppConstants.textPrimary, size: 18),
             onPressed: () => Navigator.pop(context),
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.auto_awesome, color: Color(0xFF818cf8)),
+              icon: const Icon(Icons.auto_awesome, color: AppConstants.accentYellow),
               tooltip: 'Practice AI Quiz',
               onPressed: _openQuiz,
             ),
@@ -159,8 +160,8 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        const Color(0xFF0F0F1A).withValues(alpha: 0.8),
-                        const Color(0xFF0F0F1A),
+                        AppConstants.primaryDark.withValues(alpha: 0.8),
+                        AppConstants.primaryDark,
                       ],
                     ),
                   ),
@@ -174,23 +175,23 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
+                          color: AppConstants.onAccent.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                          border: Border.all(color: AppConstants.onAccent.withValues(alpha: 0.2)),
                         ),
                         child: Text(
                           category,
                           style: GoogleFonts.inter(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: AppConstants.textPrimary,
                           ),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Text(
                         '· $publishDate · $readTime min read',
-                        style: GoogleFonts.inter(fontSize: 11, color: Colors.white70),
+                        style: GoogleFonts.inter(fontSize: 11, color: AppConstants.textSecondary),
                       ),
                     ],
                   ),
@@ -213,7 +214,7 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                   style: GoogleFonts.inter(
                     fontSize: 22,
                     fontWeight: FontWeight.w900,
-                    color: Colors.white,
+                    color: AppConstants.textPrimary,
                     height: 1.35,
                     letterSpacing: -0.5,
                   ),
@@ -223,11 +224,11 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                 // Source Info
                 Row(
                   children: [
-                    const Icon(Icons.verified_outlined, size: 14, color: Color(0xFF818cf8)),
+                    const Icon(Icons.verified_outlined, size: 14, color: AppConstants.accentYellow),
                     const SizedBox(width: 6),
                     Text(
                       'Source: $source',
-                      style: GoogleFonts.inter(fontSize: 11, color: Colors.white54),
+                      style: GoogleFonts.inter(fontSize: 11, color: AppConstants.textMuted),
                     ),
                   ],
                 ),
@@ -240,22 +241,22 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF312e81), Color(0xFF4338ca)],
+                        colors: [AppConstants.accentYellowDeep, AppConstants.accentYellowDeep],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFF818cf8).withValues(alpha: 0.4)),
+                      border: Border.all(color: AppConstants.accentYellow.withValues(alpha: 0.4)),
                     ),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
+                            color: AppConstants.textPrimary.withValues(alpha: 0.12),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.psychology_outlined, color: Colors.white, size: 24),
+                          child: const Icon(Icons.psychology_outlined, color: AppConstants.textPrimary, size: 24),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -267,18 +268,18 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                                 style: GoogleFonts.inter(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w800,
-                                  color: Colors.white,
+                                  color: AppConstants.textPrimary,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 'Test your knowledge on facts from this article',
-                                style: GoogleFonts.inter(fontSize: 11, color: Colors.white70),
+                                style: GoogleFonts.inter(fontSize: 11, color: AppConstants.textSecondary),
                               ),
                             ],
                           ),
                         ),
-                        const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 14),
+                        const Icon(Icons.arrow_forward_ios, color: AppConstants.textSecondary, size: 14),
                       ],
                     ),
                   ),
@@ -290,23 +291,23 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF818cf8).withValues(alpha: 0.08),
+                      color: AppConstants.accentYellow.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFF818cf8).withValues(alpha: 0.2)),
+                      border: Border.all(color: AppConstants.accentYellow.withValues(alpha: 0.2)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.lightbulb_outline, size: 18, color: Color(0xFF818cf8)),
+                            const Icon(Icons.lightbulb_outline, size: 18, color: AppConstants.accentYellow),
                             const SizedBox(width: 8),
                             Text(
                               'Key Takeaways',
                               style: GoogleFonts.inter(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
-                                color: const Color(0xFF818cf8),
+                                color: AppConstants.accentYellow,
                                 letterSpacing: 0.5,
                               ),
                             ),
@@ -317,7 +318,7 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                           summary,
                           style: GoogleFonts.inter(
                             fontSize: 13,
-                            color: Colors.white.withValues(alpha: 0.85),
+                            color: AppConstants.textPrimary.withValues(alpha: 0.85),
                             height: 1.6,
                           ),
                         ),
@@ -331,7 +332,7 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                 if (examRelevance.isNotEmpty) ...[
                   Text(
                     'Exam Relevance',
-                    style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+                    style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppConstants.textPrimary),
                   ),
                   const SizedBox(height: 8),
                   Wrap(
@@ -341,13 +342,13 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                       return Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.05),
+                          color: AppConstants.textPrimary.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                          border: Border.all(color: AppConstants.textPrimary.withValues(alpha: 0.1)),
                         ),
                         child: Text(
                           tag.trim(),
-                          style: GoogleFonts.inter(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.inter(fontSize: 11, color: AppConstants.textSecondary, fontWeight: FontWeight.w600),
                         ),
                       );
                     }).toList(),
@@ -358,14 +359,14 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                 // Main Article Content
                 Text(
                   'Detailed Analysis',
-                  style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
+                  style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: AppConstants.textPrimary),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   content,
                   style: GoogleFonts.inter(
                     fontSize: 14.5,
-                    color: Colors.white.withValues(alpha: 0.8),
+                    color: AppConstants.textPrimary.withValues(alpha: 0.8),
                     height: 1.7,
                   ),
                 ),
@@ -375,7 +376,7 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                 if (related.isNotEmpty) ...[
                   Text(
                     'Related Current Affairs',
-                    style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
+                    style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: AppConstants.textPrimary),
                   ),
                   const SizedBox(height: 14),
                   ...related.map((rel) => GestureDetector(
@@ -391,9 +392,9 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                           margin: const EdgeInsets.only(bottom: 10),
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.04),
+                            color: AppConstants.textPrimary.withValues(alpha: 0.04),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                            border: Border.all(color: AppConstants.textPrimary.withValues(alpha: 0.06)),
                           ),
                           child: Row(
                             children: [
@@ -401,10 +402,10 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                                 width: 36,
                                 height: 36,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF6366f1).withValues(alpha: 0.15),
+                                  color: AppConstants.accentYellow.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Icon(Icons.article_outlined, color: Color(0xFF818cf8), size: 18),
+                                child: const Icon(Icons.article_outlined, color: AppConstants.accentYellow, size: 18),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -413,19 +414,19 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
                                   children: [
                                     Text(
                                       rel['title'] ?? '',
-                                      style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: Colors.white),
+                                      style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppConstants.textPrimary),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     const SizedBox(height: 3),
                                     Text(
                                       '${rel['category']} · ${rel['publish_date']}',
-                                      style: GoogleFonts.inter(fontSize: 10.5, color: Colors.white38),
+                                      style: GoogleFonts.inter(fontSize: 10.5, color: AppConstants.textMuted),
                                     ),
                                   ],
                                 ),
                               ),
-                              const Icon(Icons.arrow_forward_ios, size: 12, color: Colors.white38),
+                              const Icon(Icons.arrow_forward_ios, size: 12, color: AppConstants.textMuted),
                             ],
                           ),
                         ),
@@ -443,8 +444,8 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
       decoration: BoxDecoration(
-        color: const Color(0xFF1a1a2e),
-        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
+        color: AppConstants.cardDark,
+        border: Border(top: BorderSide(color: AppConstants.textPrimary.withValues(alpha: 0.08))),
       ),
       child: SizedBox(
         width: double.infinity,
@@ -457,7 +458,7 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
             style: GoogleFonts.inter(fontSize: 14.5, fontWeight: FontWeight.w800),
           ),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF6366f1),
+            backgroundColor: AppConstants.accentYellow,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
         ),
@@ -480,8 +481,8 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
       return [const Color(0xFF14532d), const Color(0xFF15803d)];
     }
     if (c.contains('gov') || c.contains('policy')) {
-      return [const Color(0xFF7c2d12), const Color(0xFFc2410c)];
+      return [AppConstants.accentAmber, const Color(0xFFc2410c)];
     }
-    return [const Color(0xFF1e1b4b), const Color(0xFF4338ca)];
+    return [AppConstants.surfaceElevated, AppConstants.accentYellowDeep];
   }
 }

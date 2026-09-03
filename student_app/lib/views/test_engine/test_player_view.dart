@@ -229,7 +229,7 @@ class _TestPlayerViewState extends State<TestPlayerView> {
           duration: const Duration(seconds: 4),
           action: SnackBarAction(
             label: 'Retry',
-            textColor: Colors.white,
+            textColor: AppConstants.onAccent,
             onPressed: _submitFinalAttempt,
           ),
         ),
@@ -244,8 +244,8 @@ class _TestPlayerViewState extends State<TestPlayerView> {
         backgroundColor: AppConstants.primaryDark,
         appBar: AppBar(
           backgroundColor: AppConstants.cardDark,
-          title: const Text('Loading Test Engine...', style: TextStyle(color: Colors.white, fontSize: 16)),
-          leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: widget.onExit),
+          title: const Text('Loading Test Engine...', style: TextStyle(color: AppConstants.onAccent, fontSize: 16)),
+          leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppConstants.onAccent), onPressed: widget.onExit),
         ),
         body: const Padding(
           padding: EdgeInsets.all(AppConstants.space24),
@@ -262,7 +262,7 @@ class _TestPlayerViewState extends State<TestPlayerView> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text('No questions found for this test.', style: TextStyle(color: Colors.white70)),
+              const Text('No questions found for this test.', style: TextStyle(color: AppConstants.textSecondary)),
               const SizedBox(height: 16),
               ElevatedButton(onPressed: widget.onExit, child: const Text('Back')),
             ],
@@ -278,10 +278,10 @@ class _TestPlayerViewState extends State<TestPlayerView> {
       appBar: AppBar(
         backgroundColor: AppConstants.cardDark,
         elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: widget.onExit),
+        leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppConstants.textPrimary), onPressed: widget.onExit),
         title: Row(
           children: [
-            Text('Q ${currentIndex + 1}/${questions.length}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+            Text('Q ${currentIndex + 1}/${questions.length}', style: const TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 15)),
             const SizedBox(width: 12),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -312,14 +312,14 @@ class _TestPlayerViewState extends State<TestPlayerView> {
             value: selectedLanguage,
             dropdownColor: AppConstants.cardDark,
             underline: const SizedBox(),
-            icon: const Icon(Icons.language, color: Colors.white, size: 20),
+            icon: const Icon(Icons.language, color: AppConstants.textPrimary, size: 20),
             items: const [
-              DropdownMenuItem(value: 'en', child: Text('English', style: TextStyle(color: Colors.white, fontSize: 12))),
-              DropdownMenuItem(value: 'hi', child: Text('हिन्दी', style: TextStyle(color: Colors.white, fontSize: 12))),
+              DropdownMenuItem(value: 'en', child: Text('English', style: TextStyle(color: AppConstants.textPrimary, fontSize: 12))),
+              DropdownMenuItem(value: 'hi', child: Text('हिन्दी', style: TextStyle(color: AppConstants.textPrimary, fontSize: 12))),
             ],
             onChanged: (v) => setState(() => selectedLanguage = v ?? 'en'),
           ),
-          IconButton(icon: const Icon(Icons.grid_view_rounded, color: Colors.white), onPressed: () => _openQuestionPalette(context)),
+          IconButton(icon: const Icon(Icons.grid_view_rounded, color: AppConstants.textPrimary), onPressed: () => _openQuestionPalette(context)),
           IconButton(icon: const Icon(Icons.exit_to_app_rounded, color: AppConstants.accentRose), onPressed: () => _showSubmitDialog(context)),
         ],
       ),
@@ -349,7 +349,7 @@ class _TestPlayerViewState extends State<TestPlayerView> {
                   children: [
                     Text(
                       currentQuestion.questionText,
-                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600, height: 1.4),
+                      style: const TextStyle(color: AppConstants.onAccent, fontSize: 16, fontWeight: FontWeight.w600, height: 1.4),
                     ),
                     const SizedBox(height: AppConstants.space24),
 
@@ -376,11 +376,11 @@ class _TestPlayerViewState extends State<TestPlayerView> {
                                   shape: BoxShape.circle,
                                 ),
                                 child: Center(
-                                  child: Text(opt.optionKey, style: TextStyle(color: isSelected ? Colors.white : AppConstants.textSecondary, fontWeight: FontWeight.bold, fontSize: 13)),
+                                  child: Text(opt.optionKey, style: TextStyle(color: isSelected ? AppConstants.textPrimary : AppConstants.textSecondary, fontWeight: FontWeight.bold, fontSize: 13)),
                                 ),
                               ),
                               const SizedBox(width: 14),
-                              Expanded(child: Text(opt.optionText, style: const TextStyle(color: Colors.white, fontSize: 14.5, height: 1.3))),
+                              Expanded(child: Text(opt.optionText, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14.5, height: 1.3))),
                             ],
                           ),
                         ),
@@ -419,7 +419,7 @@ class _TestPlayerViewState extends State<TestPlayerView> {
                     onPressed: _onSaveAndNext,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppConstants.accentIndigo,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppConstants.onAccent,
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
@@ -445,7 +445,7 @@ class _TestPlayerViewState extends State<TestPlayerView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Question Palette', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+              const Text('Question Palette', style: TextStyle(color: AppConstants.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
               const SizedBox(height: AppConstants.space16),
               Expanded(
                 child: GridView.builder(
@@ -469,7 +469,7 @@ class _TestPlayerViewState extends State<TestPlayerView> {
                       },
                       child: Container(
                         decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppConstants.cardBorder)),
-                        child: Center(child: Text('${i + 1}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13))),
+                        child: Center(child: Text('${i + 1}', style: const TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 13))),
                       ),
                     );
                   },
@@ -492,7 +492,7 @@ class _TestPlayerViewState extends State<TestPlayerView> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: AppConstants.cardDark,
-          title: const Text('Submit Test Attempt?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          title: const Text('Submit Test Attempt?', style: TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -510,7 +510,7 @@ class _TestPlayerViewState extends State<TestPlayerView> {
                 Navigator.pop(context);
                 _submitFinalAttempt();
               },
-              style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentEmerald, foregroundColor: Colors.white),
+              style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentEmerald, foregroundColor: AppConstants.onAccent),
               child: const Text('Confirm & Submit', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],

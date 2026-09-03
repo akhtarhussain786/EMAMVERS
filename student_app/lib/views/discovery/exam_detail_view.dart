@@ -36,6 +36,7 @@ class _ExamDetailViewState extends State<ExamDetailView> {
   void _loadExamDetail() async {
     try {
       final res = await ApiService.get('/v1/exams/${widget.examId}');
+      if (!mounted) return;
       setState(() {
         exam = res['exam'];
         pattern = res['pattern'];
@@ -43,6 +44,7 @@ class _ExamDetailViewState extends State<ExamDetailView> {
         isLoading = false;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() => isLoading = false);
     }
   }
@@ -55,8 +57,8 @@ class _ExamDetailViewState extends State<ExamDetailView> {
         appBar: AppBar(
           backgroundColor: AppConstants.cardDark,
           elevation: 0,
-          leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: widget.onBack),
-          title: const Text('Exam Details', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+          leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppConstants.textPrimary), onPressed: widget.onBack),
+          title: const Text('Exam Details', style: TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
         ),
         body: const Padding(
           padding: EdgeInsets.all(AppConstants.space20),
@@ -70,8 +72,8 @@ class _ExamDetailViewState extends State<ExamDetailView> {
       appBar: AppBar(
         backgroundColor: AppConstants.cardDark,
         elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: widget.onBack),
-        title: Text(exam?['title'] ?? 'Exam Detail', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+        leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppConstants.textPrimary), onPressed: widget.onBack),
+        title: Text(exam?['title'] ?? 'Exam Detail', style: const TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -113,7 +115,7 @@ class _ExamDetailViewState extends State<ExamDetailView> {
                     ],
                   ),
                   const SizedBox(height: AppConstants.space12),
-                  Text(exam?['title'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+                  Text(exam?['title'] ?? '', style: const TextStyle(color: AppConstants.onAccent, fontSize: 22, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 8),
                   Text(
                     exam?['overview_text'] ?? exam?['short_description'] ?? '',
@@ -126,7 +128,7 @@ class _ExamDetailViewState extends State<ExamDetailView> {
 
             // Effective Pattern Snapshot (SRD EXAM-002)
             if (pattern != null) ...[
-              const Text('Effective Exam Pattern Snapshot', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+              const Text('Effective Exam Pattern Snapshot', style: TextStyle(color: AppConstants.onAccent, fontSize: 17, fontWeight: FontWeight.bold)),
               const SizedBox(height: AppConstants.space12),
               Container(
                 padding: const EdgeInsets.all(AppConstants.space16),
@@ -149,7 +151,7 @@ class _ExamDetailViewState extends State<ExamDetailView> {
             ],
 
             // Available Test Series (SRD TS-001)
-            const Text('Available Test Series & Mocks', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+            const Text('Available Test Series & Mocks', style: TextStyle(color: AppConstants.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
             const SizedBox(height: AppConstants.space12),
             ListView.separated(
               shrinkWrap: true,
@@ -182,7 +184,7 @@ class _ExamDetailViewState extends State<ExamDetailView> {
   Widget _patternMetric(String label, String value) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+        Text(value, style: const TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.w800, fontSize: 15)),
         const SizedBox(height: 3),
         Text(label, style: const TextStyle(color: AppConstants.textMuted, fontSize: 11.5)),
       ],

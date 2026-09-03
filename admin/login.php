@@ -90,12 +90,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            background: radial-gradient(circle at top right, #1e293b, #0f172a);
+            background: radial-gradient(circle at top right, var(--bg-card-hover), var(--bg-main));
         }
         .login-card {
             width: 100%;
             max-width: 420px;
-            background: rgba(30, 41, 59, 0.85);
+            background: rgba(252, 250, 244, 0.85);
             border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: var(--radius-lg);
             padding: 2.5rem;
@@ -125,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="login-sub">Admin Control Center Portal</div>
 
         <?php if ($error): ?>
-            <div style="background:rgba(239, 68, 68, 0.2); color:#fca5a5; padding:0.75rem; border-radius:var(--radius-sm); margin-bottom:1rem; font-size:0.85rem; font-weight:600; border:1px solid rgba(239,68,68,0.4);">
+            <div style="background:rgba(239, 68, 68, 0.2); color:var(--accent-danger); padding:0.75rem; border-radius:var(--radius-sm); margin-bottom:1rem; font-size:0.85rem; font-weight:600; border:1px solid rgba(239,68,68,0.4);">
                 <?php echo htmlspecialchars($error); ?>
             </div>
         <?php endif; ?>

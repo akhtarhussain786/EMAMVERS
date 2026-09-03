@@ -90,19 +90,19 @@ class PrimaryButton extends StatelessWidget {
             ? const SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                child: CircularProgressIndicator(color: AppConstants.textPrimary, strokeWidth: 2.5),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (icon != null) ...[
-                    Icon(icon, color: Colors.white, size: 18),
+                    Icon(icon, color: AppConstants.textPrimary, size: 18),
                     const SizedBox(width: 8),
                   ],
                   Text(
                     label,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppConstants.textPrimary,
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.3,
@@ -195,7 +195,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           controller: widget.controller,
           obscureText: widget.isPassword ? _obscureText : false,
           keyboardType: widget.keyboardType,
-          style: const TextStyle(color: Colors.white, fontSize: 14.5),
+          style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14.5),
           decoration: InputDecoration(
             hintText: widget.hint,
             hintStyle: const TextStyle(color: AppConstants.textMuted, fontSize: 13.5),
@@ -285,7 +285,7 @@ class StatCard extends StatelessWidget {
           const SizedBox(height: AppConstants.space12),
           Text(
             value,
-            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+            style: const TextStyle(color: AppConstants.textPrimary, fontSize: 20, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 2),
           Text(
@@ -332,26 +332,26 @@ class RankCard extends StatelessWidget {
             children: [
               const Text(
                 'YOUR EXAMVERSE RANK',
-                style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.8),
+                style: TextStyle(color: AppConstants.onAccent, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.8),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.25), borderRadius: BorderRadius.circular(10)),
-                child: Text('Top ${(100 - percentile).toStringAsFixed(1)}%', style: const TextStyle(color: AppConstants.accentCyan, fontSize: 11, fontWeight: FontWeight.bold)),
+                decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.28), borderRadius: BorderRadius.circular(10)),
+                child: Text('Top ${(100 - percentile).toStringAsFixed(1)}%', style: const TextStyle(color: AppConstants.onAccent, fontSize: 11, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
           const SizedBox(height: AppConstants.space16),
-          Text('#$rank', style: const TextStyle(color: Colors.white, fontSize: 44, fontWeight: FontWeight.w800, height: 1.0)),
+          Text('#$rank', style: const TextStyle(color: AppConstants.onAccent, fontSize: 44, fontWeight: FontWeight.w800, height: 1.0)),
           const SizedBox(height: 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.arrow_upward, color: AppConstants.accentEmerald, size: 14),
               const SizedBox(width: 4),
-              Text(rankImprovementText, style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.bold)),
+              Text(rankImprovementText, style: const TextStyle(color: AppConstants.onAccent, fontSize: 12.5, fontWeight: FontWeight.bold)),
               const SizedBox(width: 12),
-              Text('• Best Rank: #$bestRank', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+              Text('• Best Rank: #$bestRank', style: const TextStyle(color: AppConstants.onAccent, fontSize: 12)),
             ],
           ),
         ],
@@ -380,7 +380,7 @@ class SectionHeader extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+          style: const TextStyle(color: AppConstants.textPrimary, fontSize: 17, fontWeight: FontWeight.bold),
         ),
         if (actionLabel != null && onActionTap != null)
           TextButton(
@@ -426,7 +426,7 @@ class EmptyStateWidget extends StatelessWidget {
               child: Icon(icon, size: 40, color: AppConstants.textMuted),
             ),
             const SizedBox(height: AppConstants.space16),
-            Text(title, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+            Text(title, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
             Text(description, textAlign: TextAlign.center, style: const TextStyle(color: AppConstants.textSecondary, fontSize: 13, height: 1.4)),
             if (buttonLabel != null && onButtonPressed != null) ...[

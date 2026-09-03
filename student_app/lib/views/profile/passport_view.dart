@@ -30,12 +30,14 @@ class _PassportViewState extends State<PassportView> {
   void _loadPassport() async {
     try {
       final res = await ApiService.get('/v1/passport');
+      if (!mounted) return;
       setState(() {
         userData = res;
         userRanking = UserRanking.fromJson(res ?? {});
         isLoading = false;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() => isLoading = false);
     }
   }
@@ -73,7 +75,7 @@ class _PassportViewState extends State<PassportView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(studentName, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                        Text(studentName, style: const TextStyle(color: AppConstants.onAccent, fontSize: 20, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 2),
                         Text(targetExam, style: const TextStyle(color: AppConstants.textSecondary, fontSize: 13)),
                       ],
@@ -126,7 +128,7 @@ class _PassportViewState extends State<PassportView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Rank Contribution', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                    const Text('Rank Contribution', style: TextStyle(color: AppConstants.onAccent, fontSize: 15, fontWeight: FontWeight.bold)),
                     const SizedBox(height: AppConstants.space12),
                     _buildXpRow('Questions Solved', '+${userRanking.questionsXp} XP', AppConstants.accentCyan),
                     _buildXpRow('Accuracy Bonus', '+${userRanking.accuracyXp} XP', AppConstants.accentEmerald),
@@ -228,7 +230,7 @@ class _PassportViewState extends State<PassportView> {
         children: [
           Icon(icon, size: 16, color: isUnlocked ? AppConstants.accentAmber : AppConstants.textMuted),
           const SizedBox(width: 6),
-          Text(label, style: TextStyle(color: isUnlocked ? Colors.white : AppConstants.textMuted, fontSize: 11.5, fontWeight: FontWeight.bold)),
+          Text(label, style: TextStyle(color: isUnlocked ? AppConstants.textPrimary : AppConstants.textMuted, fontSize: 11.5, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -255,7 +257,7 @@ class _PassportViewState extends State<PassportView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                Text(title, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 2),
                 Text(subtitle, style: const TextStyle(color: AppConstants.textMuted, fontSize: 11)),
               ],

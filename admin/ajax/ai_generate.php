@@ -166,20 +166,27 @@ Generate {$count} questions now:";
 
             $subjectId = $aiQ['subject_id'] ?: 1;
 
+            // Without a rollback path a failure mid-loop leaves the
+            // transaction open and the connection unusable for later requests.
             $db->beginTransaction();
-            $db->prepare("INSERT INTO questions (subject_id, question_type, difficulty, status) VALUES (?,'MCQ',?,'published')")->execute([$subjectId, $aiQ['difficulty']]);
-            $newQId = $db->lastInsertId();
+            try {
+                $db->prepare("INSERT INTO questions (subject_id, question_type, difficulty, status) VALUES (?,'MCQ',?,'published')")->execute([$subjectId, $aiQ['difficulty']]);
+                $newQId = $db->lastInsertId();
 
-            $db->prepare("INSERT INTO question_translations (question_id, language, question_text, solution_text) VALUES (?,'en',?,?)")->execute([$newQId, $aiQ['question_text'], $aiQ['explanation']]);
+                $db->prepare("INSERT INTO question_translations (question_id, language, question_text, solution_text) VALUES (?,'en',?,?)")->execute([$newQId, $aiQ['question_text'], $aiQ['explanation']]);
 
-            $optStmt = $db->prepare("INSERT INTO question_options (question_id, option_key, language, option_text, is_correct) VALUES (?,?,'en',?,?)");
-            foreach (['A' => 'option_a', 'B' => 'option_b', 'C' => 'option_c', 'D' => 'option_d'] as $key => $col) {
-                $optStmt->execute([$newQId, $key, $aiQ[$col], ($key === strtoupper($aiQ['correct_option'])) ? 1 : 0]);
+                $optStmt = $db->prepare("INSERT INTO question_options (question_id, option_key, language, option_text, is_correct) VALUES (?,?,'en',?,?)");
+                foreach (['A' => 'option_a', 'B' => 'option_b', 'C' => 'option_c', 'D' => 'option_d'] as $key => $col) {
+                    $optStmt->execute([$newQId, $key, $aiQ[$col], ($key === strtoupper($aiQ['correct_option'])) ? 1 : 0]);
+                }
+
+                $db->prepare("UPDATE ai_generated_questions SET review_status='approved', approved_question_id=? WHERE id=?")->execute([$newQId, $aiQId]);
+                $db->commit();
+                $saved++;
+            } catch (Throwable $e) {
+                $db->rollBack();
+                error_log('EXAMVERSE AI approve failed for generated question ' . $aiQId . ': ' . $e->getMessage());
             }
-
-            $db->prepare("UPDATE ai_generated_questions SET review_status='approved', approved_question_id=? WHERE id=?")->execute([$newQId, $aiQId]);
-            $db->commit();
-            $saved++;
         }
 
         // Update batch count

@@ -52,6 +52,7 @@ class _HomeViewState extends State<HomeView> {
   void _loadHomeData() async {
     try {
       final res = await ApiService.get('/v1/home');
+      if (!mounted) return;
       setState(() {
         userRanking = UserRanking.fromJson(res['user_ranking'] ?? res['ranking'] ?? {});
         categories = (res['categories'] as List? ?? []).map((c) => ExamCategory.fromJson(c)).toList();
@@ -106,7 +107,7 @@ class _HomeViewState extends State<HomeView> {
                     children: [
                       const Text(
                         'Good Morning, Candidate 👋',
-                        style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+                        style: TextStyle(color: AppConstants.textPrimary, fontSize: 20, fontWeight: FontWeight.w800),
                       ),
                       const SizedBox(height: 2),
                       const Text(
@@ -124,7 +125,7 @@ class _HomeViewState extends State<HomeView> {
                           border: Border.all(color: AppConstants.cardBorder),
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.notifications_none, color: Colors.white, size: 22),
+                          icon: const Icon(Icons.notifications_none, color: AppConstants.textPrimary, size: 22),
                           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsView())),
                         ),
                       ),
@@ -183,7 +184,7 @@ class _HomeViewState extends State<HomeView> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text("Today's Goal",
-                              style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                              style: TextStyle(color: AppConstants.textPrimary, fontSize: 15, fontWeight: FontWeight.bold)),
                           Text('$solvedToday / $dailyTarget Questions',
                               style: const TextStyle(
                                   color: AppConstants.accentCyan, fontSize: 13, fontWeight: FontWeight.bold)),
@@ -235,7 +236,7 @@ class _HomeViewState extends State<HomeView> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
-                                    color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                                    color: AppConstants.textPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 2),
                             Text(
                               '${resumeAttempt!['answered']} of ${resumeAttempt!['total_questions']} answered'
@@ -316,7 +317,7 @@ class _HomeViewState extends State<HomeView> {
                             Icon(_getCategoryIcon(cat.type), color: AppConstants.accentCyan, size: 24),
                             Text(
                               cat.name,
-                              style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.bold),
+                              style: const TextStyle(color: AppConstants.textPrimary, fontSize: 12.5, fontWeight: FontWeight.bold),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -354,7 +355,7 @@ class _HomeViewState extends State<HomeView> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(exam.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14.5)),
+                              Text(exam.title, style: const TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 14.5)),
                               const SizedBox(height: 2),
                               Text(exam.shortDescription ?? '', style: const TextStyle(color: AppConstants.textSecondary, fontSize: 11.5), maxLines: 1, overflow: TextOverflow.ellipsis),
                             ],
@@ -392,7 +393,7 @@ class _HomeViewState extends State<HomeView> {
               child: Icon(icon, color: color, size: 18),
             ),
             const SizedBox(height: 6),
-            Text(title, style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.bold)),
+            Text(title, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 11.5, fontWeight: FontWeight.bold)),
           ],
         ),
       ),

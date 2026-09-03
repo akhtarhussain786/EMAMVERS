@@ -20,7 +20,7 @@ $recentAttempts = $db->query("
 <div class="metrics-grid">
     <a href="index.php?page=users" class="metric-card" style="text-decoration: none; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
         <div class="metric-title">Total Candidates</div>
-        <div class="metric-value" style="color: #38bdf8;"><?php echo number_format($usersCount); ?></div>
+        <div class="metric-value" style="color: var(--accent-blue);"><?php echo number_format($usersCount); ?></div>
     </a>
     <div class="metric-card">
         <div class="metric-title">Published Tests</div>

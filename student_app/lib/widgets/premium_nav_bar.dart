@@ -68,7 +68,7 @@ class PremiumNavBar extends StatelessWidget {
                 children: [
                   Icon(
                     isSelected ? item.activeIcon : item.icon,
-                    color: isSelected ? Colors.white : AppConstants.textMuted,
+                    color: isSelected ? AppConstants.onAccent : AppConstants.textMuted,
                     size: 22,
                   ),
                   if (isSelected) ...[
@@ -76,7 +76,7 @@ class PremiumNavBar extends StatelessWidget {
                     Text(
                       item.label,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppConstants.onAccent,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.3,

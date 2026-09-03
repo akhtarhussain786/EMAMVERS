@@ -163,7 +163,7 @@ class _SubmitQuestionViewState extends State<SubmitQuestionView> {
         backgroundColor: AppConstants.scaffoldDark,
         elevation: 0,
         title: const Text('New Question',
-            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
       ),
       body: SafeArea(
         child: _loadingTaxonomy
@@ -247,7 +247,7 @@ class _SubmitQuestionViewState extends State<SubmitQuestionView> {
             initialValue: _subjectId,
             dropdownColor: AppConstants.cardDark,
             decoration: _fieldDecoration('Which subject does this belong to?'),
-            style: const TextStyle(color: Colors.white, fontSize: 14),
+            style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14),
             items: [
               for (final s in _subjects)
                 DropdownMenuItem<int>(value: s['id'] as int, child: Text(s['name']?.toString() ?? '')),
@@ -263,7 +263,7 @@ class _SubmitQuestionViewState extends State<SubmitQuestionView> {
             dropdownColor: AppConstants.cardDark,
             decoration: _fieldDecoration(
                 _topics.isEmpty ? 'Choose a subject first' : 'Narrow it down to a topic'),
-            style: const TextStyle(color: Colors.white, fontSize: 14),
+            style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14),
             items: [
               for (final t in _topics)
                 DropdownMenuItem<int>(value: t['id'] as int, child: Text(t['name']?.toString() ?? '')),
@@ -307,7 +307,7 @@ class _SubmitQuestionViewState extends State<SubmitQuestionView> {
             controller: _questionCtrl,
             maxLines: 4,
             maxLength: 2000,
-            style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
+            style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14, height: 1.5),
             decoration: _fieldDecoration('Type the full question as a student will read it'),
             validator: (v) => (v == null || v.trim().isEmpty) ? 'Question text is required' : null,
           ),
@@ -321,7 +321,7 @@ class _SubmitQuestionViewState extends State<SubmitQuestionView> {
           TextFormField(
             controller: _explanationCtrl,
             maxLines: 3,
-            style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
+            style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14, height: 1.5),
             decoration: _fieldDecoration('Explain why the correct answer is correct'),
             validator: (v) => (v == null || v.trim().isEmpty)
                 ? 'An explanation is required so students learn from the answer'
@@ -361,7 +361,7 @@ class _SubmitQuestionViewState extends State<SubmitQuestionView> {
               ),
               child: Center(
                 child: isCorrect
-                    ? const Icon(Icons.check, color: Colors.white, size: 18)
+                    ? const Icon(Icons.check, color: AppConstants.textPrimary, size: 18)
                     : Text(key,
                         style: const TextStyle(
                             color: AppConstants.textSecondary, fontWeight: FontWeight.bold, fontSize: 13)),
@@ -372,7 +372,7 @@ class _SubmitQuestionViewState extends State<SubmitQuestionView> {
           Expanded(
             child: TextFormField(
               controller: _optionCtrls[i],
-              style: const TextStyle(color: Colors.white, fontSize: 14),
+              style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14),
               decoration: _fieldDecoration('Option $key'),
               validator: (v) => (v == null || v.trim().isEmpty) ? 'Option $key cannot be empty' : null,
             ),

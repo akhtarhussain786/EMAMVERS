@@ -192,10 +192,10 @@ $batches = $db->query("SELECT aqb.*, e.title as exam_title, s.name as subject_na
 </div>
 
 <style>
-:root { --accent: #6366f1; }
+:root { --accent: var(--accent-indigo); }
 .ai-gen-page { display: flex; flex-direction: column; gap: 24px; }
 .ai-section {
-    background: var(--card-bg, #1e1e2e);
+    background: var(--card-bg, var(--bg-card));
     border: 1px solid var(--border, rgba(255,255,255,0.08));
     border-radius: 16px;
     padding: 28px;
@@ -210,35 +210,35 @@ $batches = $db->query("SELECT aqb.*, e.title as exam_title, s.name as subject_na
     border-radius: 12px; padding: 16px;
     transition: border-color 0.2s;
 }
-.key-card.key-active { border-color: #6366f1; box-shadow: 0 0 0 1px rgba(99,102,241,0.3); }
+.key-card.key-active { border-color: var(--accent-indigo); box-shadow: 0 0 0 1px rgba(99,102,241,0.3); }
 .key-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .provider-badge { padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; }
 .provider-gemini { background: linear-gradient(135deg,#4285f4,#34a853); color: white; }
-.provider-openai { background: linear-gradient(135deg,#10a37f,#1a7f64); color: white; }
+.provider-openai { background: linear-gradient(135deg,var(--accent-emerald),var(--accent-emerald)); color: white; }
 .key-status-dot { width: 8px; height: 8px; border-radius: 50%; }
-.dot-active { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+.dot-active { background: var(--accent-emerald); box-shadow: 0 0 6px var(--accent-emerald); }
 .dot-inactive { background: rgba(255,255,255,0.2); }
 .key-label { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
 .key-masked { font-family: monospace; font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 6px; }
 .key-meta { font-size: 11px; color: rgba(255,255,255,0.3); margin-bottom: 12px; }
 .key-actions { display: flex; gap: 8px; align-items: center; }
 .btn-xs { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; }
-.btn-activate { background: rgba(99,102,241,0.15); color: #818cf8; }
+.btn-activate { background: rgba(99,102,241,0.15); color: var(--accent-blue); }
 .btn-activate:hover { background: rgba(99,102,241,0.3); }
 .btn-danger-xs { background: rgba(239,68,68,0.1); color: #f87171; }
 .btn-danger-xs:hover { background: rgba(239,68,68,0.2); }
-.badge-active-tag { font-size: 11px; color: #22c55e; font-weight: 600; }
+.badge-active-tag { font-size: 11px; color: var(--accent-emerald); font-weight: 600; }
 .empty-keys-hint { padding: 16px; background: rgba(255,255,255,0.03); border-radius: 10px; color: rgba(255,255,255,0.4); font-size: 13px; text-align: center; margin-bottom: 20px; }
 .add-key-form { background: rgba(255,255,255,0.03); border-radius: 12px; padding: 20px; margin-top: 8px; }
 .form-sub-title { font-size: 14px; font-weight: 600; margin: 0 0 16px; color: rgba(255,255,255,0.7); }
 .form-row-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 16px; }
 .form-group label { display: block; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
 .form-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 9px 12px; color: white; font-size: 13px; box-sizing: border-box; }
-.form-input:focus { outline: none; border-color: #6366f1; }
-.form-input option { background: #1e1e2e; }
+.form-input:focus { outline: none; border-color: var(--accent-indigo); }
+.form-input option { background: var(--bg-card); }
 .btn-primary-ai {
     display: inline-flex; align-items: center; gap: 8px;
-    background: linear-gradient(135deg, #6366f1, #a855f7);
+    background: linear-gradient(135deg, var(--accent-indigo), #a855f7);
     color: white; border: none; border-radius: 10px;
     padding: 10px 22px; font-size: 14px; font-weight: 600;
     cursor: pointer; transition: opacity 0.2s;
@@ -251,9 +251,9 @@ $batches = $db->query("SELECT aqb.*, e.title as exam_title, s.name as subject_na
 .results-title { font-size: 16px; font-weight: 700; margin: 0; }
 .results-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .btn-sm { padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; }
-.btn-approve-all { background: rgba(34,197,94,0.15); color: #4ade80; }
+.btn-approve-all { background: rgba(21,128,61,0.15); color: #4ade80; }
 .btn-reject-all  { background: rgba(239,68,68,0.1); color: #f87171; }
-.btn-save-approved { background: linear-gradient(135deg,#6366f1,#a855f7); color: white; }
+.btn-save-approved { background: linear-gradient(135deg,var(--accent-indigo),#a855f7); color: white; }
 .q-list { display: flex; flex-direction: column; gap: 16px; }
 .q-card {
     background: rgba(255,255,255,0.04);
@@ -261,14 +261,14 @@ $batches = $db->query("SELECT aqb.*, e.title as exam_title, s.name as subject_na
     border-radius: 12px; padding: 18px;
     transition: border-color 0.2s;
 }
-.q-card.approved { border-color: #22c55e; }
-.q-card.rejected { border-color: #ef4444; opacity: 0.5; }
+.q-card.approved { border-color: var(--accent-emerald); }
+.q-card.rejected { border-color: var(--accent-danger); opacity: 0.5; }
 .q-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
-.q-num { font-size: 11px; font-weight: 700; color: #818cf8; background: rgba(99,102,241,0.1); padding: 3px 8px; border-radius: 5px; white-space: nowrap; }
+.q-num { font-size: 11px; font-weight: 700; color: var(--accent-blue); background: rgba(99,102,241,0.1); padding: 3px 8px; border-radius: 5px; white-space: nowrap; }
 .q-text { font-size: 14px; font-weight: 500; line-height: 1.5; }
 .q-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
 .q-option { padding: 8px 12px; border-radius: 8px; font-size: 13px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); }
-.q-option.correct { background: rgba(34,197,94,0.1); border-color: #22c55e; color: #4ade80; }
+.q-option.correct { background: rgba(21,128,61,0.1); border-color: var(--accent-emerald); color: #4ade80; }
 .q-explanation { font-size: 12px; color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.03); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; line-height: 1.5; }
 .q-footer { display: flex; gap: 8px; justify-content: flex-end; }
 .hidden { display: none !important; }
@@ -280,10 +280,10 @@ $batches = $db->query("SELECT aqb.*, e.title as exam_title, s.name as subject_na
 .admin-table th { padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.4); text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.06); }
 .admin-table td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); color: rgba(255,255,255,0.75); }
 .badge { padding: 3px 8px; border-radius: 5px; font-size: 11px; font-weight: 600; }
-.badge-easy    { background: rgba(34,197,94,0.15); color: #4ade80; }
+.badge-easy    { background: rgba(21,128,61,0.15); color: #4ade80; }
 .badge-medium  { background: rgba(251,191,36,0.15); color: #fbbf24; }
 .badge-hard    { background: rgba(239,68,68,0.12); color: #f87171; }
-.badge-success { background: rgba(34,197,94,0.15); color: #4ade80; }
+.badge-success { background: rgba(21,128,61,0.15); color: #4ade80; }
 .badge-warning { background: rgba(251,191,36,0.15); color: #fbbf24; }
 .badge-danger  { background: rgba(239,68,68,0.12); color: #f87171; }
 </style>
@@ -470,7 +470,7 @@ function showToast(msg, type = 'success') {
     t.textContent = msg;
     Object.assign(t.style, {
         position: 'fixed', bottom: '28px', right: '28px', zIndex: '9999',
-        background: type === 'success' ? 'rgba(34,197,94,0.95)' : 'rgba(239,68,68,0.95)',
+        background: type === 'success' ? 'rgba(21,128,61,0.95)' : 'rgba(239,68,68,0.95)',
         color: 'white', padding: '14px 22px', borderRadius: '12px',
         fontWeight: '600', fontSize: '14px', maxWidth: '380px',
         boxShadow: '0 8px 32px rgba(0,0,0,0.4)',

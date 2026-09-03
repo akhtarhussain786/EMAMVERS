@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/api_service.dart';
 import 'current_affairs_article_view.dart';
@@ -82,20 +83,20 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F1A),
+      backgroundColor: AppConstants.primaryDark,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F0F1A),
+        backgroundColor: AppConstants.primaryDark,
         title: Text(
           'Daily Current Affairs',
-          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
+          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppConstants.textPrimary),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 18),
+          icon: const Icon(Icons.arrow_back_ios, color: AppConstants.textPrimary, size: 18),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white70),
+            icon: const Icon(Icons.refresh, color: AppConstants.textSecondary),
             onPressed: _loadArticles,
           ),
         ],
@@ -109,7 +110,7 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
             // Main Article List
             Expanded(
               child: _loading
-                  ? const Center(child: CircularProgressIndicator(color: Color(0xFF818cf8)))
+                  ? const Center(child: CircularProgressIndicator(color: AppConstants.accentYellow))
                   : _errorMsg.isNotEmpty
                       ? _buildErrorState()
                       : _articles.isEmpty
@@ -126,22 +127,22 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F0F1A),
-        border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06))),
+        color: AppConstants.primaryDark,
+        border: Border(bottom: BorderSide(color: AppConstants.textPrimary.withValues(alpha: 0.06))),
       ),
       child: Column(
         children: [
           // Search Field
           TextField(
             controller: _searchCtrl,
-            style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+            style: GoogleFonts.inter(color: AppConstants.textPrimary, fontSize: 13),
             decoration: InputDecoration(
               hintText: 'Search events, topics, policies...',
-              hintStyle: GoogleFonts.inter(color: Colors.white38, fontSize: 13),
-              prefixIcon: const Icon(Icons.search, color: Colors.white38, size: 20),
+              hintStyle: GoogleFonts.inter(color: AppConstants.textMuted, fontSize: 13),
+              prefixIcon: const Icon(Icons.search, color: AppConstants.textMuted, size: 20),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white38, size: 18),
+                      icon: const Icon(Icons.close, color: AppConstants.textMuted, size: 18),
                       onPressed: () {
                         _searchCtrl.clear();
                         setState(() => _searchQuery = '');
@@ -150,7 +151,7 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
                     )
                   : null,
               filled: true,
-              fillColor: Colors.white.withValues(alpha: 0.05),
+              fillColor: AppConstants.textPrimary.withValues(alpha: 0.05),
               contentPadding: const EdgeInsets.symmetric(vertical: 10),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -184,17 +185,17 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
                         _loadArticles();
                       }
                     },
-                    selectedColor: const Color(0xFF6366f1),
-                    backgroundColor: Colors.white.withValues(alpha: 0.05),
+                    selectedColor: AppConstants.accentYellow,
+                    backgroundColor: AppConstants.textPrimary.withValues(alpha: 0.05),
                     labelStyle: GoogleFonts.inter(
                       fontSize: 11.5,
                       fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                      color: isSelected ? Colors.white : Colors.white60,
+                      color: isSelected ? AppConstants.textPrimary : AppConstants.textSecondary,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                       side: BorderSide(
-                        color: isSelected ? const Color(0xFF818cf8) : Colors.white.withValues(alpha: 0.08),
+                        color: isSelected ? AppConstants.accentYellow : AppConstants.textPrimary.withValues(alpha: 0.08),
                       ),
                     ),
                   ),
@@ -222,17 +223,17 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
                       setState(() => _selectedDate = date);
                       _loadArticles();
                     },
-                    selectedColor: const Color(0xFF6366f1),
-                    backgroundColor: Colors.white.withValues(alpha: 0.05),
+                    selectedColor: AppConstants.accentYellow,
+                    backgroundColor: AppConstants.textPrimary.withValues(alpha: 0.05),
                     labelStyle: GoogleFonts.inter(
                       fontSize: 11.5,
                       fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                      color: isSelected ? Colors.white : Colors.white60,
+                      color: isSelected ? AppConstants.textPrimary : AppConstants.textSecondary,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                       side: BorderSide(
-                        color: isSelected ? const Color(0xFF818cf8) : Colors.white.withValues(alpha: 0.08),
+                        color: isSelected ? AppConstants.accentYellow : AppConstants.textPrimary.withValues(alpha: 0.08),
                       ),
                     ),
                   );
@@ -248,7 +249,7 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
   Widget _buildArticleList() {
     return RefreshIndicator(
       onRefresh: _loadArticles,
-      color: const Color(0xFF818cf8),
+      color: AppConstants.accentYellow,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _articles.length,
@@ -273,11 +274,11 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           gradient: const LinearGradient(
-            colors: [Color(0xFF1e1b4b), Color(0xFF312e81)],
+            colors: [AppConstants.surfaceElevated, AppConstants.accentYellowDeep],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          border: Border.all(color: const Color(0xFF818cf8).withValues(alpha: 0.3)),
+          border: Border.all(color: AppConstants.accentYellow.withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -292,30 +293,30 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFef4444).withValues(alpha: 0.2),
+                          color: AppConstants.accentRose.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFFef4444).withValues(alpha: 0.4)),
+                          border: Border.all(color: AppConstants.accentRose.withValues(alpha: 0.4)),
                         ),
                         child: Text(
                           'BREAKING FOCUS',
                           style: GoogleFonts.inter(
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
-                            color: const Color(0xFFf87171),
+                            color: AppConstants.accentRose,
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         a['category'] ?? '',
-                        style: GoogleFonts.inter(fontSize: 11, color: Colors.white70),
+                        style: GoogleFonts.inter(fontSize: 11, color: AppConstants.textSecondary),
                       ),
                       const Spacer(),
-                      const Icon(Icons.auto_awesome, size: 14, color: Color(0xFF818cf8)),
+                      const Icon(Icons.auto_awesome, size: 14, color: AppConstants.accentYellow),
                       const SizedBox(width: 4),
                       Text(
                         'AI Quiz',
-                        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF818cf8)),
+                        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppConstants.accentYellow),
                       ),
                     ],
                   ),
@@ -325,7 +326,7 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
                     style: GoogleFonts.inter(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: AppConstants.textPrimary,
                       height: 1.35,
                     ),
                   ),
@@ -333,7 +334,7 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
                     const SizedBox(height: 8),
                     Text(
                       a['summary'] ?? '',
-                      style: GoogleFonts.inter(fontSize: 12, color: Colors.white60, height: 1.4),
+                      style: GoogleFonts.inter(fontSize: 12, color: AppConstants.textSecondary, height: 1.4),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -343,12 +344,12 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
                     children: [
                       Text(
                         '${a['publish_date']} · ${a['read_time_minutes'] ?? 3} min read',
-                        style: GoogleFonts.inter(fontSize: 11, color: Colors.white38),
+                        style: GoogleFonts.inter(fontSize: 11, color: AppConstants.textMuted),
                       ),
                       const Spacer(),
                       Text(
                         'Read & Practice →',
-                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF818cf8)),
+                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppConstants.accentYellow),
                       ),
                     ],
                   ),
@@ -368,9 +369,9 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.03),
+          color: AppConstants.textPrimary.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+          border: Border.all(color: AppConstants.textPrimary.withValues(alpha: 0.06)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -380,7 +381,7 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6366f1).withValues(alpha: 0.15),
+                    color: AppConstants.accentYellow.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -388,29 +389,29 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
                     style: GoogleFonts.inter(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF818cf8),
+                      color: AppConstants.accentYellow,
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   a['publish_date'] ?? '',
-                  style: GoogleFonts.inter(fontSize: 11, color: Colors.white38),
+                  style: GoogleFonts.inter(fontSize: 11, color: AppConstants.textMuted),
                 ),
                 const Spacer(),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: AppConstants.textPrimary.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.psychology_outlined, size: 12, color: Color(0xFF818cf8)),
+                      const Icon(Icons.psychology_outlined, size: 12, color: AppConstants.accentYellow),
                       const SizedBox(width: 3),
                       Text(
                         'Quiz Ready',
-                        style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white70),
+                        style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppConstants.textSecondary),
                       ),
                     ],
                   ),
@@ -423,14 +424,14 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
               style: GoogleFonts.inter(
                 fontSize: 14.5,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: AppConstants.textPrimary,
                 height: 1.35,
               ),
             ),
             const SizedBox(height: 6),
             Text(
               a['summary'] ?? a['content_body'] ?? '',
-              style: GoogleFonts.inter(fontSize: 12, color: Colors.white54, height: 1.4),
+              style: GoogleFonts.inter(fontSize: 12, color: AppConstants.textMuted, height: 1.4),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -438,7 +439,7 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
               const SizedBox(height: 10),
               Text(
                 'Exam Targets: ${a['exam_relevance']}',
-                style: GoogleFonts.inter(fontSize: 10.5, color: const Color(0xFF818cf8).withValues(alpha: 0.8), fontWeight: FontWeight.w500),
+                style: GoogleFonts.inter(fontSize: 10.5, color: AppConstants.accentYellow.withValues(alpha: 0.8), fontWeight: FontWeight.w500),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -456,16 +457,16 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.newspaper_outlined, size: 54, color: Colors.white24),
+            const Icon(Icons.newspaper_outlined, size: 54, color: AppConstants.cardBorder),
             const SizedBox(height: 16),
             Text(
               'No Current Affairs Found',
-              style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white70),
+              style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppConstants.textSecondary),
             ),
             const SizedBox(height: 6),
             Text(
               'Try changing your category or search term.',
-              style: GoogleFonts.inter(fontSize: 12, color: Colors.white38),
+              style: GoogleFonts.inter(fontSize: 12, color: AppConstants.textMuted),
             ),
           ],
         ),
@@ -482,11 +483,11 @@ class _CurrentAffairsViewState extends State<CurrentAffairsView> {
           children: [
             const Icon(Icons.warning_amber_rounded, size: 48, color: Colors.amber),
             const SizedBox(height: 14),
-            Text(_errorMsg, style: GoogleFonts.inter(color: Colors.white70, fontSize: 13), textAlign: TextAlign.center),
+            Text(_errorMsg, style: GoogleFonts.inter(color: AppConstants.textSecondary, fontSize: 13), textAlign: TextAlign.center),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadArticles,
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366f1)),
+              style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentYellow),
               child: Text('Retry', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
             ),
           ],

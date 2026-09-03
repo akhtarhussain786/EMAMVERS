@@ -23,11 +23,13 @@ class _WrongQuestionsViewState extends State<WrongQuestionsView> {
   void _loadWrongQuestions() async {
     try {
       final res = await ApiService.get('/v1/user/wrong-questions');
+      if (!mounted) return;
       setState(() {
         wrongQuestions = res is List ? res : [];
         isLoading = false;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() => isLoading = false);
     }
   }
@@ -39,9 +41,9 @@ class _WrongQuestionsViewState extends State<WrongQuestionsView> {
       appBar: AppBar(
         backgroundColor: AppConstants.cardDark,
         elevation: 0,
-        title: const Text('Mistake Bank / Wrong Notebook', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        title: const Text('Mistake Bank / Wrong Notebook', style: TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: AppConstants.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -55,7 +57,7 @@ class _WrongQuestionsViewState extends State<WrongQuestionsView> {
                     children: [
                       Icon(Icons.check_circle_outline, size: 64, color: AppConstants.accentGreen),
                       const SizedBox(height: 12),
-                      const Text('No recorded mistakes yet!', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                      const Text('No recorded mistakes yet!', style: TextStyle(color: AppConstants.onAccent, fontSize: 18, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 6),
                       const Text('Questions you answer wrong during full mock tests\nwill automatically appear here for revision.',
                           textAlign: TextAlign.center, style: TextStyle(color: AppConstants.textMuted, fontSize: 12)),
@@ -117,7 +119,7 @@ class _WrongQuestionsViewState extends State<WrongQuestionsView> {
                                     ],
                                   ),
                                   const SizedBox(height: 12),
-                                  Text(qText, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+                                  Text(qText, style: const TextStyle(color: AppConstants.onAccent, fontSize: 15, fontWeight: FontWeight.w600)),
                                   const SizedBox(height: 12),
                                   Row(
                                     children: [
@@ -152,7 +154,7 @@ class _WrongQuestionsViewState extends State<WrongQuestionsView> {
                                     final isUserChoice = key == userKey;
 
                                     Color borderCol = AppConstants.cardBorder;
-                                    Color textCol = Colors.white70;
+                                    Color textCol = AppConstants.textSecondary;
                                     if (isCorrect) {
                                       borderCol = AppConstants.accentGreen;
                                       textCol = AppConstants.accentGreen;
@@ -189,7 +191,7 @@ class _WrongQuestionsViewState extends State<WrongQuestionsView> {
                                       color: AppConstants.primaryDark,
                                       borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: Text(solText, style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4)),
+                                    child: Text(solText, style: const TextStyle(color: AppConstants.onAccent, fontSize: 13, height: 1.4)),
                                   ),
                                 ],
                               ),

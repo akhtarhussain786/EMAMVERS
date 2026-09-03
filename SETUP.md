@@ -131,3 +131,31 @@ root, and are served only through the entitlement-checked
 - **Payments.** `MarketplaceController::purchase()` has no gateway. With
   `PAYMENTS_ENABLED=true` it returns 503 until one is implemented; the capture
   and signature-verification step goes in the marked block.
+
+## 7. Running the tests
+
+```bash
+cd student_app
+
+# Unit + widget tests (includes the palette contrast checks)
+flutter test
+
+# UI + readability tests: drives the real app against a running API.
+# Credentials are passed in so none are committed.
+flutter test integration_test/app_ui_test.dart -d linux \
+  --dart-define=API_BASE_URL=http://127.0.0.1:8911/EXAMVERSE/api \
+  --dart-define=TEST_STUDENT_PASSWORD='<student password>' \
+  --dart-define=TEST_TEACHER_PASSWORD='<teacher password>'
+```
+
+The readability suite walks the rendered widget tree on 12 screens and fails
+any text below 3:1 against the background actually painted behind it. Run it
+after changing colours — a source-level scan cannot tell whether a given white
+belongs on a card or on an accent fill.
+
+## 8. Theme
+
+The app uses a white ground with a dark-yellow accent. All colours live in
+`AppConstants` (`student_app/lib/core/constants.dart`) and the matching admin
+tokens are the `:root` variables in `admin/assets/style.css`. Keep the two in
+step, and re-run the contrast tests after any change.

@@ -15,18 +15,18 @@ $subjects = $db->query("SELECT id, name FROM subjects ORDER BY name ASC")->fetch
     .qr-tab.active { background:rgba(56,189,248,.15); border-color:rgba(56,189,248,.45); color:var(--accent-blue); }
     .qr-tab .cnt { display:inline-block; margin-left:.4rem; padding:0 .4rem; border-radius:99px;
                    background:rgba(255,255,255,.12); font-size:.72rem; }
-    .sub-card { background:var(--bg-card,#151F32); border:1px solid rgba(148,163,184,.15);
+    .sub-card { background:var(--bg-card); border:1px solid rgba(148,163,184,.15);
                 border-radius:var(--radius-md,12px); padding:1.1rem; margin-bottom:1rem; }
     .sub-meta { display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; margin-bottom:.75rem; font-size:.75rem; }
     .pill { padding:.15rem .55rem; border-radius:99px; background:rgba(148,163,184,.12);
             color:var(--text-secondary); font-weight:600; }
     .pill.subj { background:rgba(139,92,246,.15); color:#c4b5fd; }
     .pill.diff { background:rgba(245,158,11,.15); color:#fcd34d; }
-    .pill.author { background:rgba(34,197,94,.12); color:#86efac; }
+    .pill.author { background:rgba(21,128,61,.12); color:#86efac; }
     .q-text { color:#fff; font-size:.95rem; font-weight:600; line-height:1.5; margin-bottom:.85rem; }
     .opt-row { display:flex; gap:.6rem; align-items:flex-start; padding:.45rem .65rem; border-radius:8px;
                margin-bottom:.3rem; background:rgba(148,163,184,.05); font-size:.85rem; color:var(--text-secondary); }
-    .opt-row.correct { background:rgba(34,197,94,.12); border:1px solid rgba(34,197,94,.35); color:#bbf7d0; }
+    .opt-row.correct { background:rgba(21,128,61,.12); border:1px solid rgba(21,128,61,.35); color:#bbf7d0; }
     .opt-key { font-weight:800; min-width:1.2rem; }
     .expl { margin-top:.75rem; padding:.65rem .8rem; border-radius:8px; background:rgba(56,189,248,.07);
             border-left:3px solid rgba(56,189,248,.5); font-size:.82rem; color:var(--text-secondary); line-height:1.5; }
@@ -116,7 +116,7 @@ function renderCard(q) {
     const actions = q.status === 'review' ? `
         <div class="qr-actions">
             <button class="btn btn-primary" onclick="approve(${q.id})">✓ Approve &amp; Publish</button>
-            <button class="btn" style="background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3);"
+            <button class="btn" style="background:rgba(239,68,68,.15);color:var(--accent-danger);border:1px solid rgba(239,68,68,.3);"
                     onclick="reject(${q.id})">✗ Reject</button>
         </div>` : '';
 
@@ -186,7 +186,7 @@ async function loadTeachers() {
                 <td>${esc(t.specialisation || '—')}</td>
                 <td>${t.questions_submitted}</td>
                 <td style="color:#86efac;">${t.questions_approved}</td>
-                <td style="color:#fca5a5;">${t.questions_rejected}</td>
+                <td style="color:var(--accent-danger);">${t.questions_rejected}</td>
                 <td><span class="pill">${esc(t.status)}</span></td>
                 <td><button class="btn btn-xs" onclick="toggleTeacher(${t.id}, '${t.status === 'active' ? 'suspended' : 'active'}')">
                     ${t.status === 'active' ? 'Suspend' : 'Reactivate'}</button></td>

@@ -125,7 +125,7 @@ class _BuildPracticeViewState extends State<BuildPracticeView> {
         backgroundColor: AppConstants.scaffoldDark,
         elevation: 0,
         title: const Text('Build Your Test',
-            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
       ),
       body: SafeArea(
         child: _loading
@@ -211,7 +211,7 @@ class _BuildPracticeViewState extends State<BuildPracticeView> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(s['subject_name']?.toString() ?? '',
-                          style: const TextStyle(color: Colors.white, fontSize: 14)),
+                          style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14)),
                     ),
                     Text('${s['available']} available',
                         style: const TextStyle(color: AppConstants.textMuted, fontSize: 11.5)),

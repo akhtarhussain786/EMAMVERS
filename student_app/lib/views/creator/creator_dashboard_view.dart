@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/api_service.dart';
 
@@ -58,11 +59,11 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1e1e2e),
+        backgroundColor: AppConstants.cardDark,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Request Payout',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: AppConstants.textPrimary),
         ),
         content: Form(
           key: formKey,
@@ -72,18 +73,18 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
             children: [
               Text(
                 'Available Pending: ₹${pendingAmount.toStringAsFixed(2)}',
-                style: GoogleFonts.inter(fontSize: 13, color: Colors.white70),
+                style: GoogleFonts.inter(fontSize: 13, color: AppConstants.textSecondary),
               ),
               const SizedBox(height: 14),
               TextFormField(
                 controller: amountCtrl,
                 keyboardType: TextInputType.number,
-                style: GoogleFonts.inter(color: Colors.white),
+                style: GoogleFonts.inter(color: AppConstants.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'Amount (₹)',
-                  labelStyle: GoogleFonts.inter(color: Colors.white54),
+                  labelStyle: GoogleFonts.inter(color: AppConstants.textMuted),
                   filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.05),
+                  fillColor: AppConstants.textPrimary.withValues(alpha: 0.05),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 validator: (v) {
@@ -99,7 +100,7 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white54)),
+            child: Text('Cancel', style: GoogleFonts.inter(color: AppConstants.textMuted)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -107,7 +108,7 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
                 Navigator.pop(ctx, true);
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366f1)),
+            style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentYellow),
             child: Text('Submit Request', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
           ),
         ],
@@ -141,26 +142,26 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F1A),
+      backgroundColor: AppConstants.primaryDark,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F0F1A),
+        backgroundColor: AppConstants.primaryDark,
         title: Text(
           'Creator Studio',
-          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
+          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppConstants.textPrimary),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 18),
+          icon: const Icon(Icons.arrow_back_ios, color: AppConstants.textPrimary, size: 18),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white70),
+            icon: const Icon(Icons.refresh, color: AppConstants.textSecondary),
             onPressed: _loadDashboard,
           ),
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF818cf8)))
+          ? const Center(child: CircularProgressIndicator(color: AppConstants.accentYellow))
           : _errorMsg.isNotEmpty
               ? _buildErrorView()
               : _buildDashboardContent(),
@@ -179,12 +180,12 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
             Text(
               _errorMsg,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+              style: GoogleFonts.inter(color: AppConstants.textSecondary, fontSize: 14),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => Navigator.pushNamed(context, '/become-creator'),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366f1)),
+              style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentYellow),
               child: Text('Register as Creator', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
             ),
           ],
@@ -204,7 +205,7 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
 
     return RefreshIndicator(
       onRefresh: _loadDashboard,
-      color: const Color(0xFF818cf8),
+      color: AppConstants.accentYellow,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(18),
         child: Column(
@@ -215,12 +216,12 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF1e1b4b), Color(0xFF312e81)],
+                  colors: [AppConstants.surfaceElevated, AppConstants.accentYellowDeep],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF818cf8).withValues(alpha: 0.3)),
+                border: Border.all(color: AppConstants.accentYellow.withValues(alpha: 0.3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -229,10 +230,10 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
                     children: [
                       CircleAvatar(
                         radius: 22,
-                        backgroundColor: const Color(0xFF6366f1),
+                        backgroundColor: AppConstants.accentYellow,
                         child: Text(
                           (creator['display_name'] ?? 'C')[0].toUpperCase(),
-                          style: GoogleFonts.inter(fontWeight: FontWeight.w800, color: Colors.white),
+                          style: GoogleFonts.inter(fontWeight: FontWeight.w800, color: AppConstants.textPrimary),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -242,7 +243,7 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
                           children: [
                             Text(
                               creator['display_name'] ?? '',
-                              style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
+                              style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: AppConstants.textPrimary),
                             ),
                             Text(
                               'Status: ${creator['verification_status']?.toUpperCase() ?? 'PENDING'}',
@@ -258,7 +259,7 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
                     ],
                   ),
                   const SizedBox(height: 18),
-                  const Divider(color: Colors.white12),
+                  const Divider(color: AppConstants.cardBorder),
                   const SizedBox(height: 10),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -266,7 +267,7 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Available Balance', style: GoogleFonts.inter(fontSize: 11, color: Colors.white54)),
+                          Text('Available Balance', style: GoogleFonts.inter(fontSize: 11, color: AppConstants.textMuted)),
                           const SizedBox(height: 2),
                           Text('₹${pendingPayout.toStringAsFixed(0)}',
                               style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.greenAccent)),
@@ -275,7 +276,7 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
                       ElevatedButton(
                         onPressed: pendingPayout >= 100 ? () => _requestPayout(pendingPayout) : null,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF6366f1),
+                          backgroundColor: AppConstants.accentYellow,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                         child: Text('Withdraw', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700)),
@@ -312,7 +313,7 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
               children: [
                 Text(
                   'My Uploaded Materials',
-                  style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+                  style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppConstants.textPrimary),
                 ),
               ],
             ),
@@ -323,13 +324,13 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.03),
+                  color: AppConstants.textPrimary.withValues(alpha: 0.03),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Center(
                   child: Text(
                     'No study materials uploaded yet.',
-                    style: GoogleFonts.inter(color: Colors.white38, fontSize: 13),
+                    style: GoogleFonts.inter(color: AppConstants.textMuted, fontSize: 13),
                   ),
                 ),
               )
@@ -338,9 +339,9 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.04),
+                      color: AppConstants.textPrimary.withValues(alpha: 0.04),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                      border: Border.all(color: AppConstants.textPrimary.withValues(alpha: 0.06)),
                     ),
                     child: Row(
                       children: [
@@ -348,10 +349,10 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF6366f1).withValues(alpha: 0.15),
+                            color: AppConstants.accentYellow.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.picture_as_pdf_outlined, color: Color(0xFF818cf8), size: 22),
+                          child: const Icon(Icons.picture_as_pdf_outlined, color: AppConstants.accentYellow, size: 22),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -360,14 +361,14 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
                             children: [
                               Text(
                                 m['title'] ?? '',
-                                style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.white),
+                                style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13, color: AppConstants.textPrimary),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 3),
                               Text(
                                 '${m['exam_title'] ?? 'General'} · ₹${m['price'] ?? '0'} · ${m['sales_count'] ?? 0} sales',
-                                style: GoogleFonts.inter(fontSize: 11, color: Colors.white54),
+                                style: GoogleFonts.inter(fontSize: 11, color: AppConstants.textMuted),
                               ),
                             ],
                           ),
@@ -397,14 +398,14 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
             if (recentSales.isNotEmpty) ...[
               Text(
                 'Recent Sales',
-                style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+                style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppConstants.textPrimary),
               ),
               const SizedBox(height: 12),
               ...recentSales.map((s) => Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.03),
+                      color: AppConstants.textPrimary.withValues(alpha: 0.03),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
@@ -415,11 +416,11 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
                           children: [
                             Text(
                               s['material_title'] ?? '',
-                              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppConstants.textPrimary),
                             ),
                             Text(
                               'Buyer: ${s['buyer_name'] ?? 'Student'}',
-                              style: GoogleFonts.inter(fontSize: 10, color: Colors.white38),
+                              style: GoogleFonts.inter(fontSize: 10, color: AppConstants.textMuted),
                             ),
                           ],
                         ),
@@ -443,9 +444,9 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
+        color: AppConstants.textPrimary.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        border: Border.all(color: AppConstants.textPrimary.withValues(alpha: 0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -458,7 +459,7 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
               Expanded(
                 child: Text(
                   title,
-                  style: GoogleFonts.inter(fontSize: 11, color: Colors.white54),
+                  style: GoogleFonts.inter(fontSize: 11, color: AppConstants.textMuted),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -467,7 +468,7 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
           const SizedBox(height: 8),
           Text(
             val,
-            style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
+            style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: AppConstants.textPrimary),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),

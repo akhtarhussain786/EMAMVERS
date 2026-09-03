@@ -27,7 +27,7 @@ $exams = $db->query("
 ?>
 
 <?php if ($message): ?>
-    <div style="background:rgba(16, 185, 129, 0.2); color:var(--accent-emerald); padding:1rem; border-radius:var(--radius-sm); margin-bottom:1.5rem; font-weight:600;">
+    <div style="background:rgba(21, 128, 61, 0.2); color:var(--accent-emerald); padding:1rem; border-radius:var(--radius-sm); margin-bottom:1.5rem; font-weight:600;">
         <?php echo htmlspecialchars($message); ?>
     </div>
 <?php endif; ?>

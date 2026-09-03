@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/api_service.dart';
 
@@ -66,15 +67,15 @@ class _BecomeCreatorViewState extends State<BecomeCreatorView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F1A),
+      backgroundColor: AppConstants.primaryDark,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F0F1A),
+        backgroundColor: AppConstants.primaryDark,
         title: Text(
           'Become a Creator',
-          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
+          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppConstants.textPrimary),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 18),
+          icon: const Icon(Icons.arrow_back_ios, color: AppConstants.textPrimary, size: 18),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -102,19 +103,19 @@ class _BecomeCreatorViewState extends State<BecomeCreatorView> {
             const SizedBox(height: 24),
             Text(
               'Application Submitted!',
-              style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white),
+              style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w800, color: AppConstants.textPrimary),
             ),
             const SizedBox(height: 10),
             Text(
               'Your creator application is under review by the ExamVerse team. Once approved, you can start uploading study materials and earning 80% revenue share!',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 13, color: Colors.white60, height: 1.5),
+              style: GoogleFonts.inter(fontSize: 13, color: AppConstants.textSecondary, height: 1.5),
             ),
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6366f1),
+                backgroundColor: AppConstants.accentYellow,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -142,7 +143,7 @@ class _BecomeCreatorViewState extends State<BecomeCreatorView> {
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF4338ca), Color(0xFF6366f1)],
+                  colors: [AppConstants.accentYellowDeep, AppConstants.accentYellow],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -150,7 +151,7 @@ class _BecomeCreatorViewState extends State<BecomeCreatorView> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.monetization_on_outlined, color: Colors.white, size: 36),
+                  const Icon(Icons.monetization_on_outlined, color: AppConstants.textPrimary, size: 36),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
@@ -158,12 +159,12 @@ class _BecomeCreatorViewState extends State<BecomeCreatorView> {
                       children: [
                         Text(
                           'Earn with ExamVerse',
-                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
+                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: AppConstants.textPrimary),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           'Upload PDFs, notes & mock test papers. Keep 80% of every sale directly to your UPI/Bank.',
-                          style: GoogleFonts.inter(fontSize: 11, color: Colors.white.withValues(alpha: 0.85)),
+                          style: GoogleFonts.inter(fontSize: 11, color: AppConstants.textPrimary.withValues(alpha: 0.85)),
                         ),
                       ],
                     ),
@@ -176,13 +177,13 @@ class _BecomeCreatorViewState extends State<BecomeCreatorView> {
 
             Text(
               'Profile Details',
-              style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
+              style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppConstants.textPrimary),
             ),
             const SizedBox(height: 12),
 
             TextFormField(
               controller: _nameCtrl,
-              style: GoogleFonts.inter(color: Colors.white),
+              style: GoogleFonts.inter(color: AppConstants.textPrimary),
               decoration: _inputDec('Creator / Brand Display Name *', Icons.badge_outlined),
               validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter display name' : null,
             ),
@@ -191,7 +192,7 @@ class _BecomeCreatorViewState extends State<BecomeCreatorView> {
             TextFormField(
               controller: _aboutCtrl,
               maxLines: 3,
-              style: GoogleFonts.inter(color: Colors.white),
+              style: GoogleFonts.inter(color: AppConstants.textPrimary),
               decoration: _inputDec('About You / Teaching Experience', Icons.info_outline),
             ),
 
@@ -199,20 +200,20 @@ class _BecomeCreatorViewState extends State<BecomeCreatorView> {
 
             Text(
               'Payout Information (UPI / Bank)',
-              style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
+              style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppConstants.textPrimary),
             ),
             const SizedBox(height: 12),
 
             TextFormField(
               controller: _upiCtrl,
-              style: GoogleFonts.inter(color: Colors.white),
+              style: GoogleFonts.inter(color: AppConstants.textPrimary),
               decoration: _inputDec('UPI ID (e.g. name@okhdfcbank)', Icons.qr_code),
             ),
             const SizedBox(height: 14),
 
             TextFormField(
               controller: _bankAccountCtrl,
-              style: GoogleFonts.inter(color: Colors.white),
+              style: GoogleFonts.inter(color: AppConstants.textPrimary),
               decoration: _inputDec('Bank Account Number (Optional)', Icons.account_balance),
             ),
             const SizedBox(height: 14),
@@ -222,7 +223,7 @@ class _BecomeCreatorViewState extends State<BecomeCreatorView> {
                 Expanded(
                   child: TextFormField(
                     controller: _bankIfscCtrl,
-                    style: GoogleFonts.inter(color: Colors.white),
+                    style: GoogleFonts.inter(color: AppConstants.textPrimary),
                     decoration: _inputDec('IFSC Code', Icons.numbers),
                   ),
                 ),
@@ -230,7 +231,7 @@ class _BecomeCreatorViewState extends State<BecomeCreatorView> {
                 Expanded(
                   child: TextFormField(
                     controller: _bankNameCtrl,
-                    style: GoogleFonts.inter(color: Colors.white),
+                    style: GoogleFonts.inter(color: AppConstants.textPrimary),
                     decoration: _inputDec('Account Holder', Icons.person_outline),
                   ),
                 ),
@@ -245,14 +246,14 @@ class _BecomeCreatorViewState extends State<BecomeCreatorView> {
               child: ElevatedButton(
                 onPressed: _loading ? null : _submit,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6366f1),
+                  backgroundColor: AppConstants.accentYellow,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
                 child: _loading
                     ? const SizedBox(
                         width: 22,
                         height: 22,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                        child: CircularProgressIndicator(color: AppConstants.textPrimary, strokeWidth: 2.5),
                       )
                     : Text(
                         'Submit Application',
@@ -270,21 +271,21 @@ class _BecomeCreatorViewState extends State<BecomeCreatorView> {
   InputDecoration _inputDec(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      labelStyle: GoogleFonts.inter(color: Colors.white54, fontSize: 13),
-      prefixIcon: Icon(icon, color: Colors.white38, size: 20),
+      labelStyle: GoogleFonts.inter(color: AppConstants.textMuted, fontSize: 13),
+      prefixIcon: Icon(icon, color: AppConstants.textMuted, size: 20),
       filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.05),
+      fillColor: AppConstants.textPrimary.withValues(alpha: 0.05),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        borderSide: BorderSide(color: AppConstants.textPrimary.withValues(alpha: 0.1)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        borderSide: BorderSide(color: AppConstants.textPrimary.withValues(alpha: 0.1)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF818cf8)),
+        borderSide: const BorderSide(color: AppConstants.accentYellow),
       ),
     );
   }

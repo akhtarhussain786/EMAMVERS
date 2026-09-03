@@ -139,7 +139,7 @@ class _MapQuizViewState extends State<MapQuizView> {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppConstants.cardDark,
-        title: const Text('Map Quiz Completed! 🏆', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text('Map Quiz Completed! 🏆', style: TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -196,7 +196,7 @@ class _MapQuizViewState extends State<MapQuizView> {
       backgroundColor: AppConstants.primaryDark,
       appBar: AppBar(
         backgroundColor: AppConstants.scaffoldDark,
-        title: Text('Map Quiz (${currentIndex + 1}/${questions.length})', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        title: Text('Map Quiz (${currentIndex + 1}/${questions.length})', style: const TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
         elevation: 0,
       ),
       body: SafeArea(
@@ -227,7 +227,7 @@ class _MapQuizViewState extends State<MapQuizView> {
                     const SizedBox(height: 12),
                     Text(
                       'In which state/region is "$locationName" located?',
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800, height: 1.3),
+                      style: const TextStyle(color: AppConstants.onAccent, fontSize: 18, fontWeight: FontWeight.w800, height: 1.3),
                     ),
                     const SizedBox(height: 8),
                     Text(currentQ['short_description'] ?? '', style: const TextStyle(color: AppConstants.textSecondary, fontSize: 12.5)),
@@ -277,12 +277,12 @@ class _MapQuizViewState extends State<MapQuizView> {
                           backgroundColor: isSelected ? AppConstants.accentCyan : AppConstants.primaryDark,
                           child: Text(
                             String.fromCharCode(65 + index),
-                            style: TextStyle(color: isSelected ? Colors.black : Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: isSelected ? Colors.black : AppConstants.onAccent, fontSize: 12, fontWeight: FontWeight.bold),
                           ),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
-                          child: Text(optionText, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+                          child: Text(optionText, style: const TextStyle(color: AppConstants.onAccent, fontSize: 15, fontWeight: FontWeight.w600)),
                         ),
                         if (isSubmitted && isCorrect)
                           const Icon(Icons.check_circle, color: AppConstants.accentEmerald, size: 20),

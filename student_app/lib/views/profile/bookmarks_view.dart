@@ -23,11 +23,13 @@ class _BookmarksViewState extends State<BookmarksView> {
   void _loadBookmarks() async {
     try {
       final res = await ApiService.get('/v1/bookmarks');
+      if (!mounted) return;
       setState(() {
         bookmarks = res is List ? res : [];
         isLoading = false;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() => isLoading = false);
     }
   }
@@ -35,6 +37,7 @@ class _BookmarksViewState extends State<BookmarksView> {
   void _deleteBookmark(int id) async {
     try {
       await ApiService.delete('/v1/bookmarks/$id');
+      if (!mounted) return;
       setState(() {
         bookmarks.removeWhere((b) => b['id'] == id);
       });
@@ -63,9 +66,9 @@ class _BookmarksViewState extends State<BookmarksView> {
       appBar: AppBar(
         backgroundColor: AppConstants.cardDark,
         elevation: 0,
-        title: const Text('Saved Items & Bookmarks', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        title: const Text('Saved Items & Bookmarks', style: TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: AppConstants.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -103,7 +106,7 @@ class _BookmarksViewState extends State<BookmarksView> {
                             children: [
                               Icon(Icons.bookmark_border, size: 64, color: AppConstants.textMuted),
                               const SizedBox(height: 12),
-                              const Text('No saved items yet', style: TextStyle(color: Colors.white70, fontSize: 16)),
+                              const Text('No saved items yet', style: TextStyle(color: AppConstants.textSecondary, fontSize: 16)),
                               const SizedBox(height: 4),
                               const Text('Bookmark questions, articles & notes for quick revision', style: TextStyle(color: AppConstants.textMuted, fontSize: 12)),
                             ],
@@ -155,7 +158,7 @@ class _BookmarksViewState extends State<BookmarksView> {
                                         const SizedBox(height: 4),
                                         Text(
                                           title,
-                                          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                                          style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14, fontWeight: FontWeight.w600),
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -199,7 +202,7 @@ class _BookmarksViewState extends State<BookmarksView> {
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : AppConstants.textMuted,
+            color: isSelected ? AppConstants.textPrimary : AppConstants.textMuted,
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),

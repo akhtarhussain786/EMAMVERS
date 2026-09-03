@@ -78,8 +78,8 @@ class _ResultViewState extends State<ResultView> {
         backgroundColor: AppConstants.primaryDark,
         appBar: AppBar(
           backgroundColor: AppConstants.cardDark,
-          title: const Text('Result Analysis', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-          leading: IconButton(icon: const Icon(Icons.home, color: Colors.white), onPressed: widget.onHome),
+          title: const Text('Result Analysis', style: TextStyle(color: AppConstants.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+          leading: IconButton(icon: const Icon(Icons.home, color: AppConstants.textPrimary), onPressed: widget.onHome),
         ),
         body: const Padding(
           padding: EdgeInsets.all(AppConstants.space20),
@@ -95,8 +95,8 @@ class _ResultViewState extends State<ResultView> {
         appBar: AppBar(
           backgroundColor: AppConstants.cardDark,
           elevation: 0,
-          title: const Text('Result', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-          leading: IconButton(icon: const Icon(Icons.home, color: Colors.white), onPressed: widget.onHome),
+          title: const Text('Result', style: TextStyle(color: AppConstants.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+          leading: IconButton(icon: const Icon(Icons.home, color: AppConstants.textPrimary), onPressed: widget.onHome),
         ),
         body: SafeArea(
           child: EmptyStateWidget(
@@ -127,8 +127,8 @@ class _ResultViewState extends State<ResultView> {
       appBar: AppBar(
         backgroundColor: AppConstants.cardDark,
         elevation: 0,
-        title: Text(testTitle, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-        leading: IconButton(icon: const Icon(Icons.home, color: Colors.white), onPressed: widget.onHome),
+        title: Text(testTitle, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+        leading: IconButton(icon: const Icon(Icons.home, color: AppConstants.textPrimary), onPressed: widget.onHome),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppConstants.space20),
@@ -148,18 +148,18 @@ class _ResultViewState extends State<ResultView> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('TEST PERFORMANCE SUMMARY', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                      const Text('TEST PERFORMANCE SUMMARY', style: TextStyle(color: AppConstants.onAccent, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
-                        child: Text('Percentile ${summary?['percentile'] ?? '—'}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                        decoration: BoxDecoration(color: AppConstants.onAccent.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
+                        child: Text('Percentile ${summary?['percentile'] ?? '—'}', style: const TextStyle(color: AppConstants.onAccent, fontSize: 11, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
                   const SizedBox(height: AppConstants.space16),
-                  Text('${score.toStringAsFixed(1)} / 200', style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w800)),
+                  Text('${score.toStringAsFixed(1)} / 200', style: const TextStyle(color: AppConstants.onAccent, fontSize: 36, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 4),
-                  const Text('Total Score Achieved', style: TextStyle(color: Colors.white70, fontSize: 12.5)),
+                  const Text('Total Score Achieved', style: TextStyle(color: AppConstants.onAccent, fontSize: 12.5)),
                   const SizedBox(height: AppConstants.space20),
 
                   Row(
@@ -186,7 +186,7 @@ class _ResultViewState extends State<ResultView> {
             const SizedBox(height: AppConstants.space24),
 
             // Sectional Breakdown Table (SRD AN-001)
-            const Text('Sectional Performance Breakdown', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+            const Text('Sectional Performance Breakdown', style: TextStyle(color: AppConstants.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
             const SizedBox(height: AppConstants.space12),
             Container(
               decoration: BoxDecoration(
@@ -209,7 +209,7 @@ class _ResultViewState extends State<ResultView> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(sec['section_name'] ?? 'Section', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14.5)),
+                            Text(sec['section_name'] ?? 'Section', style: const TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 14.5)),
                             const SizedBox(height: 4),
                             Text('Correct: ${sec['correct']} • Wrong: ${sec['wrong']} • Unattempted: ${sec['unattempted']}', style: const TextStyle(color: AppConstants.textSecondary, fontSize: 11.5)),
                           ],
@@ -263,7 +263,7 @@ class _ResultViewState extends State<ResultView> {
                       children: [
                         Row(
                           children: [
-                            Text('Q${sol['question_order']}.', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            Text('Q${sol['question_order']}.', style: const TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold)),
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -273,7 +273,7 @@ class _ResultViewState extends State<ResultView> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Text(sol['question_text'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.35)),
+                        Text(sol['question_text'] ?? '', style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14, height: 1.35)),
                         const SizedBox(height: 12),
 
                         // Solution Explanation
@@ -312,9 +312,9 @@ class _ResultViewState extends State<ResultView> {
   Widget _heroBadge(String label, String value) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
+        Text(value, style: const TextStyle(color: AppConstants.onAccent, fontWeight: FontWeight.w800, fontSize: 16)),
         const SizedBox(height: 2),
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 10.5)),
+        Text(label, style: const TextStyle(color: AppConstants.onAccent, fontSize: 10.5)),
       ],
     );
   }

@@ -63,7 +63,7 @@ class _TeacherDashboardViewState extends State<TeacherDashboardView> {
         backgroundColor: AppConstants.scaffoldDark,
         elevation: 0,
         title: const Text('Teacher Panel',
-            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: AppConstants.accentRose),
@@ -98,7 +98,7 @@ class _TeacherDashboardViewState extends State<TeacherDashboardView> {
                       children: [
                         Text('Welcome, ${teacher?['display_name'] ?? teacher?['full_name'] ?? 'Teacher'}',
                             style: const TextStyle(
-                                color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                                color: AppConstants.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
                         if (teacher?['specialisation'] != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
@@ -130,7 +130,7 @@ class _TeacherDashboardViewState extends State<TeacherDashboardView> {
                             leading: const Icon(Icons.list_alt, color: AppConstants.accentCyan),
                             title: const Text('My Submissions',
                                 style: TextStyle(
-                                    color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+                                    color: AppConstants.textPrimary, fontSize: 15, fontWeight: FontWeight.w600)),
                             subtitle: const Text('Track what is approved, pending or needs changes',
                                 style: TextStyle(color: AppConstants.textSecondary, fontSize: 12.5)),
                             trailing: const Icon(Icons.chevron_right, color: AppConstants.textMuted),
@@ -141,7 +141,7 @@ class _TeacherDashboardViewState extends State<TeacherDashboardView> {
 
                         const Text('Recent Submissions',
                             style: TextStyle(
-                                color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                                color: AppConstants.textPrimary, fontSize: 15, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 12),
                         ..._recentTiles(),
                         const SizedBox(height: 80),
@@ -173,7 +173,7 @@ class _TeacherDashboardViewState extends State<TeacherDashboardView> {
               Text(q['question_text']?.toString() ?? '(no text)',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white, fontSize: 13.5, height: 1.4)),
+                  style: const TextStyle(color: AppConstants.textPrimary, fontSize: 13.5, height: 1.4)),
               const SizedBox(height: 6),
               Text(q['subject_name']?.toString() ?? '—',
                   style: const TextStyle(color: AppConstants.textMuted, fontSize: 11.5)),

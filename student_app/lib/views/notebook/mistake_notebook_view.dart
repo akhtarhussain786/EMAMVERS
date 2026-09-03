@@ -66,7 +66,7 @@ class _MistakeNotebookViewState extends State<MistakeNotebookView> {
       backgroundColor: AppConstants.primaryDark,
       appBar: AppBar(
         backgroundColor: AppConstants.scaffoldDark,
-        title: const Text('Mistake Notebook', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        title: const Text('Mistake Notebook', style: TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
         elevation: 0,
       ),
       body: SafeArea(
@@ -90,7 +90,7 @@ class _MistakeNotebookViewState extends State<MistakeNotebookView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: const [
-                          Text('Smart Error Revision Engine', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                          Text('Smart Error Revision Engine', style: TextStyle(color: AppConstants.textPrimary, fontSize: 15, fontWeight: FontWeight.bold)),
                           SizedBox(height: 2),
                           Text('Review incorrectly answered questions to eliminate weak concepts.', style: TextStyle(color: AppConstants.textSecondary, fontSize: 11.5)),
                         ],
@@ -146,7 +146,7 @@ class _MistakeNotebookViewState extends State<MistakeNotebookView> {
                                     ),
                                     const SizedBox(height: AppConstants.space12),
 
-                                    Text(item['question_text'] ?? 'Question', style: const TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.bold, height: 1.3)),
+                                    Text(item['question_text'] ?? 'Question', style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14.5, fontWeight: FontWeight.bold, height: 1.3)),
                                     const SizedBox(height: AppConstants.space12),
 
                                     Row(

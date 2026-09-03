@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/api_service.dart';
 import 'purchase_flow_screen.dart';
@@ -46,14 +47,14 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const Scaffold(
-        backgroundColor: Color(0xFF0F0F1A),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF818cf8))),
+        backgroundColor: AppConstants.primaryDark,
+        body: Center(child: CircularProgressIndicator(color: AppConstants.accentYellow)),
       );
     }
     if (_material == null) {
       return const Scaffold(
-        backgroundColor: Color(0xFF0F0F1A),
-        body: Center(child: Text('Material not found', style: TextStyle(color: Colors.white))),
+        backgroundColor: AppConstants.primaryDark,
+        body: Center(child: Text('Material not found', style: TextStyle(color: AppConstants.textPrimary))),
       );
     }
 
@@ -65,16 +66,16 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
     final List reviews = m['reviews'] ?? [];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F1A),
+      backgroundColor: AppConstants.primaryDark,
       body: CustomScrollView(
         slivers: [
           // Hero Header
           SliverAppBar(
             expandedHeight: 220,
             pinned: true,
-            backgroundColor: const Color(0xFF0F0F1A),
+            backgroundColor: AppConstants.primaryDark,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 18),
+              icon: const Icon(Icons.arrow_back_ios, color: AppConstants.textPrimary, size: 18),
               onPressed: () => Navigator.pop(context),
             ),
             flexibleSpace: FlexibleSpaceBar(
@@ -96,31 +97,31 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF6366f1).withValues(alpha: 0.2),
+                            color: AppConstants.accentYellow.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: const Color(0xFF818cf8).withValues(alpha: 0.3)),
+                            border: Border.all(color: AppConstants.accentYellow.withValues(alpha: 0.3)),
                           ),
                           child: Text(m['exam_title'] ?? m['subject_name'] ?? 'Study Material',
-                              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF818cf8))),
+                              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppConstants.accentYellow)),
                         ),
                         const SizedBox(height: 12),
                         Text(m['title'] ?? '',
-                            style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white),
+                            style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w800, color: AppConstants.onAccent),
                             maxLines: 2),
                         const SizedBox(height: 8),
                         Row(children: [
-                          CircleAvatar(radius: 14, backgroundColor: const Color(0xFF6366f1),
+                          CircleAvatar(radius: 14, backgroundColor: AppConstants.accentYellow,
                               child: Text((m['creator_name'] ?? 'C')[0].toUpperCase(),
-                                  style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white))),
+                                  style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, color: AppConstants.textPrimary))),
                           const SizedBox(width: 8),
                           Text(m['creator_name'] ?? '',
-                              style: GoogleFonts.inter(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w600)),
+                              style: GoogleFonts.inter(fontSize: 12, color: AppConstants.textSecondary, fontWeight: FontWeight.w600)),
                           const Spacer(),
                           // Rating
                           Icon(Icons.star, size: 14, color: Colors.amber.shade400),
                           const SizedBox(width: 4),
                           Text('$rating ($ratingCount)',
-                              style: GoogleFonts.inter(fontSize: 12, color: Colors.white60)),
+                              style: GoogleFonts.inter(fontSize: 12, color: AppConstants.textSecondary)),
                         ]),
                       ],
                     ),
@@ -153,17 +154,17 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF818cf8).withValues(alpha: 0.08),
+                    color: AppConstants.accentYellow.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFF818cf8).withValues(alpha: 0.2)),
+                    border: Border.all(color: AppConstants.accentYellow.withValues(alpha: 0.2)),
                   ),
                   child: Row(children: [
-                    const Icon(Icons.preview_outlined, color: Color(0xFF818cf8), size: 22),
+                    const Icon(Icons.preview_outlined, color: AppConstants.accentYellow, size: 22),
                     const SizedBox(width: 12),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('Free Preview', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+                      Text('Free Preview', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppConstants.textPrimary)),
                       Text('${m['preview_pages'] ?? 5} pages free — buy to unlock full content',
-                          style: GoogleFonts.inter(fontSize: 12, color: Colors.white54)),
+                          style: GoogleFonts.inter(fontSize: 12, color: AppConstants.textMuted)),
                     ])),
                   ]),
                 ),
@@ -172,10 +173,10 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
 
                 // Description
                 Text('About this material',
-                    style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+                    style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppConstants.textPrimary)),
                 const SizedBox(height: 10),
                 Text(m['description'] ?? 'No description provided.',
-                    style: GoogleFonts.inter(fontSize: 13, color: Colors.white60, height: 1.6)),
+                    style: GoogleFonts.inter(fontSize: 13, color: AppConstants.textSecondary, height: 1.6)),
 
                 // Tags
                 if ((m['tags'] ?? '').isNotEmpty) ...[
@@ -184,9 +185,9 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
                     children: (m['tags'] as String).split(',').map((tag) => Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.06),
+                          color: AppConstants.textPrimary.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(20)),
-                      child: Text(tag.trim(), style: GoogleFonts.inter(fontSize: 11, color: Colors.white54)),
+                      child: Text(tag.trim(), style: GoogleFonts.inter(fontSize: 11, color: AppConstants.textMuted)),
                     )).toList(),
                   ),
                 ],
@@ -195,19 +196,19 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
 
                 // Reviews
                 if (reviews.isNotEmpty) ...[
-                  Text('Reviews', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+                  Text('Reviews', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppConstants.textPrimary)),
                   const SizedBox(height: 12),
                   ...reviews.take(3).map((r) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.04),
+                          color: AppConstants.textPrimary.withValues(alpha: 0.04),
                           borderRadius: BorderRadius.circular(12)),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Row(children: [
                           Text(r['full_name'] ?? 'Student',
-                              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
+                              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppConstants.textPrimary)),
                           const Spacer(),
                           ...List.generate(5, (i) => Icon(
                               i < (r['rating'] ?? 0) ? Icons.star : Icons.star_border,
@@ -216,7 +217,7 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
                         ]),
                         if (r['review_text'] != null && r['review_text'].isNotEmpty) ...[
                           const SizedBox(height: 6),
-                          Text(r['review_text'], style: GoogleFonts.inter(fontSize: 12, color: Colors.white54)),
+                          Text(r['review_text'], style: GoogleFonts.inter(fontSize: 12, color: AppConstants.textMuted)),
                         ],
                       ]),
                     ),
@@ -234,16 +235,16 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         decoration: BoxDecoration(
-          color: const Color(0xFF1a1a2e),
-          border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
+          color: AppConstants.cardDark,
+          border: Border(top: BorderSide(color: AppConstants.textPrimary.withValues(alpha: 0.08))),
         ),
         child: Row(children: [
           // Price
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Price', style: GoogleFonts.inter(fontSize: 11, color: Colors.white38)),
+            Text('Price', style: GoogleFonts.inter(fontSize: 11, color: AppConstants.textMuted)),
             Text(isFree ? 'FREE' : '₹${price.toStringAsFixed(0)}',
                 style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w900,
-                    color: isFree ? Colors.green.shade400 : Colors.white)),
+                    color: isFree ? Colors.green.shade400 : AppConstants.textPrimary)),
           ]),
           const SizedBox(width: 20),
           // Action Button
@@ -260,7 +261,7 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
                   onPressed: () => Navigator.push(context, MaterialPageRoute(
                       builder: (_) => PurchaseFlowScreen(material: m))),
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6366f1),
+                      backgroundColor: AppConstants.accentYellow,
                       padding: const EdgeInsets.symmetric(vertical: 15),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
                   child: Text(isFree ? 'Get for Free' : 'Buy Now — ₹${price.toStringAsFixed(0)}',
@@ -287,12 +288,12 @@ class _StatChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: AppConstants.textPrimary.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(8)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 12, color: Colors.white38),
+        Icon(icon, size: 12, color: AppConstants.textMuted),
         const SizedBox(width: 5),
-        Text(label, style: GoogleFonts.inter(fontSize: 11, color: Colors.white54)),
+        Text(label, style: GoogleFonts.inter(fontSize: 11, color: AppConstants.textMuted)),
       ]),
     );
   }

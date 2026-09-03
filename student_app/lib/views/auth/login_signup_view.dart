@@ -40,6 +40,7 @@ class _LoginSignupViewState extends State<LoginSignupView> {
     final prefs = await SharedPreferences.getInstance();
     final savedIdentity = prefs.getString('remembered_identity');
     final savedRememberMe = prefs.getBool('remember_me') ?? true;
+    if (!mounted) return;
     setState(() {
       rememberMe = savedRememberMe;
       if (savedIdentity != null && savedIdentity.isNotEmpty && rememberMe) {
@@ -62,6 +63,7 @@ class _LoginSignupViewState extends State<LoginSignupView> {
   void _loadMetadata() async {
     try {
       final res = await ApiService.get('/v1/auth/meta');
+      if (!mounted) return;
       setState(() {
         states = res['states'] ?? [];
         qualifications = res['qualifications'] ?? [];
@@ -157,7 +159,7 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                   RichText(
                     text: const TextSpan(
                       children: [
-                        TextSpan(text: 'EXAM', style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+                        TextSpan(text: 'EXAM', style: TextStyle(color: AppConstants.onAccent, fontSize: 36, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
                         TextSpan(text: 'VERSE', style: TextStyle(color: AppConstants.accentCyan, fontSize: 36, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
                       ],
                     ),
@@ -178,7 +180,7 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                       children: [
                         Text(
                           isSignUp ? 'Create Candidate Account' : 'Welcome Back',
-                          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+                          style: const TextStyle(color: AppConstants.textPrimary, fontSize: 20, fontWeight: FontWeight.w800),
                         ),
                         const SizedBox(height: 4),
                         Text(

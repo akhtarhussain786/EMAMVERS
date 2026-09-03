@@ -29,62 +29,76 @@ class AppConstants {
     return 'http://127.0.0.1/EXAMVERSE/api';
   }
 
-  // EXAMVERSE Color System — Premium Dark Futuristic Theme
-  static const Color primaryDark = Color(0xFF080D18);      // Deepest background #080D18
-  static const Color scaffoldDark = Color(0xFF101827);     // Secondary surface #101827
-  static const Color cardDark = Color(0xFF151F32);         // Card background #151F32
-  static const Color surfaceElevated = Color(0xFF1A263B);   // Elevated surface #1A263B
-  static const Color cardBorder = Color(0x2694A3B8);       // Subtle border rgba(148,163,184,0.15)
+  // ── EXAMVERSE Colour System — Light theme: white + dark yellow ──────────
+  // Every pair below is checked against WCAG AA (4.5:1 for body text).
+  // Names are kept from the previous dark theme so all 600+ call sites keep
+  // working; only the values changed.
 
-  // Signature Accents
-  static const Color accentCyan = Color(0xFF38BDF8);       // Primary Cyan #38BDF8
-  static const Color accentBlue = Color(0xFF0284C7);       // Secondary Blue #0284C7
-  static const Color accentPurple = Color(0xFF8B5CF6);     // Purple Accent #8B5CF6
-  static const Color accentViolet = Color(0xFF6366F1);     // Royal Indigo / Violet
-  static const Color accentIndigo = Color(0xFF6366F1);     // Alias for violet
-  static const Color accentEmerald = Color(0xFF22C55E);    // Success #22C55E
-  static const Color accentGreen = Color(0xFF22C55E);      // Alias for emerald
-  static const Color accentAmber = Color(0xFFF59E0B);      // Warning #F59E0B
-  static const Color accentRose = Color(0xFFEF4444);       // Danger #EF4444
+  static const Color primaryDark = Color(0xFFFFFFFF);      // page background
+  static const Color scaffoldDark = Color(0xFFFCFAF4);     // app bars, chrome
+  static const Color cardDark = Color(0xFFFCFAF4);         // card surface
+  static const Color surfaceElevated = Color(0xFFF5F0E1);  // raised surface
+  static const Color cardBorder = Color(0xFFE3DBC5);       // hairline border
 
-  // Typography Hierarchy Text Colors
-  static const Color textPrimary = Color(0xFFF8FAFC);     // Primary Text #F8FAFC
-  static const Color textSecondary = Color(0xFF94A3B8);   // Secondary Text #94A3B8
-  static const Color textMuted = Color(0xFF64748B);       // Captions & inactive #64748B
+  // Signature accent: dark yellow. 4.92:1 on white, and white text on it is
+  // also 4.92:1, so it works both as ink and as a button fill.
+  static const Color accentYellow = Color(0xFF8A6D00);
+  static const Color accentYellowDeep = Color(0xFF6B5400);
+  static const Color accentYellowSoft = Color(0xFFC9A227);
+
+  // Legacy accent names now resolve to the yellow family or an accessible
+  // status colour, so existing widgets stay readable on a light background.
+  static const Color accentCyan = accentYellow;
+  static const Color accentBlue = accentYellowDeep;
+  static const Color accentPurple = Color(0xFF6D28D9);
+  static const Color accentViolet = Color(0xFF6D28D9);
+  static const Color accentIndigo = accentYellow;
+  static const Color accentEmerald = Color(0xFF15803D);
+  static const Color accentGreen = Color(0xFF15803D);
+  static const Color accentAmber = Color(0xFFB45309);
+  static const Color accentRose = Color(0xFFB91C1C);
+
+  // Typography — dark ink on light ground.
+  static const Color textPrimary = Color(0xFF1A1A1A);      // 17.4:1 on white
+  static const Color textSecondary = Color(0xFF54524B);    //  7.8:1 on white
+  static const Color textMuted = Color(0xFF726F65);        //  5.0:1 on white
+
+  /// Ink to place on top of a filled accent surface.
+  static const Color onAccent = Color(0xFFFFFFFF);
 
   // Curated Gradients
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [accentCyan, accentBlue],
+    colors: [accentYellow, accentYellowDeep],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient aiGradient = LinearGradient(
-    colors: [accentPurple, accentBlue],
+    colors: [accentPurple, accentYellowDeep],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient readinessGradient = LinearGradient(
-    colors: [Color(0xFF4F46E5), Color(0xFF0284C7)],
+    colors: [accentYellow, accentYellowSoft],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient emeraldGradient = LinearGradient(
-    colors: [Color(0xFF16A34A), accentEmerald],
+    colors: [Color(0xFF15803D), Color(0xFF22A354)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient goldGradient = LinearGradient(
-    colors: [Color(0xFFD97706), accentAmber],
+    colors: [accentYellowDeep, accentYellow],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient darkCardGradient = LinearGradient(
-    colors: [Color(0xFF151F32), Color(0xFF101827)],
+    colors: [Color(0xFFFCFAF4), Color(0xFFF5F0E1)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -108,16 +122,16 @@ class AppConstants {
   // Reusable Soft Box Shadows
   static List<BoxShadow> get cardShadow => [
     BoxShadow(
-      color: Colors.black.withValues(alpha: 0.3),
-      blurRadius: 16,
-      offset: const Offset(0, 4),
+      color: Colors.black.withValues(alpha: 0.06),
+      blurRadius: 14,
+      offset: const Offset(0, 3),
     ),
   ];
 
   static List<BoxShadow> glowShadow(Color color) => [
     BoxShadow(
-      color: color.withValues(alpha: 0.35),
-      blurRadius: 20,
+      color: color.withValues(alpha: 0.22),
+      blurRadius: 18,
       spreadRadius: 1,
       offset: const Offset(0, 4),
     ),

@@ -32,11 +32,13 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
   void _loadInstructions() async {
     try {
       final res = await ApiService.get('/v1/tests/${widget.testId}/instructions');
+      if (!mounted) return;
       setState(() {
         instructionsData = res;
         isLoading = false;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() => isLoading = false);
     }
   }
@@ -48,8 +50,8 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
         backgroundColor: AppConstants.primaryDark,
         appBar: AppBar(
           backgroundColor: AppConstants.cardDark,
-          title: const Text('Test Instructions', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-          leading: IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: widget.onCancel),
+          title: const Text('Test Instructions', style: TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+          leading: IconButton(icon: const Icon(Icons.close, color: AppConstants.textPrimary), onPressed: widget.onCancel),
         ),
         body: const Padding(
           padding: EdgeInsets.all(AppConstants.space24),
@@ -71,8 +73,8 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
       appBar: AppBar(
         backgroundColor: AppConstants.cardDark,
         elevation: 0,
-        title: const Text('Test Instructions', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-        leading: IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: widget.onCancel),
+        title: const Text('Test Instructions', style: TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+        leading: IconButton(icon: const Icon(Icons.close, color: AppConstants.textPrimary), onPressed: widget.onCancel),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -80,7 +82,7 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+            Text(title, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 22, fontWeight: FontWeight.w800)),
             const SizedBox(height: 4),
             Text(examTitle, style: const TextStyle(color: AppConstants.accentBlue, fontSize: 13.5, fontWeight: FontWeight.w700)),
             const SizedBox(height: AppConstants.space20),
@@ -106,7 +108,7 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
             ),
             const SizedBox(height: AppConstants.space24),
 
-            const Text('General Guidelines & Exam Rules:', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('General Guidelines & Exam Rules:', style: TextStyle(color: AppConstants.onAccent, fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: AppConstants.space12),
             _ruleBullet('The countdown timer at the top right of the screen displays remaining test time.'),
             _ruleBullet('You can navigate between questions using the Question Palette.'),
@@ -122,7 +124,7 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
                 onPressed: widget.onProceedToTest,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppConstants.accentEmerald,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppConstants.onAccent,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusMedium)),
                   elevation: 0,
@@ -140,7 +142,7 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
   Widget _infoTile(String label, String value) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14.5)),
+        Text(value, style: const TextStyle(color: AppConstants.onAccent, fontWeight: FontWeight.w800, fontSize: 14.5)),
         const SizedBox(height: 2),
         Text(label, style: const TextStyle(color: AppConstants.textMuted, fontSize: 11)),
       ],

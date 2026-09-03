@@ -135,7 +135,7 @@ $currentPage = isset($page) ? $page : 'dashboard';
     letter-spacing: 0.5px;
 }
 .nav-badge.new {
-    background: linear-gradient(135deg, #6366f1, #a855f7);
+    background: linear-gradient(135deg, var(--accent-indigo), #a855f7);
     color: white;
 }
 .sidebar-footer {
@@ -154,6 +154,6 @@ $currentPage = isset($page) ? $page : 'dashboard';
     font-size: 13px;
     transition: all 0.2s;
 }
-.logout-btn:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+.logout-btn:hover { color: var(--accent-danger); background: rgba(239,68,68,0.1); }
 .logout-btn svg { width: 16px; height: 16px; }
 </style>

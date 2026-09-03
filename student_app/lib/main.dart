@@ -89,16 +89,30 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
       title: 'EXAMVERSE',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        brightness: Brightness.dark,
+        brightness: Brightness.light,
         scaffoldBackgroundColor: AppConstants.primaryDark,
-        primaryColor: AppConstants.accentIndigo,
+        primaryColor: AppConstants.accentYellow,
         cardColor: AppConstants.cardDark,
-        textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
-        colorScheme: const ColorScheme.dark(
-          primary: AppConstants.accentIndigo,
-          secondary: AppConstants.accentPurple,
+        textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme)
+            .apply(bodyColor: AppConstants.textPrimary, displayColor: AppConstants.textPrimary),
+        colorScheme: const ColorScheme.light(
+          primary: AppConstants.accentYellow,
+          onPrimary: AppConstants.onAccent,
+          secondary: AppConstants.accentYellowDeep,
+          onSecondary: AppConstants.onAccent,
           surface: AppConstants.cardDark,
+          onSurface: AppConstants.textPrimary,
         ),
+        // Chrome must not fall back to Material's dark defaults.
+        appBarTheme: const AppBarTheme(
+          backgroundColor: AppConstants.scaffoldDark,
+          foregroundColor: AppConstants.textPrimary,
+          elevation: 0,
+          iconTheme: IconThemeData(color: AppConstants.textPrimary),
+        ),
+        iconTheme: const IconThemeData(color: AppConstants.textPrimary),
+        dividerColor: AppConstants.cardBorder,
+        progressIndicatorTheme: const ProgressIndicatorThemeData(color: AppConstants.accentYellow),
         useMaterial3: true,
       ),
       routes: {

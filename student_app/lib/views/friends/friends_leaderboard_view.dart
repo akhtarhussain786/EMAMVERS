@@ -69,7 +69,7 @@ class _FriendsLeaderboardViewState extends State<FriendsLeaderboardView> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
-                    Text('Find Friends on ExamVerse', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text('Find Friends on ExamVerse', style: TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
                     Text('Privacy-safe contact matching', style: TextStyle(color: AppConstants.textSecondary, fontSize: 12)),
                   ],
                 ),
@@ -98,6 +98,7 @@ class _FriendsLeaderboardViewState extends State<FriendsLeaderboardView> {
                   });
                   _loadFriendsLeaderboard();
                 } catch (_) {
+                  if (!mounted) return;
                   setState(() => isLoading = false);
                 }
               },
@@ -114,7 +115,7 @@ class _FriendsLeaderboardViewState extends State<FriendsLeaderboardView> {
       backgroundColor: AppConstants.primaryDark,
       appBar: AppBar(
         backgroundColor: AppConstants.scaffoldDark,
-        title: const Text('Friends Leaderboard', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        title: const Text('Friends Leaderboard', style: TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
         elevation: 0,
         actions: [
           IconButton(
@@ -138,13 +139,14 @@ class _FriendsLeaderboardViewState extends State<FriendsLeaderboardView> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('YOUR FRIENDS RANK', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+                        const Text('YOUR FRIENDS RANK', style: TextStyle(color: AppConstants.onAccent, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
                         const SizedBox(height: 4),
-                        Text('#$myFriendsRank / $totalFriends', style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w800)),
+                        Text('#$myFriendsRank / $totalFriends', style: const TextStyle(color: AppConstants.onAccent, fontSize: 32, fontWeight: FontWeight.w800)),
                       ],
                     ),
                     SecondaryButton(
                       label: '+ Find Friends',
+                      color: AppConstants.onAccent,
                       icon: Icons.person_add,
                       onPressed: _syncContactsModal,
                     ),
@@ -190,14 +192,14 @@ class _FriendsLeaderboardViewState extends State<FriendsLeaderboardView> {
                                 CircleAvatar(
                                   radius: 18,
                                   backgroundColor: AppConstants.primaryDark,
-                                  child: Text((friend['full_name'] ?? 'F')[0].toUpperCase(), style: TextStyle(color: isUser ? AppConstants.accentCyan : Colors.white, fontWeight: FontWeight.bold)),
+                                  child: Text((friend['full_name'] ?? 'F')[0].toUpperCase(), style: TextStyle(color: isUser ? AppConstants.accentCyan : AppConstants.textPrimary, fontWeight: FontWeight.bold)),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(friend['full_name'] ?? 'Friend', style: TextStyle(color: isUser ? AppConstants.accentCyan : Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                                      Text(friend['full_name'] ?? 'Friend', style: TextStyle(color: isUser ? AppConstants.accentCyan : AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 14)),
                                       const SizedBox(height: 2),
                                       Text('${friend['solved_questions']} Solved • ${friend['accuracy']}% Acc', style: const TextStyle(color: AppConstants.textMuted, fontSize: 11)),
                                     ],

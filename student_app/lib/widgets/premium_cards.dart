@@ -37,7 +37,7 @@ class ReadinessCard extends StatelessWidget {
               height: 140,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.08),
+                color: AppConstants.onAccent.withValues(alpha: 0.08),
               ),
             ),
           ),
@@ -52,7 +52,7 @@ class ReadinessCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.25),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                      border: Border.all(color: AppConstants.textPrimary.withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -62,7 +62,7 @@ class ReadinessCard extends StatelessWidget {
                         Text(
                           'YOUR EXAM READINESS',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppConstants.onAccent,
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.8,
@@ -105,8 +105,8 @@ class ReadinessCard extends StatelessWidget {
                           child: CircularProgressIndicator(
                             value: score / 100.0,
                             strokeWidth: 8,
-                            backgroundColor: Colors.white.withValues(alpha: 0.15),
-                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                            backgroundColor: AppConstants.onAccent.withValues(alpha: 0.15),
+                            valueColor: const AlwaysStoppedAnimation<Color>(AppConstants.onAccent),
                             strokeCap: StrokeCap.round,
                           ),
                         ),
@@ -116,7 +116,7 @@ class ReadinessCard extends StatelessWidget {
                             Text(
                               '$score',
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppConstants.textPrimary,
                                 fontSize: 26,
                                 fontWeight: FontWeight.w800,
                                 height: 1.0,
@@ -125,7 +125,7 @@ class ReadinessCard extends StatelessWidget {
                             const Text(
                               '/100',
                               style: TextStyle(
-                                color: Colors.white70,
+                                color: AppConstants.textSecondary,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -143,7 +143,7 @@ class ReadinessCard extends StatelessWidget {
                         Text(
                           statusText,
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppConstants.textPrimary,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -152,7 +152,7 @@ class ReadinessCard extends StatelessWidget {
                         const Text(
                           'AI prediction based on your last 8 mock tests & speed stats.',
                           style: TextStyle(
-                            color: Colors.white70,
+                            color: AppConstants.textSecondary,
                             fontSize: 12.5,
                             height: 1.3,
                           ),
@@ -170,7 +170,7 @@ class ReadinessCard extends StatelessWidget {
                   icon: const Icon(Icons.psychology, size: 18),
                   label: const Text('View AI Exam Twin', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
+                    backgroundColor: AppConstants.textPrimary,
                     foregroundColor: AppConstants.primaryDark,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusMedium)),
@@ -234,7 +234,7 @@ class AiMissionCard extends StatelessWidget {
                       Text(
                         '✨ Today\'s AI Mission',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppConstants.onAccent,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -332,7 +332,7 @@ class AiMissionCard extends StatelessWidget {
                   Text(
                     title,
                     style: TextStyle(
-                      color: isCompleted ? AppConstants.textSecondary : Colors.white,
+                      color: isCompleted ? AppConstants.textSecondary : AppConstants.textPrimary,
                       fontSize: 13.5,
                       fontWeight: FontWeight.w600,
                       decoration: isCompleted ? TextDecoration.lineThrough : null,
@@ -418,7 +418,7 @@ class AiInsightCard extends StatelessWidget {
           Text(
             title,
             style: const TextStyle(
-              color: Colors.white,
+              color: AppConstants.onAccent,
               fontSize: 18,
               fontWeight: FontWeight.w800,
             ),
@@ -461,7 +461,7 @@ class AiInsightCard extends StatelessWidget {
                   onPressed: onTapFix,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppConstants.accentPurple,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppConstants.onAccent,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                   child: const Text('Fix This Weakness →', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
@@ -533,7 +533,7 @@ class MetricTile extends StatelessWidget {
           Text(
             value,
             style: const TextStyle(
-              color: Colors.white,
+              color: AppConstants.onAccent,
               fontSize: 22,
               fontWeight: FontWeight.w800,
             ),
@@ -585,31 +585,31 @@ class NationalChallengeCard extends StatelessWidget {
                 ),
                 child: Row(
                   children: const [
-                    Icon(Icons.emoji_events, color: Colors.white, size: 14),
+                    Icon(Icons.emoji_events, color: AppConstants.onAccent, size: 14),
                     SizedBox(width: 6),
-                    Text('LIVE NATIONAL CHALLENGE', style: TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.bold)),
+                    Text('LIVE NATIONAL CHALLENGE', style: TextStyle(color: AppConstants.onAccent, fontSize: 10.5, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: AppConstants.textPrimary.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(participants, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                child: Text(participants, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 11, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
           const SizedBox(height: AppConstants.space12),
           Text(
             title,
-            style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w800),
+            style: const TextStyle(color: AppConstants.textPrimary, fontSize: 19, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 4),
           const Text(
             'Compete for All-India AIR Rank & State Rank with AI Twin Diagnosis.',
-            style: TextStyle(color: Colors.white70, fontSize: 12.5),
+            style: TextStyle(color: AppConstants.textSecondary, fontSize: 12.5),
           ),
           const SizedBox(height: AppConstants.space16),
           SizedBox(
@@ -617,7 +617,7 @@ class NationalChallengeCard extends StatelessWidget {
             child: ElevatedButton(
               onPressed: onTapJoin,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
+                backgroundColor: AppConstants.textPrimary,
                 foregroundColor: AppConstants.primaryDark,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusMedium)),
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -703,7 +703,7 @@ class TestCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             title,
-            style: const TextStyle(color: Colors.white, fontSize: 15.5, fontWeight: FontWeight.bold),
+            style: const TextStyle(color: AppConstants.onAccent, fontSize: 15.5, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Row(
@@ -729,7 +729,7 @@ class TestCard extends StatelessWidget {
                 onPressed: onTapStart,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppConstants.accentIndigo,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppConstants.onAccent,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                 ),
@@ -798,7 +798,7 @@ class LostMarksCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppConstants.space16),
-          const Text('Lost Marks Breakdown:', style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold)),
+          const Text('Lost Marks Breakdown:', style: TextStyle(color: AppConstants.textPrimary, fontSize: 13.5, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
           _buildItem('Concept Gap', 12, AppConstants.accentRose),
           _buildItem('Silly Mistakes', 8, AppConstants.accentAmber),
@@ -824,7 +824,7 @@ class LostMarksCard extends StatelessWidget {
                   onPressed: onTapCreatePlan,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppConstants.accentEmerald,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppConstants.onAccent,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   child: const Text('Create Plan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
@@ -844,8 +844,8 @@ class LostMarksCard extends StatelessWidget {
         children: [
           Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
           const SizedBox(width: 10),
-          Expanded(child: Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12.5))),
-          Text('$marks Marks', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12.5)),
+          Expanded(child: Text(label, style: const TextStyle(color: AppConstants.textSecondary, fontSize: 12.5))),
+          Text('$marks Marks', style: const TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 12.5)),
         ],
       ),
     );

@@ -38,7 +38,7 @@ class _IndiaMapViewState extends State<IndiaMapView> {
         padding: const EdgeInsets.all(AppConstants.space20),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(location.name,
-              style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+              style: const TextStyle(color: AppConstants.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
           Text('${location.state}, ${location.country}',
               style: const TextStyle(color: AppConstants.accentCyan, fontSize: 12.5)),
@@ -76,7 +76,7 @@ class _IndiaMapViewState extends State<IndiaMapView> {
       backgroundColor: AppConstants.primaryDark,
       appBar: AppBar(
         backgroundColor: AppConstants.scaffoldDark,
-        title: const Text('Interactive Map Learning', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        title: const Text('Interactive Map Learning', style: TextStyle(color: AppConstants.onAccent, fontSize: 18, fontWeight: FontWeight.bold)),
         elevation: 0,
       ),
       body: Stack(
@@ -143,7 +143,7 @@ class _IndiaMapViewState extends State<IndiaMapView> {
                                       Text(
                                         loc.name,
                                         style: TextStyle(
-                                          color: selectedLocation?.id == loc.id ? Colors.black : Colors.white,
+                                          color: selectedLocation?.id == loc.id ? Colors.black : AppConstants.onAccent,
                                           fontSize: 10.5,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -178,9 +178,9 @@ class _IndiaMapViewState extends State<IndiaMapView> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(selectedLocation!.name, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text(selectedLocation!.name, style: const TextStyle(color: AppConstants.onAccent, fontSize: 18, fontWeight: FontWeight.bold)),
                         IconButton(
-                          icon: const Icon(Icons.close, color: Colors.white70, size: 18),
+                          icon: const Icon(Icons.close, color: AppConstants.onAccent, size: 18),
                           onPressed: () => setState(() => selectedLocation = null),
                         ),
                       ],

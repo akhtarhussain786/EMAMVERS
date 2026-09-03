@@ -69,6 +69,7 @@ class _AiCoachViewState extends State<AiCoachView> {
   void _runStrategySimulator() async {
     try {
       final res = await ApiService.post('/v1/ai/strategy-simulations', {});
+      if (!mounted) return;
       setState(() {
         simulatedStrategies = (res is Map ? res['simulated_strategies'] : null) as List? ?? [];
       });
@@ -156,7 +157,7 @@ class _AiCoachViewState extends State<AiCoachView> {
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: AppConstants.glowShadow(AppConstants.accentPurple),
                         ),
-                        child: const Icon(Icons.psychology, color: Colors.white, size: 22),
+                        child: const Icon(Icons.psychology, color: AppConstants.onAccent, size: 22),
                       ),
                       const SizedBox(width: 12),
                       Column(
@@ -164,7 +165,7 @@ class _AiCoachViewState extends State<AiCoachView> {
                         children: const [
                           Text(
                             'AI Exam Twin',
-                            style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+                            style: TextStyle(color: AppConstants.onAccent, fontSize: 20, fontWeight: FontWeight.w800),
                           ),
                           SizedBox(height: 2),
                           Text(
@@ -210,7 +211,7 @@ class _AiCoachViewState extends State<AiCoachView> {
                       children: [
                         const Text(
                           'PREPARATION READINESS GAUGE',
-                          style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.6),
+                          style: TextStyle(color: AppConstants.onAccent, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.6),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -247,7 +248,7 @@ class _AiCoachViewState extends State<AiCoachView> {
                             children: [
                               Text(
                                 readiness.toStringAsFixed(0),
-                                style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w800, height: 1.0),
+                                style: const TextStyle(color: AppConstants.textPrimary, fontSize: 34, fontWeight: FontWeight.w800, height: 1.0),
                               ),
                               const Text(
                                 'Exam Readiness',
@@ -293,7 +294,7 @@ class _AiCoachViewState extends State<AiCoachView> {
               const SizedBox(height: AppConstants.space24),
 
               // 3. TODAY'S AI MISSION SUMMARY
-              const Text('Personalized Preparation Missions', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+              const Text('Personalized Preparation Missions', style: TextStyle(color: AppConstants.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
               const SizedBox(height: AppConstants.space12),
               Container(
                 padding: const EdgeInsets.all(AppConstants.space20),
@@ -330,7 +331,7 @@ class _AiCoachViewState extends State<AiCoachView> {
                                 const Icon(Icons.check_circle_outline, color: AppConstants.accentEmerald, size: 20),
                                 const SizedBox(width: 12),
                                 Expanded(
-                                  child: Text(item['title'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w600)),
+                                  child: Text(item['title'] ?? '', style: const TextStyle(color: AppConstants.onAccent, fontSize: 13.5, fontWeight: FontWeight.w600)),
                                 ),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -350,7 +351,7 @@ class _AiCoachViewState extends State<AiCoachView> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: const [
-                  Text('Exam Strategy Simulator', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+                  Text('Exam Strategy Simulator', style: TextStyle(color: AppConstants.onAccent, fontSize: 17, fontWeight: FontWeight.bold)),
                   Text('AI POWERED', style: TextStyle(color: AppConstants.accentPurple, fontSize: 11, fontWeight: FontWeight.w800)),
                 ],
               ),
@@ -385,7 +386,7 @@ class _AiCoachViewState extends State<AiCoachView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(strat['name'] ?? '', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                          Text(strat['name'] ?? '', style: const TextStyle(color: AppConstants.onAccent, fontWeight: FontWeight.bold, fontSize: 15)),
                           const SizedBox(height: 6),
                           Text('Expected Score Band: ${strat['estimated_score_range']}', style: const TextStyle(color: AppConstants.accentEmerald, fontWeight: FontWeight.w800, fontSize: 13)),
                           const SizedBox(height: 6),
