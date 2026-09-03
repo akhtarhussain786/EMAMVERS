@@ -49,8 +49,8 @@ class _PassportViewState extends State<PassportView> {
       );
     }
 
-    final studentName = userData?['passport_holder'] ?? 'Rahul Kumar';
-    final targetExam = userData?['target_exam'] ?? 'Preparing for SSC CGL';
+    final studentName = userData?['passport_holder'] ?? 'Candidate';
+    final targetExam = userData?['target_exam'] ?? 'No target exam set yet';
 
     return Scaffold(
       backgroundColor: AppConstants.primaryDark,
@@ -94,7 +94,9 @@ class _PassportViewState extends State<PassportView> {
               RankCard(
                 rank: userRanking.currentRank,
                 percentile: userRanking.percentile,
-                rankImprovementText: '↑ ${userRanking.rankImprovement} positions this week',
+                rankImprovementText: userRanking.previousRank > 0
+                    ? '↑ ${userRanking.rankImprovement} positions this week'
+                    : 'Attempt a test to start tracking your rank',
                 bestRank: userRanking.bestRank,
               ),
               const SizedBox(height: AppConstants.space24),

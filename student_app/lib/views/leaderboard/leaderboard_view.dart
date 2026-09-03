@@ -73,7 +73,9 @@ class _LeaderboardViewState extends State<LeaderboardView> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(color: AppConstants.accentAmber.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
-                    child: const Text('128K+ LIVE', style: TextStyle(color: AppConstants.accentAmber, fontSize: 11, fontWeight: FontWeight.bold)),
+                    // Real cohort size, not an invented "128K+".
+                    child: Text('${leaderboard.length} RANKED',
+                        style: const TextStyle(color: AppConstants.accentAmber, fontSize: 11, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),

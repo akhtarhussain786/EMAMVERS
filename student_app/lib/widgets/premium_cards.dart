@@ -10,9 +10,9 @@ class ReadinessCard extends StatelessWidget {
 
   const ReadinessCard({
     super.key,
-    this.score = 72,
-    this.statusText = 'Moderate Readiness',
-    this.monthlyChange = '+6% this month',
+    required this.score,
+    required this.statusText,
+    required this.monthlyChange,
     required this.onTapAiTwin,
   });
 
@@ -194,8 +194,8 @@ class AiMissionCard extends StatelessWidget {
 
   const AiMissionCard({
     super.key,
-    this.completedCount = 2,
-    this.totalCount = 5,
+    required this.completedCount,
+    required this.totalCount,
     required this.onTapMission,
   });
 
@@ -368,10 +368,10 @@ class AiInsightCard extends StatelessWidget {
 
   const AiInsightCard({
     super.key,
-    this.category = 'Your biggest score blocker',
-    this.title = 'Time Management in Quant',
-    this.description = 'You understand most concepts, but your solving speed is currently limiting your score.',
-    this.impactMarks = '8–12 Marks',
+    required this.category,
+    required this.title,
+    required this.description,
+    required this.impactMarks,
     required this.onTapFix,
   });
 
@@ -557,8 +557,8 @@ class NationalChallengeCard extends StatelessWidget {
 
   const NationalChallengeCard({
     super.key,
-    this.title = 'August National Flagship Mock',
-    this.participants = '128K+ Aspirants',
+    required this.title,
+    required this.participants,
     required this.onTapJoin,
   });
 
@@ -651,7 +651,7 @@ class TestCard extends StatelessWidget {
     required this.totalMarks,
     required this.durationMinutes,
     required this.totalAttempts,
-    this.difficulty = 'Medium',
+    required this.difficulty,
     this.isFree = true,
     required this.onTapStart,
   });
@@ -760,7 +760,7 @@ class LostMarksCard extends StatelessWidget {
 
   const LostMarksCard({
     super.key,
-    this.totalLost = 40,
+    required this.totalLost,
     required this.onTapCreatePlan,
   });
 

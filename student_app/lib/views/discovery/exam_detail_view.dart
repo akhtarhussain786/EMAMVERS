@@ -164,7 +164,9 @@ class _ExamDetailViewState extends State<ExamDetailView> {
                   totalQuestions: test.totalQuestions ?? 0,
                   totalMarks: (test.totalQuestions ?? 0) * 2,
                   durationMinutes: test.totalDurationSeconds != null ? (test.totalDurationSeconds! / 60).round() : 60,
-                  totalAttempts: 1240 + (i * 350),
+                  // Real evaluated-attempt count from the API.
+                  totalAttempts: test.totalAttempts,
+                  difficulty: test.testType.replaceAll('_', ' '),
                   isFree: !test.isPaid,
                   onTapStart: () => widget.onStartTest(test.id),
                 );

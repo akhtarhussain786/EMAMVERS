@@ -17,6 +17,8 @@ class HomeView extends StatefulWidget {
   final VoidCallback onOpenAiCoach;
   final VoidCallback onOpenLeaderboard;
   final VoidCallback onBuildPractice;
+  /// Resumes an unfinished attempt by id.
+  final void Function(int attemptId) onResumeAttempt;
 
   const HomeView({
     super.key,
@@ -25,6 +27,7 @@ class HomeView extends StatefulWidget {
     required this.onOpenAiCoach,
     required this.onOpenLeaderboard,
     required this.onBuildPractice,
+    required this.onResumeAttempt,
   });
 
   @override
@@ -37,6 +40,7 @@ class _HomeViewState extends State<HomeView> {
   List<ExamCategory> categories = [];
   List<ExamItem> featuredExams = [];
   Map<String, dynamic>? monthlyChallenge;
+  Map<String, dynamic>? resumeAttempt;
   List<dynamic> currentAffairs = [];
 
   @override
@@ -53,6 +57,7 @@ class _HomeViewState extends State<HomeView> {
         categories = (res['categories'] as List? ?? []).map((c) => ExamCategory.fromJson(c)).toList();
         featuredExams = (res['featured_exams'] as List? ?? []).map((e) => ExamItem.fromJson(e)).toList();
         monthlyChallenge = res['monthly_challenge'];
+        resumeAttempt = res['resume_attempt'] as Map<String, dynamic>?;
         currentAffairs = res['current_affairs'] ?? [];
         isLoading = false;
       });
@@ -162,62 +167,95 @@ class _HomeViewState extends State<HomeView> {
               ),
               const SizedBox(height: AppConstants.space24),
 
-              // 4. DAILY GOAL CARD
-              ExamVerseCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text("Today's Goal", style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-                        Text("32 / 50 Questions", style: TextStyle(color: AppConstants.accentCyan, fontSize: 13, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    const SizedBox(height: AppConstants.space12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: const LinearProgressIndicator(
-                        value: 0.64,
-                        minHeight: 8,
-                        backgroundColor: AppConstants.surfaceElevated,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppConstants.accentCyan),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text('18 Questions Remaining to reach today\'s streak target', style: TextStyle(color: AppConstants.textMuted, fontSize: 11.5)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppConstants.space24),
+              // 4. DAILY GOAL CARD — measured against this candidate's own
+              // solved count, not a fixed 32/50.
+              Builder(builder: (_) {
+                const dailyTarget = 50;
+                final solvedToday = userRanking.totalQuestionsSolved % dailyTarget;
+                final progress = userRanking.hasData ? solvedToday / dailyTarget : 0.0;
+                final remaining = (dailyTarget - solvedToday).clamp(0, dailyTarget);
 
-              // 5. CONTINUE PRACTICE CARD
-              ExamVerseCard(
-                gradient: AppConstants.darkCardGradient,
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: AppConstants.accentCyan.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)),
-                      child: const Icon(Icons.play_circle_fill, color: AppConstants.accentCyan, size: 28),
-                    ),
-                    const SizedBox(width: AppConstants.space16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text('SSC CGL • Quantitative Aptitude', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-                          SizedBox(height: 2),
-                          Text('Algebra & Trigonometry • 64% Completed', style: TextStyle(color: AppConstants.textSecondary, fontSize: 11.5)),
+                return ExamVerseCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text("Today's Goal",
+                              style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                          Text('$solvedToday / $dailyTarget Questions',
+                              style: const TextStyle(
+                                  color: AppConstants.accentCyan, fontSize: 13, fontWeight: FontWeight.bold)),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    SecondaryButton(label: 'Resume', onPressed: widget.onOpenAiCoach),
-                  ],
-                ),
-              ),
+                      const SizedBox(height: AppConstants.space12),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 8,
+                          backgroundColor: AppConstants.surfaceElevated,
+                          valueColor: const AlwaysStoppedAnimation<Color>(AppConstants.accentCyan),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        userRanking.hasData
+                            ? '$remaining questions remaining to reach today\'s target'
+                            : 'Attempt your first test to start tracking a daily goal',
+                        style: const TextStyle(color: AppConstants.textMuted, fontSize: 11.5),
+                      ),
+                    ],
+                  ),
+                );
+              }),
               const SizedBox(height: AppConstants.space24),
+
+              // 5. CONTINUE PRACTICE CARD — only when an attempt is genuinely
+              // unfinished; previously it showed invented progress to everyone.
+              if (resumeAttempt != null) ...[
+                ExamVerseCard(
+                  gradient: AppConstants.darkCardGradient,
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                            color: AppConstants.accentCyan.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(14)),
+                        child: const Icon(Icons.play_circle_fill, color: AppConstants.accentCyan, size: 28),
+                      ),
+                      const SizedBox(width: AppConstants.space16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(resumeAttempt!['exam_title']?.toString() ?? 'Unfinished test',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${resumeAttempt!['answered']} of ${resumeAttempt!['total_questions']} answered'
+                              ' • ${resumeAttempt!['percent_complete']}% complete',
+                              style: const TextStyle(color: AppConstants.textSecondary, fontSize: 11.5),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SecondaryButton(
+                        label: 'Resume',
+                        onPressed: () =>
+                            widget.onResumeAttempt(resumeAttempt!['attempt_id'] as int),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppConstants.space24),
+              ],
 
               // 6. QUICK ACTIONS GRID
               const SectionHeader(title: 'Quick Actions'),

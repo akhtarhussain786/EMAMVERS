@@ -51,6 +51,26 @@ class _ResultViewState extends State<ResultView> {
     }
   }
 
+  /// Marks this candidate did not bank: negative marking already applied for
+  /// wrong answers, plus the positive marks forgone on unattempted questions.
+  int _lostMarks() {
+    final s = summary;
+    if (s == null) return 0;
+    int asInt(dynamic v) => v == null ? 0 : (v is int ? v : int.tryParse(v.toString()) ?? 0);
+
+    final wrong = asInt(s['wrong_count']);
+    final unattempted = asInt(s['unattempted_count']);
+    // Solutions carry the real per-question marks; fall back to the common 2/0.5.
+    final positive = solutions.isNotEmpty
+        ? (double.tryParse('${solutions.first['positive_marks']}') ?? 2.0)
+        : 2.0;
+    final negative = solutions.isNotEmpty
+        ? (double.tryParse('${solutions.first['negative_marks']}') ?? 0.5)
+        : 0.5;
+
+    return ((wrong * (positive + negative)) + (unattempted * positive)).round();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -157,8 +177,10 @@ class _ResultViewState extends State<ResultView> {
             const SizedBox(height: AppConstants.space24),
 
             // Impactful Lost Marks Card Component
+            // Derived from this attempt: marks lost to wrong answers plus the
+            // marks left on the table by unattempted questions.
             LostMarksCard(
-              totalLost: 40,
+              totalLost: _lostMarks(),
               onTapCreatePlan: widget.onHome,
             ),
             const SizedBox(height: AppConstants.space24),

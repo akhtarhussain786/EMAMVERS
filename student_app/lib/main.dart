@@ -214,6 +214,10 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
             onOpenAiCoach: () => setState(() => currentTabIndex = 2),
             onOpenLeaderboard: () => setState(() => currentTabIndex = 3),
             onBuildPractice: () => setState(() => isBuildingPractice = true),
+            onResumeAttempt: (attemptId) => setState(() {
+              practiceAttemptId = attemptId;
+              isPlayingTest = true;
+            }),
           ),
           const MarketplaceScreen(),
           const AiCoachView(),

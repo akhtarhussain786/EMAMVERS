@@ -63,6 +63,7 @@ class TestItem {
   final int? totalQuestions;
   final double? totalMarks;
   final int? totalDurationSeconds;
+  final int totalAttempts;
 
   TestItem({
     required this.id,
@@ -74,6 +75,7 @@ class TestItem {
     this.totalQuestions,
     this.totalMarks,
     this.totalDurationSeconds,
+    this.totalAttempts = 0,
   });
 
   factory TestItem.fromJson(Map<String, dynamic> json) {
@@ -87,6 +89,9 @@ class TestItem {
       totalQuestions: json['total_questions'],
       totalMarks: json['total_marks'] != null ? double.parse(json['total_marks'].toString()) : null,
       totalDurationSeconds: json['total_duration_seconds'],
+      totalAttempts: json['total_attempts'] is int
+          ? json['total_attempts']
+          : int.tryParse('${json['total_attempts'] ?? 0}') ?? 0,
     );
   }
 }
