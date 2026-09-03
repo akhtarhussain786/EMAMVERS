@@ -58,6 +58,16 @@ class ResultController {
         $stmtAtt->execute(['id' => $attemptId, 'user_id' => $userId]);
         if (!$stmtAtt->fetch()) Response::error('Attempt not found', 404);
 
+        // Solutions must follow whichever paper the candidate actually sat: a
+        // randomised attempt has its own question set and ordering.
+        $modeStmt = $db->prepare("SELECT assembly_mode FROM test_attempts WHERE id = ?");
+        $modeStmt->execute([$attemptId]);
+        $isRandomised = $modeStmt->fetchColumn() === 'randomised';
+
+        $orderJoin = $isRandomised
+            ? "JOIN attempt_questions tq ON q.id = tq.question_id AND tq.attempt_id = :att_id_sub"
+            : "JOIN test_questions tq ON q.id = tq.question_id AND tq.test_id = (SELECT test_id FROM test_attempts WHERE id = :att_id_sub)";
+
         $stmt = $db->prepare("
             SELECT tq.question_order, tq.positive_marks, tq.negative_marks,
                    q.id as question_id, q.question_type, q.difficulty, q.pyq_year, q.pyq_shift,
@@ -65,13 +75,13 @@ class ResultController {
                    aa.selected_option_key, aa.numerical_answer, aa.is_correct, aa.marks_awarded, aa.time_spent_seconds, aa.is_marked_for_review
             FROM attempt_answers aa
             JOIN questions q ON aa.question_id = q.id
-            JOIN test_questions tq ON q.id = tq.question_id AND tq.test_id = (SELECT test_id FROM test_attempts WHERE id = :att_id_sub)
+            $orderJoin
             LEFT JOIN question_translations qt ON q.id = qt.question_id AND qt.language = 'en'
             WHERE aa.attempt_id = :att_id
             ORDER BY tq.question_order ASC
         ");
         // Native prepared statements reject a named placeholder used twice,
-        // so the subquery gets its own name.
+        // so the join gets its own name.
         $stmt->execute(['att_id_sub' => $attemptId, 'att_id' => $attemptId]);
         $solutions = $stmt->fetchAll();
 

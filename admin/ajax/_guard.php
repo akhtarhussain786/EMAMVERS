@@ -45,7 +45,7 @@ function getBody(): array {
  * or delete keys on behalf of a logged-in admin.
  */
 $adminAjaxAction = $_GET['action'] ?? '';
-$readOnlyActions = ['list', 'batches', 'batch_questions', 'marketplace_stats', 'stats', 'teachers'];
+$readOnlyActions = ['list', 'batches', 'batch_questions', 'marketplace_stats', 'stats', 'teachers', 'levels', 'meta'];
 
 if (!in_array($adminAjaxAction, $readOnlyActions, true)) {
     if (!adminCsrfValid(adminCsrfFromRequest(getBody()))) {

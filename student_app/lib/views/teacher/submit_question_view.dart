@@ -28,6 +28,9 @@ class _SubmitQuestionViewState extends State<SubmitQuestionView> {
 
   List<dynamic> _subjects = [];
   List<dynamic> _topics = [];
+  List<dynamic> _exams = [];
+  // A question can serve several departments, so this is a set.
+  final Set<int> _examIds = <int>{};
   int? _subjectId;
   int? _topicId;
   String _difficulty = 'medium';
@@ -59,6 +62,7 @@ class _SubmitQuestionViewState extends State<SubmitQuestionView> {
       if (!mounted) return;
       setState(() {
         _subjects = (res is Map ? res['subjects'] : null) as List? ?? [];
+        _exams = (res is Map ? res['exams'] : null) as List? ?? [];
         _loadingTaxonomy = false;
       });
     } catch (e) {
@@ -91,6 +95,11 @@ class _SubmitQuestionViewState extends State<SubmitQuestionView> {
       return;
     }
 
+    if (_examIds.isEmpty) {
+      _snack('Choose at least one exam this question is for', isError: true);
+      return;
+    }
+
     // Two identical options make the question unanswerable — catch it here
     // rather than letting the reviewer find it.
     final texts = _optionCtrls.map((c) => c.text.trim().toLowerCase()).toList();
@@ -103,6 +112,7 @@ class _SubmitQuestionViewState extends State<SubmitQuestionView> {
     try {
       await ApiService.post('/v1/teacher/questions', {
         'subject_id': _subjectId,
+        'exam_ids': _examIds.toList(),
         'topic_id': _topicId,
         'difficulty': _difficulty,
         'question_text': _questionCtrl.text.trim(),
@@ -132,6 +142,8 @@ class _SubmitQuestionViewState extends State<SubmitQuestionView> {
     setState(() {
       _correctKey = null;
       _topicId = null;
+      // Exam selection is deliberately kept — a teacher usually files several
+      // questions for the same department in a row.
     });
   }
 
@@ -192,6 +204,43 @@ class _SubmitQuestionViewState extends State<SubmitQuestionView> {
             ]),
           ),
           const SizedBox(height: AppConstants.space24),
+
+          _label('Exam / Department'),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final e in _exams)
+                FilterChip(
+                  label: Text(e['title']?.toString() ?? ''),
+                  selected: _examIds.contains(e['id']),
+                  onSelected: (on) => setState(() {
+                    on ? _examIds.add(e['id'] as int) : _examIds.remove(e['id']);
+                  }),
+                  selectedColor: AppConstants.accentCyan.withValues(alpha: 0.22),
+                  backgroundColor: AppConstants.cardDark,
+                  labelStyle: TextStyle(
+                    color: _examIds.contains(e['id'])
+                        ? AppConstants.accentCyan
+                        : AppConstants.textSecondary,
+                    fontSize: 12.5,
+                    fontWeight: _examIds.contains(e['id']) ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(
+                      color: _examIds.contains(e['id'])
+                          ? AppConstants.accentCyan
+                          : AppConstants.cardBorder,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text('The question is added to each selected department\'s bank.',
+              style: TextStyle(color: AppConstants.textMuted, fontSize: 11.5)),
+          const SizedBox(height: AppConstants.space16),
 
           _label('Subject'),
           DropdownButtonFormField<int>(

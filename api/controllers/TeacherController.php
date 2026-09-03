@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../utils/response.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../utils/question_fingerprint.php';
 
 /**
  * Teacher question authoring.
@@ -66,8 +67,17 @@ class TeacherController {
         }
         unset($s);
 
+        // Departments the teacher can file a question under.
+        $exams = $db->query("
+            SELECT e.id, e.title, ec.name AS category_name
+            FROM exams e
+            LEFT JOIN exam_categories ec ON e.category_id = ec.id
+            WHERE e.status = 'active' ORDER BY e.title ASC
+        ")->fetchAll();
+
         Response::json([
             'subjects'     => $subjects,
+            'exams'        => $exams,
             'difficulties' => ['easy', 'medium', 'hard'],
         ], 'Question taxonomy loaded');
     }
@@ -90,6 +100,8 @@ class TeacherController {
         $explanation  = trim($input['explanation'] ?? '');
         $options      = $input['options'] ?? [];
         $correctKey   = strtoupper(trim($input['correct_option'] ?? ''));
+        // One question can serve several departments, so this is a list.
+        $examIds      = array_values(array_unique(array_filter(array_map('intval', (array)($input['exam_ids'] ?? [])))));
 
         // ── Validation ───────────────────────────────────────────────────
         $errors = [];
@@ -121,6 +133,9 @@ class TeacherController {
         if (!in_array($correctKey, ['A','B','C','D'], true)) {
             $errors['correct_option'] = 'Mark which option (A, B, C or D) is correct';
         }
+        if (empty($examIds)) {
+            $errors['exam_ids'] = 'Choose at least one exam this question is for';
+        }
 
         if ($errors) {
             Response::json(null, 'Please correct the highlighted fields', 'error', 422, $errors);
@@ -145,16 +160,25 @@ class TeacherController {
             if (!$chapterId) Response::error('The selected topic does not belong to that subject', 422);
         }
 
-        // Reject an exact duplicate of a question this teacher already submitted.
-        $dup = $db->prepare("
-            SELECT q.id FROM questions q
-            JOIN question_translations qt ON q.id = qt.question_id AND qt.language = 'en'
-            WHERE q.author_user_id = ? AND qt.question_text = ? AND q.status <> 'rejected'
-            LIMIT 1
-        ");
-        $dup->execute([$profile['user_id'], $questionText]);
-        if ($dup->fetchColumn()) {
-            Response::error('You have already submitted this question', 409);
+        // Exams must exist before we file the question against them.
+        $ph = implode(',', array_fill(0, count($examIds), '?'));
+        $eCheck = $db->prepare("SELECT id FROM exams WHERE id IN ($ph)");
+        $eCheck->execute($examIds);
+        $validExamIds = $eCheck->fetchAll(PDO::FETCH_COLUMN);
+        if (count($validExamIds) !== count($examIds)) {
+            Response::error('One or more selected exams no longer exist', 422);
+        }
+
+        // Bank-wide duplicate check, not just against this teacher's own work.
+        $optionTexts = [];
+        foreach (['A','B','C','D'] as $i => $key) {
+            $optionTexts[] = trim((string)($options[$i]['option_text'] ?? $options[$i] ?? ''));
+        }
+        $contentHash   = QuestionFingerprint::contentHash($questionText, $optionTexts);
+        $structureHash = QuestionFingerprint::structureHash($questionText, $optionTexts);
+
+        if (QuestionFingerprint::findDuplicate($db, $contentHash)) {
+            Response::error('This question already exists in the bank', 409);
         }
 
         $db->beginTransaction();
@@ -180,6 +204,14 @@ class TeacherController {
                 $text = trim((string)($options[$i]['option_text'] ?? $options[$i] ?? ''));
                 $optStmt->execute([$questionId, $key, $text, $key === $correctKey ? 1 : 0]);
             }
+
+            $db->prepare("UPDATE questions SET content_hash = ?, structure_hash = ? WHERE id = ?")
+               ->execute([$contentHash, $structureHash, $questionId]);
+
+            // File it into each selected department's bank straight away; the
+            // question only becomes visible to students once it is approved.
+            $link = $db->prepare("INSERT IGNORE INTO question_exams (question_id, exam_id) VALUES (?, ?)");
+            foreach ($validExamIds as $examId) $link->execute([$questionId, $examId]);
 
             $db->prepare("UPDATE teacher_profiles SET questions_submitted = questions_submitted + 1 WHERE user_id = ?")
                ->execute([$profile['user_id']]);

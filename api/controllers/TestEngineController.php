@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../utils/response.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../services/QuestionBank.php';
 
 class TestEngineController {
     public static function getInstructions($testId) {
@@ -57,17 +58,37 @@ class TestEngineController {
         $stmtCheck->execute(['test_id' => $testId, 'user_id' => $userId]);
         $existing = $stmtCheck->fetch();
 
+        $randomised = !empty($test['is_randomised']);
+
         if ($existing) {
             $attemptId = $existing['id'];
             $startedAt = strtotime($existing['started_at']);
         } else {
             $stmtCreate = $db->prepare("
-                INSERT INTO test_attempts (test_id, user_id, pattern_version, status, started_at)
-                VALUES (:test_id, :user_id, :pv, 'in_progress', NOW())
+                INSERT INTO test_attempts (test_id, user_id, pattern_version, assembly_mode, status, started_at)
+                VALUES (:test_id, :user_id, :pv, :mode, 'in_progress', NOW())
             ");
-            $stmtCreate->execute(['test_id' => $testId, 'user_id' => $userId, 'pv' => $test['pattern_version']]);
+            $stmtCreate->execute([
+                'test_id' => $testId, 'user_id' => $userId,
+                'pv' => $test['pattern_version'],
+                'mode' => $randomised ? 'randomised' : 'fixed',
+            ]);
             $attemptId = $db->lastInsertId();
             $startedAt = time();
+
+            // A randomised blueprint draws its own paper, stored against this
+            // attempt so a resume shows the identical questions and ordering.
+            if ($randomised) {
+                $paper = QuestionBank::assemblePaper(
+                    $db, $userId, $test['pattern_id'], $test['exam_id'],
+                    (int)($test['total_questions'] ?? 0)
+                );
+                if (!$paper) {
+                    $db->prepare("DELETE FROM test_attempts WHERE id = ?")->execute([$attemptId]);
+                    Response::error('This test has no questions available yet. Please try again later.', 409);
+                }
+                QuestionBank::persistPaper($db, $attemptId, $paper);
+            }
         }
 
         // Remaining time is derived server-side from started_at, so reloading
@@ -76,18 +97,36 @@ class TestEngineController {
         $elapsed = max(0, time() - $startedAt);
         $remainingSeconds = max(0, $totalDuration - $elapsed);
 
-        // Blueprint for this test.
-        $stmtQ = $db->prepare("
-            SELECT tq.question_id, tq.question_order, tq.positive_marks, tq.negative_marks, tq.section_id,
-                   q.question_type, q.difficulty, q.pyq_year, q.pyq_shift, s.name as section_name
-            FROM test_questions tq
-            JOIN questions q ON tq.question_id = q.id
-            LEFT JOIN pattern_sections ps ON tq.section_id = ps.id
-            LEFT JOIN subjects s ON ps.subject_id = s.id
-            WHERE tq.test_id = :test_id
-            ORDER BY tq.question_order ASC
-        ");
-        $stmtQ->execute(['test_id' => $testId]);
+        // Questions come from the attempt for a randomised paper, and from the
+        // shared blueprint for a fixed one (a ranked challenge still needs
+        // every candidate on the same paper).
+        if ($randomised) {
+            $stmtQ = $db->prepare("
+                SELECT aq.question_id, aq.question_order, aq.positive_marks, aq.negative_marks, aq.section_id,
+                       aq.option_order,
+                       q.question_type, q.difficulty, q.pyq_year, q.pyq_shift, s.name as section_name
+                FROM attempt_questions aq
+                JOIN questions q ON aq.question_id = q.id
+                LEFT JOIN pattern_sections ps ON aq.section_id = ps.id
+                LEFT JOIN subjects s ON ps.subject_id = s.id
+                WHERE aq.attempt_id = :attempt_id
+                ORDER BY aq.question_order ASC
+            ");
+            $stmtQ->execute(['attempt_id' => $attemptId]);
+        } else {
+            $stmtQ = $db->prepare("
+                SELECT tq.question_id, tq.question_order, tq.positive_marks, tq.negative_marks, tq.section_id,
+                       NULL AS option_order,
+                       q.question_type, q.difficulty, q.pyq_year, q.pyq_shift, s.name as section_name
+                FROM test_questions tq
+                JOIN questions q ON tq.question_id = q.id
+                LEFT JOIN pattern_sections ps ON tq.section_id = ps.id
+                LEFT JOIN subjects s ON ps.subject_id = s.id
+                WHERE tq.test_id = :test_id
+                ORDER BY tq.question_order ASC
+            ");
+            $stmtQ->execute(['test_id' => $testId]);
+        }
         $questions = $stmtQ->fetchAll();
 
         if (!empty($questions)) {
@@ -121,8 +160,25 @@ class TestEngineController {
             foreach ($questions as &$q) {
                 $qId = $q['question_id'];
                 $q['translations'] = $translations[$qId] ?? [];
-                $q['options']      = $options[$qId] ?? [];
                 $q['user_state']   = $states[$qId] ?? null;
+
+                $opts = $options[$qId] ?? [];
+                // Re-order options into the sequence stored for this attempt so
+                // a resumed test looks identical to how the candidate left it.
+                if (!empty($q['option_order'])) {
+                    $wanted = explode(',', $q['option_order']);
+                    $byKey = [];
+                    foreach ($opts as $o) $byKey[$o['option_key']][] = $o;
+                    $ordered = [];
+                    foreach ($wanted as $key) {
+                        foreach ($byKey[$key] ?? [] as $o) $ordered[] = $o;
+                        unset($byKey[$key]);
+                    }
+                    foreach ($byKey as $rest) foreach ($rest as $o) $ordered[] = $o;
+                    $opts = $ordered;
+                }
+                $q['options'] = $opts;
+                unset($q['option_order']);
             }
             unset($q);
         }
@@ -163,9 +219,15 @@ class TestEngineController {
      * ownership-checked by the caller.
      */
     private static function persistAnswer($db, $attempt, $questionId, $optionKey, $numerical, $isMarked, $timeSpent) {
-        // The question must belong to this attempt's test.
-        $check = $db->prepare("SELECT 1 FROM test_questions WHERE test_id = :test_id AND question_id = :q_id");
-        $check->execute(['test_id' => $attempt['test_id'], 'q_id' => $questionId]);
+        // The question must be on this attempt's paper. For a randomised
+        // attempt that is attempt_questions; for a fixed one, test_questions.
+        if (($attempt['assembly_mode'] ?? 'fixed') === 'randomised') {
+            $check = $db->prepare("SELECT 1 FROM attempt_questions WHERE attempt_id = :att_id AND question_id = :q_id");
+            $check->execute(['att_id' => $attempt['id'], 'q_id' => $questionId]);
+        } else {
+            $check = $db->prepare("SELECT 1 FROM test_questions WHERE test_id = :test_id AND question_id = :q_id");
+            $check->execute(['test_id' => $attempt['test_id'], 'q_id' => $questionId]);
+        }
         if (!$check->fetchColumn()) return false;
 
         $isAnswered = (($optionKey !== null && $optionKey !== '') || ($numerical !== null && $numerical !== '')) ? 1 : 0;
@@ -274,13 +336,23 @@ class TestEngineController {
 
         // 3. Fetch the test blueprint and the answer key in two queries rather
         //    than one query per question.
-        $stmtTQ = $db->prepare("
-            SELECT tq.question_id, tq.positive_marks, tq.negative_marks, q.question_type
-            FROM test_questions tq
-            JOIN questions q ON tq.question_id = q.id
-            WHERE tq.test_id = :test_id
-        ");
-        $stmtTQ->execute(['test_id' => $attempt['test_id']]);
+        if (($attempt['assembly_mode'] ?? 'fixed') === 'randomised') {
+            $stmtTQ = $db->prepare("
+                SELECT aq.question_id, aq.positive_marks, aq.negative_marks, q.question_type
+                FROM attempt_questions aq
+                JOIN questions q ON aq.question_id = q.id
+                WHERE aq.attempt_id = :att_id
+            ");
+            $stmtTQ->execute(['att_id' => $attemptId]);
+        } else {
+            $stmtTQ = $db->prepare("
+                SELECT tq.question_id, tq.positive_marks, tq.negative_marks, q.question_type
+                FROM test_questions tq
+                JOIN questions q ON tq.question_id = q.id
+                WHERE tq.test_id = :test_id
+            ");
+            $stmtTQ->execute(['test_id' => $attempt['test_id']]);
+        }
         $testQuestions = $stmtTQ->fetchAll();
 
         if (empty($testQuestions)) {

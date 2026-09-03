@@ -17,7 +17,7 @@ $currentAdmin = $_SESSION['admin_user'] ?? [
 ];
 
 $page = isset($_GET['page']) ? trim($_GET['page']) : 'dashboard';
-$allowedPages = ['dashboard', 'users', 'question_review', 'map_locations', 'taxonomy', 'patterns', 'questions', 'tests', 'challenges', 'cms', 'audits', 'ai_generator', 'marketplace', 'creators'];
+$allowedPages = ['dashboard', 'users', 'question_review', 'question_bank', 'map_locations', 'taxonomy', 'patterns', 'questions', 'tests', 'challenges', 'cms', 'audits', 'ai_generator', 'marketplace', 'creators'];
 
 if (!in_array($page, $allowedPages)) {
     $page = 'dashboard';
@@ -27,6 +27,7 @@ $titleMap = [
     'dashboard'     => 'Operational Dashboard & Analytics Summary',
     'users'         => '👥 Registered Student & Candidate Directory',
     'question_review' => '📝 Teacher Question Submissions & Review',
+    'question_bank'   => '🏦 Question Bank Health & Top-up Targets',
     'map_locations' => '🗺️ Map Learning Locations & Geography Bank',
     'taxonomy'      => 'Exam Taxonomy & Organization Governance',
     'patterns'      => 'Universal Test Pattern Builder',
