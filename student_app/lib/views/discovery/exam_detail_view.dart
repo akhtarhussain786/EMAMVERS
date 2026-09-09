@@ -128,7 +128,7 @@ class _ExamDetailViewState extends State<ExamDetailView> {
 
             // Effective Pattern Snapshot (SRD EXAM-002)
             if (pattern != null) ...[
-              const Text('Effective Exam Pattern Snapshot', style: TextStyle(color: AppConstants.onAccent, fontSize: 17, fontWeight: FontWeight.bold)),
+              const Text('Effective Exam Pattern Snapshot', style: TextStyle(color: AppConstants.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
               const SizedBox(height: AppConstants.space12),
               Container(
                 padding: const EdgeInsets.all(AppConstants.space16),
@@ -138,12 +138,14 @@ class _ExamDetailViewState extends State<ExamDetailView> {
                   border: Border.all(color: AppConstants.cardBorder),
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _patternMetric('Duration', '${(pattern!['total_duration_seconds'] / 60).round()} Mins'),
-                    _patternMetric('Questions', '${pattern!['total_questions']} Qs'),
-                    _patternMetric('Total Marks', '${pattern!['total_marks']} Marks'),
-                    _patternMetric('Marking', '+${pattern!['default_positive_marks']} / -${pattern!['default_negative_marks']}'),
+                    Expanded(child: _patternMetric('Duration', '${(pattern!['total_duration_seconds'] / 60).round()}m')),
+                    Container(width: 1, height: 28, color: AppConstants.cardBorder),
+                    Expanded(child: _patternMetric('Questions', '${pattern!['total_questions']} Qs')),
+                    Container(width: 1, height: 28, color: AppConstants.cardBorder),
+                    Expanded(child: _patternMetric('Marks', '${pattern!['total_marks']}')),
+                    Container(width: 1, height: 28, color: AppConstants.cardBorder),
+                    Expanded(child: _patternMetric('Marking', '+${pattern!['default_positive_marks']}/-${pattern!['default_negative_marks']}')),
                   ],
                 ),
               ),

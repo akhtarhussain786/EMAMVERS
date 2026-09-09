@@ -818,7 +818,7 @@ class LostMarksCard extends StatelessWidget {
               children: [
                 const Text(
                   '18–24 Marks Potentially Recoverable',
-                  style: TextStyle(color: AppConstants.accentEmerald, fontSize: 12.5, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: Color(0xFF065F46), fontSize: 12.5, fontWeight: FontWeight.bold),
                 ),
                 ElevatedButton(
                   onPressed: onTapCreatePlan,

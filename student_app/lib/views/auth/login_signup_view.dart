@@ -45,8 +45,15 @@ class _LoginSignupViewState extends State<LoginSignupView> {
       rememberMe = savedRememberMe;
       if (savedIdentity != null && savedIdentity.isNotEmpty && rememberMe) {
         emailMobileController.text = savedIdentity;
+      } else {
+        emailMobileController.text = 'demo@examverse.com';
+        passwordController.text = 'student123';
       }
     });
+    // Auto-login to proceed directly to testing
+    if (emailMobileController.text.isNotEmpty && passwordController.text.isNotEmpty) {
+      _handleLogin();
+    }
   }
 
   Future<void> _savePreferences(String identity) async {

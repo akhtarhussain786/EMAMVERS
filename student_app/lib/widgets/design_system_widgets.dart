@@ -90,14 +90,14 @@ class PrimaryButton extends StatelessWidget {
             ? const SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(color: AppConstants.textPrimary, strokeWidth: 2.5),
+                child: CircularProgressIndicator(color: AppConstants.onAccent, strokeWidth: 2.5),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (icon != null) ...[
-                    Icon(icon, color: AppConstants.textPrimary, size: 18),
+                    Icon(icon, color: AppConstants.onAccent, size: 18),
                     const SizedBox(width: 8),
                   ],
                   Flexible(
@@ -106,7 +106,7 @@ class PrimaryButton extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: AppConstants.textPrimary,
+                        color: AppConstants.onAccent,
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.3,

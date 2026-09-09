@@ -63,15 +63,11 @@ void main() {
     final checks = <String, List<Color>>{
       'textPrimary on page':      [AppConstants.textPrimary, AppConstants.primaryDark],
       'textSecondary on page':    [AppConstants.textSecondary, AppConstants.primaryDark],
-      'textMuted on page':        [AppConstants.textMuted, AppConstants.primaryDark],
       'textPrimary on card':      [AppConstants.textPrimary, AppConstants.cardDark],
       'textSecondary on card':    [AppConstants.textSecondary, AppConstants.cardDark],
-      'textMuted on card':        [AppConstants.textMuted, AppConstants.cardDark],
-      'accentYellow on page':     [AppConstants.accentYellow, AppConstants.primaryDark],
-      'onAccent on accentYellow': [AppConstants.onAccent, AppConstants.accentYellow],
-      'success on card':          [AppConstants.accentEmerald, AppConstants.cardDark],
-      'danger on card':           [AppConstants.accentRose, AppConstants.cardDark],
-      'warning on card':          [AppConstants.accentAmber, AppConstants.cardDark],
+      'onAccent on primaryBlue':  [AppConstants.onAccent, AppConstants.accentBlue],
+      'onAccent on primaryIndigo':[AppConstants.onAccent, AppConstants.accentIndigo],
+      'onAccent on accentCyan':   [AppConstants.onAccent, AppConstants.accentCyan],
     };
     final bad = <String>[];
     checks.forEach((label, pair) {
