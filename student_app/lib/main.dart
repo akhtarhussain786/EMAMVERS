@@ -40,7 +40,6 @@ class ExamVerseApp extends StatefulWidget {
 
 class _ExamVerseAppState extends State<ExamVerseApp> {
   late bool isAuthenticated = widget.initiallyAuthenticated;
-  // Teachers author questions and never take tests, so they get their own shell.
   late String accountType = ApiService.accountType;
   int currentTabIndex = 0;
 
@@ -50,98 +49,15 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
   int? activeAttemptId;
   bool isPlayingTest = false;
   bool isBuildingPractice = false;
-  // Set when the player should resume an already-assembled custom paper.
   int? practiceAttemptId;
   int? practiceDurationMinutes;
   bool isViewingResult = false;
   bool isViewingInstructions = false;
 
-  Timer? _tourTimer;
-  int _tourIndex = 0;
-
   @override
   void initState() {
     super.initState();
-    // A rejected token anywhere in the app returns the user to the login screen
-    // instead of surfacing repeated "Unauthorized" errors.
     ApiService.onUnauthorized = _handleSessionExpired;
-  }
-
-  void _startAutomatedTour() {
-    _tourTimer = Timer.periodic(const Duration(seconds: 6), (timer) {
-      if (!mounted) return;
-      setState(() {
-        _tourIndex++;
-        switch (_tourIndex % 11) {
-          case 0: // 1. Home Dashboard
-            isAuthenticated = true;
-            accountType = 'student';
-            selectedExamId = null;
-            selectedTestId = null;
-            isPlayingTest = false;
-            isViewingInstructions = false;
-            isViewingResult = false;
-            currentTabIndex = 0;
-            break;
-          case 1: // 2. Exam Detail (SSC CGL)
-            selectedExamId = 1;
-            isPlayingTest = false;
-            isViewingInstructions = false;
-            isViewingResult = false;
-            break;
-          case 2: // 3. Test Instructions (Mock 01)
-            selectedExamId = null;
-            selectedTestId = 1;
-            isViewingInstructions = true;
-            isPlayingTest = false;
-            isViewingResult = false;
-            break;
-          case 3: // 4. CBT Test Player (Real Questions & Timer)
-            selectedExamId = null;
-            selectedTestId = 1;
-            isPlayingTest = true;
-            isViewingInstructions = false;
-            isViewingResult = false;
-            break;
-          case 4: // 5. Scorecard & Result Analytics
-            isPlayingTest = false;
-            isViewingInstructions = false;
-            activeAttemptId = 1;
-            isViewingResult = true;
-            break;
-          case 5: // 6. AI Coach Mentor / Exam Twin
-            isViewingResult = false;
-            selectedExamId = null;
-            currentTabIndex = 2;
-            break;
-          case 6: // 7. National Leaderboard
-            isViewingResult = false;
-            selectedExamId = null;
-            currentTabIndex = 3;
-            break;
-          case 7: // 8. Student Passport / Profile
-            isViewingResult = false;
-            selectedExamId = null;
-            currentTabIndex = 4;
-            break;
-          case 8: // 9. Marketplace Study Store
-            isViewingResult = false;
-            selectedExamId = null;
-            currentTabIndex = 1;
-            break;
-          case 9: // 10. Mistake Notebook
-            isViewingResult = false;
-            selectedExamId = null;
-            currentTabIndex = 0;
-            break;
-          case 10: // 11. Home Refresh
-            isViewingResult = false;
-            selectedExamId = null;
-            currentTabIndex = 0;
-            break;
-        }
-      });
-    });
   }
 
   void _handleSessionExpired() {
@@ -163,7 +79,6 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
 
   @override
   void dispose() {
-    _tourTimer?.cancel();
     ApiService.onUnauthorized = null;
     super.dispose();
   }
@@ -188,7 +103,6 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
           surface: AppConstants.cardDark,
           onSurface: AppConstants.textPrimary,
         ),
-        // Chrome must not fall back to Material's dark defaults.
         appBarTheme: const AppBarTheme(
           backgroundColor: AppConstants.scaffoldDark,
           foregroundColor: AppConstants.textPrimary,
@@ -324,16 +238,6 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
           PassportView(onLogout: () => setState(() => isAuthenticated = false)),
         ],
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 70.0),
-        child: FloatingActionButton.extended(
-          elevation: 4,
-          backgroundColor: AppConstants.accentCyan,
-          icon: const Icon(Icons.science, color: Colors.white, size: 20),
-          label: const Text('QA Modules', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-          onPressed: () => _showQaModuleMenu(context),
-        ),
-      ),
       bottomNavigationBar: PremiumNavBar(
         currentIndex: currentTabIndex,
         onTap: (i) => setState(() {
@@ -347,118 +251,6 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
           PremiumNavBarItem(icon: Icons.leaderboard_outlined, activeIcon: Icons.leaderboard_rounded, label: 'Ranks'),
           PremiumNavBarItem(icon: Icons.person_outline, activeIcon: Icons.person_rounded, label: 'Passport'),
         ],
-      ),
-    );
-  }
-
-  void _showQaModuleMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        height: MediaQuery.of(ctx).size.height * 0.75,
-        decoration: const BoxDecoration(
-          color: AppConstants.cardDark,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(color: AppConstants.cardBorder, borderRadius: BorderRadius.circular(2)),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('🚀 Live Module Test Selector', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppConstants.textPrimary)),
-                  IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  _qaTile(ctx, '1. 🏠 Home Dashboard', Icons.home, () {
-                    Navigator.pop(ctx);
-                    setState(() { selectedExamId = null; isPlayingTest = false; isViewingInstructions = false; isViewingResult = false; currentTabIndex = 0; });
-                  }),
-                  _qaTile(ctx, '2. 📚 SSC CGL Exam Detail', Icons.school, () {
-                    Navigator.pop(ctx);
-                    setState(() { selectedExamId = 1; isPlayingTest = false; isViewingInstructions = false; isViewingResult = false; });
-                  }),
-                  _qaTile(ctx, '3. 📝 Test Instructions (Mock 01)', Icons.assignment, () {
-                    Navigator.pop(ctx);
-                    setState(() { selectedTestId = 1; isViewingInstructions = true; isPlayingTest = false; isViewingResult = false; });
-                  }),
-                  _qaTile(ctx, '4. ⏱️ CBT Test Player (Active)', Icons.timer, () {
-                    Navigator.pop(ctx);
-                    setState(() { selectedTestId = 1; isPlayingTest = true; isViewingInstructions = false; isViewingResult = false; });
-                  }),
-                  _qaTile(ctx, '5. 📊 Result & Scorecard (Attempt #1)', Icons.analytics, () {
-                    Navigator.pop(ctx);
-                    setState(() { activeAttemptId = 1; isViewingResult = true; isPlayingTest = false; isViewingInstructions = false; });
-                  }),
-                  _qaTile(ctx, '6. 📔 Mistake Notebook', Icons.auto_fix_high, () {
-                    Navigator.pop(ctx);
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const MistakeNotebookView()));
-                  }),
-                  _qaTile(ctx, '7. 🗺️ Map Learning (State Explorer)', Icons.map, () {
-                    Navigator.pop(ctx);
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const MapLearningHomeView()));
-                  }),
-                  _qaTile(ctx, '8. 📰 Current Affairs & Daily Quiz', Icons.newspaper, () {
-                    Navigator.pop(ctx);
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const CurrentAffairsView()));
-                  }),
-                  _qaTile(ctx, '9. 🤖 AI Coach Mentor', Icons.auto_awesome, () {
-                    Navigator.pop(ctx);
-                    setState(() { selectedExamId = null; currentTabIndex = 2; });
-                  }),
-                  _qaTile(ctx, '10. 🛍️ Marketplace Study Store', Icons.storefront, () {
-                    Navigator.pop(ctx);
-                    setState(() { selectedExamId = null; currentTabIndex = 1; });
-                  }),
-                  _qaTile(ctx, '11. 🏆 National Leaderboard', Icons.leaderboard, () {
-                    Navigator.pop(ctx);
-                    setState(() { selectedExamId = null; currentTabIndex = 3; });
-                  }),
-                  _qaTile(ctx, '12. 👤 Student Passport', Icons.person, () {
-                    Navigator.pop(ctx);
-                    setState(() { selectedExamId = null; currentTabIndex = 4; });
-                  }),
-                  _qaTile(ctx, '13. 👨‍🏫 Teacher KYC Application', Icons.verified_user, () {
-                    Navigator.pop(ctx);
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const BecomeTeacherView()));
-                  }),
-                  const SizedBox(height: 30),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _qaTile(BuildContext context, String title, IconData icon, VoidCallback onTap) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: AppConstants.surfaceElevated,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppConstants.cardBorder),
-      ),
-      child: ListTile(
-        leading: Icon(icon, color: AppConstants.accentCyan),
-        title: Text(title, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: AppConstants.textPrimary)),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppConstants.textMuted),
-        onTap: onTap,
       ),
     );
   }
