@@ -25,9 +25,15 @@ class AppConstants {
     }
 
     if (kIsWeb) return 'http://localhost/EXAMVERSE/api';
-    if (Platform.isAndroid) return 'http://$hostLanIp/EXAMVERSE/api';
+    if (Platform.isAndroid) {
+      final host = const String.fromEnvironment('API_HOST', defaultValue: '127.0.0.1');
+      if (host.startsWith('http://') || host.startsWith('https://')) return host;
+      return 'http://$host/EXAMVERSE/api';
+    }
     return 'http://127.0.0.1/EXAMVERSE/api';
   }
+
+
 
   // ── EXAMVERSE Modern UI Colour System — Royal Blue & Clean Surfaces ─────
   static const Color primaryDark = Color(0xFFFFFFFF);      // page background
