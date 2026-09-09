@@ -102,21 +102,25 @@ class _HomeViewState extends State<HomeView> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Good Morning, Candidate 👋',
-                        style: TextStyle(color: AppConstants.textPrimary, fontSize: 20, fontWeight: FontWeight.w800),
-                      ),
-                      const SizedBox(height: 2),
-                      const Text(
-                        'Ready to improve your rank today?',
-                        style: TextStyle(color: AppConstants.textSecondary, fontSize: 12.5),
-                      ),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Good Morning, Candidate 👋',
+                          style: TextStyle(color: AppConstants.textPrimary, fontSize: 19, fontWeight: FontWeight.w800),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Ready to improve your rank today?',
+                          style: TextStyle(color: AppConstants.textSecondary, fontSize: 12.5),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
                         decoration: BoxDecoration(
@@ -378,7 +382,7 @@ class _HomeViewState extends State<HomeView> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
         decoration: BoxDecoration(
           color: AppConstants.cardDark,
           borderRadius: BorderRadius.circular(AppConstants.radiusCard),
@@ -386,19 +390,27 @@ class _HomeViewState extends State<HomeView> {
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             CircleAvatar(
-              radius: 18,
+              radius: 16,
               backgroundColor: color.withValues(alpha: 0.15),
-              child: Icon(icon, color: color, size: 18),
+              child: Icon(icon, color: color, size: 16),
             ),
-            const SizedBox(height: 6),
-            Text(title, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 11.5, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppConstants.textPrimary, fontSize: 10.5, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
       ),
     );
   }
+
 
   IconData _getCategoryIcon(String type) {
     switch (type) {
