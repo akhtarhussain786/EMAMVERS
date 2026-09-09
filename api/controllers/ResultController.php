@@ -22,6 +22,25 @@ class ResultController {
         $stmt->execute(['id' => $attemptId, 'user_id' => $userId]);
         $result = $stmt->fetch();
 
+        if (!$result) {
+            $stmtLatest = $db->prepare("
+                SELECT att.*, t.title as test_title, t.test_type, e.title as exam_title,
+                       u.full_name, s.name as state_name
+                FROM test_attempts att
+                JOIN tests t ON att.test_id = t.id
+                JOIN exams e ON t.exam_id = e.id
+                JOIN users u ON att.user_id = u.id
+                LEFT JOIN states s ON u.state_id = s.id
+                WHERE att.user_id = :user_id AND att.status = 'evaluated'
+                ORDER BY att.id DESC LIMIT 1
+            ");
+            $stmtLatest->execute(['user_id' => $userId]);
+            $result = $stmtLatest->fetch();
+            if ($result) {
+                $attemptId = $result['id'];
+            }
+        }
+
         if (!$result) Response::error('Result record not found', 404);
 
         // Fetch Sectional breakdown
@@ -56,7 +75,16 @@ class ResultController {
 
         $stmtAtt = $db->prepare("SELECT id FROM test_attempts WHERE id = :id AND user_id = :user_id");
         $stmtAtt->execute(['id' => $attemptId, 'user_id' => $userId]);
-        if (!$stmtAtt->fetch()) Response::error('Attempt not found', 404);
+        if (!$stmtAtt->fetch()) {
+            $stmtLatest = $db->prepare("SELECT id FROM test_attempts WHERE user_id = :user_id AND status = 'evaluated' ORDER BY id DESC LIMIT 1");
+            $stmtLatest->execute(['user_id' => $userId]);
+            $lat = $stmtLatest->fetch();
+            if ($lat) {
+                $attemptId = $lat['id'];
+            } else {
+                Response::error('Attempt not found', 404);
+            }
+        }
 
         // Solutions must follow whichever paper the candidate actually sat: a
         // randomised attempt has its own question set and ordering.
