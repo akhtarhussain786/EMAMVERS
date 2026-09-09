@@ -159,11 +159,12 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                   RichText(
                     text: const TextSpan(
                       children: [
-                        TextSpan(text: 'EXAM', style: TextStyle(color: AppConstants.onAccent, fontSize: 36, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+                        TextSpan(text: 'EXAM', style: TextStyle(color: AppConstants.textPrimary, fontSize: 36, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
                         TextSpan(text: 'VERSE', style: TextStyle(color: AppConstants.accentCyan, fontSize: 36, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
                       ],
                     ),
                   ),
+
                   const SizedBox(height: 6),
                   const Text(
                     "India's AI Exam Performance & Career Platform",
@@ -282,6 +283,39 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: AppConstants.space12),
+
+                  // DEMO QUICK FILL HELPER
+                  if (!isSignUp)
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.center,
+                      children: [
+                        ActionChip(
+                          avatar: const Icon(Icons.school, size: 16, color: AppConstants.accentCyan),
+                          label: const Text('Demo Student', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          backgroundColor: AppConstants.accentCyan.withOpacity(0.1),
+                          side: BorderSide(color: AppConstants.accentCyan.withOpacity(0.3)),
+                          onPressed: () {
+                            emailMobileController.text = 'demo@examverse.com';
+                            passwordController.text = 'student123';
+                            _handleLogin();
+                          },
+                        ),
+                        ActionChip(
+                          avatar: const Icon(Icons.psychology, size: 16, color: AppConstants.accentGreen),
+                          label: const Text('Demo Teacher', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          backgroundColor: AppConstants.accentGreen.withOpacity(0.1),
+                          side: BorderSide(color: AppConstants.accentGreen.withOpacity(0.3)),
+                          onPressed: () {
+                            emailMobileController.text = 'neha.sharma@example.com';
+                            passwordController.text = 'teacher123';
+                            _handleLogin();
+                          },
+                        ),
+                      ],
+                    ),
                 ],
               ),
             ),
