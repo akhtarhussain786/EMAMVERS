@@ -134,6 +134,31 @@ class QuestionItem {
     return 'Question';
   }
 
+  String textForLanguage(String lang) {
+    if (translations.isEmpty) return 'Question';
+    final match = translations.firstWhere(
+      (t) => t.language == lang,
+      orElse: () => translations.first,
+    );
+    return match.questionText;
+  }
+
+  String get englishQuestionText => textForLanguage('en');
+  String get hindiQuestionText => textForLanguage('hi');
+  bool get hasHindi => translations.any((t) => t.language == 'hi');
+
+  List<QuestionOption> optionsForLanguage(String lang) {
+    final filtered = options.where((o) => o.language == lang).toList();
+    if (filtered.isNotEmpty) return filtered;
+    final enOpts = options.where((o) => o.language == 'en').toList();
+    if (enOpts.isNotEmpty) return enOpts;
+    final byKey = <String, QuestionOption>{};
+    for (var o in options) {
+      byKey.putIfAbsent(o.optionKey, () => o);
+    }
+    return byKey.values.toList();
+  }
+
   QuestionItem({
     required this.questionId,
     required this.questionOrder,

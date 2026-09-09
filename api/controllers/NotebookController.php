@@ -11,11 +11,16 @@ class NotebookController {
         $db = Database::getConnection();
 
         $stmt = $db->prepare("
-            SELECT n.*, qt.question_text, qt.solution_text as explanation,
+            SELECT n.*, 
+                   qte.question_text as question_text_en, qte.solution_text as explanation_en,
+                   qth.question_text as question_text_hi, qth.solution_text as explanation_hi,
+                   COALESCE(qte.question_text, qth.question_text) as question_text,
+                   COALESCE(qte.solution_text, qth.solution_text) as explanation,
                    s.name as subject_name, c.name as chapter_name
             FROM mistake_notebook n
             JOIN questions q ON n.question_id = q.id
-            LEFT JOIN question_translations qt ON q.id = qt.question_id AND qt.language = 'en'
+            LEFT JOIN question_translations qte ON q.id = qte.question_id AND qte.language = 'en'
+            LEFT JOIN question_translations qth ON q.id = qth.question_id AND qth.language = 'hi'
             LEFT JOIN topics t ON q.topic_id = t.id
             LEFT JOIN chapters c ON t.chapter_id = c.id
             LEFT JOIN subjects s ON c.subject_id = s.id

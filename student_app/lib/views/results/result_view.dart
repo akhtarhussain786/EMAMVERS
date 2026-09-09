@@ -280,15 +280,25 @@ class _ResultViewState extends State<ResultView> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(sol['question_text'] ?? '', style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14, height: 1.35)),
+                        // English & Hindi Question Text
+                        Text(sol['question_text_en'] ?? sol['question_text'] ?? '', style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14, fontWeight: FontWeight.w700, height: 1.35)),
+                        if (sol['question_text_hi'] != null && sol['question_text_hi'].toString().isNotEmpty && sol['question_text_hi'] != sol['question_text_en']) ...[
+                          const SizedBox(height: 6),
+                          Text(sol['question_text_hi'], style: const TextStyle(color: AppConstants.textSecondary, fontSize: 13.5, height: 1.35)),
+                        ],
                         const SizedBox(height: 12),
 
                         // Solution Explanation
-                        if (sol['solution_text'] != null) ...[
-                          const Text('Solution Explanation:', style: TextStyle(color: AppConstants.textSecondary, fontSize: 11.5, fontWeight: FontWeight.bold)),
+                        if (sol['solution_text_en'] != null || sol['solution_text'] != null) ...[
+                          const Text('Solution Explanation (ENG):', style: TextStyle(color: AppConstants.accentBlue, fontSize: 11.5, fontWeight: FontWeight.bold)),
                           const SizedBox(height: 4),
-                          Text(sol['solution_text'], style: const TextStyle(color: AppConstants.accentBlue, fontSize: 12.5, height: 1.4)),
+                          Text(sol['solution_text_en'] ?? sol['solution_text'], style: const TextStyle(color: AppConstants.accentBlue, fontSize: 12.5, height: 1.4)),
+                        ],
+                        if (sol['solution_text_hi'] != null && sol['solution_text_hi'].toString().isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          const Text('समाधान विवरण (हिन्दी):', style: TextStyle(color: AppConstants.accentEmerald, fontSize: 11.5, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 4),
+                          Text(sol['solution_text_hi'], style: const TextStyle(color: AppConstants.textPrimary, fontSize: 12.5, height: 1.4)),
                         ],
 
                         // Shortcut Method (SRD SOL-002)

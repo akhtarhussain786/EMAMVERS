@@ -34,7 +34,7 @@ class _TestPlayerViewState extends State<TestPlayerView> {
   int attemptId = 0;
   List<QuestionItem> questions = [];
   int currentIndex = 0;
-  String selectedLanguage = 'en';
+  String selectedLanguage = 'both';
   bool isSubmitting = false;
 
   // Timer
@@ -314,10 +314,11 @@ class _TestPlayerViewState extends State<TestPlayerView> {
             underline: const SizedBox(),
             icon: const Icon(Icons.language, color: AppConstants.textPrimary, size: 20),
             items: const [
+              DropdownMenuItem(value: 'both', child: Text('Eng + हिंदी', style: TextStyle(color: AppConstants.textPrimary, fontSize: 12, fontWeight: FontWeight.bold))),
               DropdownMenuItem(value: 'en', child: Text('English', style: TextStyle(color: AppConstants.textPrimary, fontSize: 12))),
               DropdownMenuItem(value: 'hi', child: Text('हिन्दी', style: TextStyle(color: AppConstants.textPrimary, fontSize: 12))),
             ],
-            onChanged: (v) => setState(() => selectedLanguage = v ?? 'en'),
+            onChanged: (v) => setState(() => selectedLanguage = v ?? 'both'),
           ),
           IconButton(icon: const Icon(Icons.grid_view_rounded, color: AppConstants.textPrimary), onPressed: () => _openQuestionPalette(context)),
           IconButton(icon: const Icon(Icons.exit_to_app_rounded, color: AppConstants.accentRose), onPressed: () => _showSubmitDialog(context)),
@@ -347,44 +348,13 @@ class _TestPlayerViewState extends State<TestPlayerView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      currentQuestion.questionText,
-                      style: const TextStyle(color: AppConstants.textPrimary, fontSize: 16, fontWeight: FontWeight.w700, height: 1.4),
-                    ),
+                    _buildQuestionStem(currentQuestion),
                     const SizedBox(height: AppConstants.space24),
 
                     // Options List
-                    ...currentQuestion.options.map((opt) {
-                      final isSelected = currentQuestion.selectedOption == opt.optionKey;
-                      return GestureDetector(
-                        onTap: () => _onOptionSelected(opt.optionKey),
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: isSelected ? AppConstants.accentIndigo.withValues(alpha: 0.12) : AppConstants.cardDark,
-                            borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-                            border: Border.all(color: isSelected ? AppConstants.accentIndigo : AppConstants.cardBorder, width: isSelected ? 2.0 : 1.0),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: isSelected ? AppConstants.accentIndigo : AppConstants.surfaceElevated,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Center(
-                                  child: Text(opt.optionKey, style: TextStyle(color: isSelected ? Colors.white : AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 13)),
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(child: Text(opt.optionText, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14.5, height: 1.3, fontWeight: FontWeight.w500))),
-                            ],
-                          ),
-                        ),
-                      );
+                    ...['A', 'B', 'C', 'D'].map((optKey) {
+                      final isSelected = currentQuestion.selectedOption == optKey;
+                      return _buildOptionTile(currentQuestion, optKey, isSelected);
                     }),
                   ],
                 ),
@@ -526,6 +496,123 @@ class _TestPlayerViewState extends State<TestPlayerView> {
         Text(label, style: const TextStyle(color: AppConstants.textSecondary, fontSize: 13)),
         Text(val, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14)),
       ],
+    );
+  }
+
+  Widget _buildQuestionStem(QuestionItem q) {
+    if (selectedLanguage == 'both') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // English Stem
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 2, right: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(color: AppConstants.accentBlue.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(4)),
+                child: const Text('ENG', style: TextStyle(color: AppConstants.accentBlue, fontSize: 10, fontWeight: FontWeight.bold)),
+              ),
+              Expanded(
+                child: Text(
+                  q.englishQuestionText,
+                  style: const TextStyle(color: AppConstants.textPrimary, fontSize: 15.5, fontWeight: FontWeight.w700, height: 1.4),
+                ),
+              ),
+            ],
+          ),
+          if (q.hasHindi) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Divider(color: AppConstants.cardBorder, height: 1),
+            ),
+            // Hindi Stem
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 2, right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(color: AppConstants.accentEmerald.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(4)),
+                  child: const Text('हिन्दी', style: TextStyle(color: AppConstants.accentEmerald, fontSize: 10, fontWeight: FontWeight.bold)),
+                ),
+                Expanded(
+                  child: Text(
+                    q.hindiQuestionText,
+                    style: const TextStyle(color: AppConstants.textPrimary, fontSize: 15.5, fontWeight: FontWeight.w700, height: 1.4),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      );
+    } else {
+      final text = selectedLanguage == 'hi' ? q.hindiQuestionText : q.englishQuestionText;
+      return Text(
+        text,
+        style: const TextStyle(color: AppConstants.textPrimary, fontSize: 16, fontWeight: FontWeight.w700, height: 1.4),
+      );
+    }
+  }
+
+  Widget _buildOptionTile(QuestionItem q, String optKey, bool isSelected) {
+    String enText = '';
+    String hiText = '';
+    final enOpt = q.options.where((o) => o.optionKey == optKey && o.language == 'en').toList();
+    if (enOpt.isNotEmpty) enText = enOpt.first.optionText;
+    final hiOpt = q.options.where((o) => o.optionKey == optKey && o.language == 'hi').toList();
+    if (hiOpt.isNotEmpty) hiText = hiOpt.first.optionText;
+
+    if (enText.isEmpty && hiText.isNotEmpty) enText = hiText;
+    if (hiText.isEmpty && enText.isNotEmpty) hiText = enText;
+
+    return GestureDetector(
+      onTap: () => _onOptionSelected(optKey),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isSelected ? AppConstants.accentIndigo.withValues(alpha: 0.12) : AppConstants.cardDark,
+          borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+          border: Border.all(color: isSelected ? AppConstants.accentIndigo : AppConstants.cardBorder, width: isSelected ? 2.0 : 1.0),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: isSelected ? AppConstants.accentIndigo : AppConstants.surfaceElevated,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(optKey, style: TextStyle(color: isSelected ? Colors.white : AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 13)),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: selectedLanguage == 'both'
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(enText, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+                        if (hiText.isNotEmpty && hiText != enText) ...[
+                          const SizedBox(height: 3),
+                          Text(hiText, style: const TextStyle(color: AppConstants.textSecondary, fontSize: 13.5, fontWeight: FontWeight.w500)),
+                        ],
+                      ],
+                    )
+                  : Text(
+                      selectedLanguage == 'hi' ? hiText : enText,
+                      style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14.5, height: 1.3, fontWeight: FontWeight.w500),
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
