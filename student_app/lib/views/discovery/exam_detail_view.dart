@@ -115,7 +115,7 @@ class _ExamDetailViewState extends State<ExamDetailView> {
                     ],
                   ),
                   const SizedBox(height: AppConstants.space12),
-                  Text(exam?['title'] ?? '', style: const TextStyle(color: AppConstants.onAccent, fontSize: 22, fontWeight: FontWeight.w800)),
+                  Text(exam?['title'] ?? '', style: const TextStyle(color: AppConstants.textPrimary, fontSize: 22, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 8),
                   Text(
                     exam?['overview_text'] ?? exam?['short_description'] ?? '',

@@ -148,34 +148,41 @@ class _AiCoachViewState extends State<AiCoachView> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          gradient: AppConstants.aiGradient,
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: AppConstants.glowShadow(AppConstants.accentPurple),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            gradient: AppConstants.aiGradient,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: AppConstants.glowShadow(AppConstants.accentPurple),
+                          ),
+                          child: const Icon(Icons.psychology, color: AppConstants.onAccent, size: 22),
                         ),
-                        child: const Icon(Icons.psychology, color: AppConstants.onAccent, size: 22),
-                      ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            'AI Exam Twin',
-                            style: TextStyle(color: AppConstants.onAccent, fontSize: 20, fontWeight: FontWeight.w800),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'AI Exam Twin',
+                                style: TextStyle(color: AppConstants.onAccent, fontSize: 18, fontWeight: FontWeight.w800),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'Your preparation intelligence',
+                                style: TextStyle(color: AppConstants.textSecondary, fontSize: 11),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
-                          SizedBox(height: 2),
-                          Text(
-                            'Your preparation intelligence',
-                            style: TextStyle(color: AppConstants.textSecondary, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
@@ -183,8 +190,9 @@ class _AiCoachViewState extends State<AiCoachView> {
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: AppConstants.accentPurple.withValues(alpha: 0.4)),
                     ),
-                    child: Row(
-                      children: const [
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
                         Icon(Icons.auto_awesome, color: AppConstants.accentPurple, size: 13),
                         SizedBox(width: 4),
                         Text('AI ACTIVE', style: TextStyle(color: AppConstants.accentPurple, fontSize: 11, fontWeight: FontWeight.w800)),

@@ -91,9 +91,9 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
             Container(
               padding: const EdgeInsets.all(AppConstants.space16),
               decoration: BoxDecoration(
-                gradient: AppConstants.darkCardGradient,
+                color: AppConstants.surfaceElevated,
                 borderRadius: BorderRadius.circular(AppConstants.radiusCard),
-                border: Border.all(color: AppConstants.accentIndigo.withValues(alpha: 0.4)),
+                border: Border.all(color: AppConstants.cardBorder),
                 boxShadow: AppConstants.cardShadow,
               ),
               child: Row(
@@ -108,7 +108,7 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
             ),
             const SizedBox(height: AppConstants.space24),
 
-            const Text('General Guidelines & Exam Rules:', style: TextStyle(color: AppConstants.onAccent, fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('General Guidelines & Exam Rules:', style: TextStyle(color: AppConstants.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: AppConstants.space12),
             _ruleBullet('The countdown timer at the top right of the screen displays remaining test time.'),
             _ruleBullet('You can navigate between questions using the Question Palette.'),
@@ -124,7 +124,7 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
                 onPressed: widget.onProceedToTest,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppConstants.accentEmerald,
-                  foregroundColor: AppConstants.onAccent,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusMedium)),
                   elevation: 0,
@@ -142,9 +142,9 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
   Widget _infoTile(String label, String value) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(color: AppConstants.onAccent, fontWeight: FontWeight.w800, fontSize: 14.5)),
+        Text(value, style: const TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.w800, fontSize: 14.5)),
         const SizedBox(height: 2),
-        Text(label, style: const TextStyle(color: AppConstants.textMuted, fontSize: 11)),
+        Text(label, style: const TextStyle(color: AppConstants.textSecondary, fontSize: 11)),
       ],
     );
   }

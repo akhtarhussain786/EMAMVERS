@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'core/api_service.dart';
@@ -55,18 +56,93 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
   bool isViewingResult = false;
   bool isViewingInstructions = false;
 
+  Timer? _tourTimer;
+  int _tourIndex = 0;
+
   @override
   void initState() {
     super.initState();
     // A rejected token anywhere in the app returns the user to the login screen
     // instead of surfacing repeated "Unauthorized" errors.
     ApiService.onUnauthorized = _handleSessionExpired;
+    _startAutomatedTour();
   }
 
-  @override
-  void dispose() {
-    ApiService.onUnauthorized = null;
-    super.dispose();
+  void _startAutomatedTour() {
+    _tourTimer = Timer.periodic(const Duration(seconds: 6), (timer) {
+      if (!mounted) return;
+      setState(() {
+        _tourIndex++;
+        switch (_tourIndex % 11) {
+          case 0: // 1. Home Dashboard
+            isAuthenticated = true;
+            accountType = 'student';
+            selectedExamId = null;
+            selectedTestId = null;
+            isPlayingTest = false;
+            isViewingInstructions = false;
+            isViewingResult = false;
+            currentTabIndex = 0;
+            break;
+          case 1: // 2. Exam Detail (SSC CGL)
+            selectedExamId = 1;
+            isPlayingTest = false;
+            isViewingInstructions = false;
+            isViewingResult = false;
+            break;
+          case 2: // 3. Test Instructions (Mock 01)
+            selectedExamId = null;
+            selectedTestId = 1;
+            isViewingInstructions = true;
+            isPlayingTest = false;
+            isViewingResult = false;
+            break;
+          case 3: // 4. CBT Test Player (Real Questions & Timer)
+            selectedExamId = null;
+            selectedTestId = 1;
+            isPlayingTest = true;
+            isViewingInstructions = false;
+            isViewingResult = false;
+            break;
+          case 4: // 5. Scorecard & Result Analytics
+            isPlayingTest = false;
+            isViewingInstructions = false;
+            activeAttemptId = 1;
+            isViewingResult = true;
+            break;
+          case 5: // 6. AI Coach Mentor / Exam Twin
+            isViewingResult = false;
+            selectedExamId = null;
+            currentTabIndex = 2;
+            break;
+          case 6: // 7. National Leaderboard
+            isViewingResult = false;
+            selectedExamId = null;
+            currentTabIndex = 3;
+            break;
+          case 7: // 8. Student Passport / Profile
+            isViewingResult = false;
+            selectedExamId = null;
+            currentTabIndex = 4;
+            break;
+          case 8: // 9. Marketplace Study Store
+            isViewingResult = false;
+            selectedExamId = null;
+            currentTabIndex = 1;
+            break;
+          case 9: // 10. Mistake Notebook
+            isViewingResult = false;
+            selectedExamId = null;
+            currentTabIndex = 0;
+            break;
+          case 10: // 11. Home Refresh
+            isViewingResult = false;
+            selectedExamId = null;
+            currentTabIndex = 0;
+            break;
+        }
+      });
+    });
   }
 
   void _handleSessionExpired() {
@@ -84,6 +160,13 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
       selectedTestId = null;
       activeAttemptId = null;
     });
+  }
+
+  @override
+  void dispose() {
+    _tourTimer?.cancel();
+    ApiService.onUnauthorized = null;
+    super.dispose();
   }
 
   @override

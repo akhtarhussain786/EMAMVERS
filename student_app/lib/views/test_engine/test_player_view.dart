@@ -349,7 +349,7 @@ class _TestPlayerViewState extends State<TestPlayerView> {
                   children: [
                     Text(
                       currentQuestion.questionText,
-                      style: const TextStyle(color: AppConstants.onAccent, fontSize: 16, fontWeight: FontWeight.w600, height: 1.4),
+                      style: const TextStyle(color: AppConstants.textPrimary, fontSize: 16, fontWeight: FontWeight.w700, height: 1.4),
                     ),
                     const SizedBox(height: AppConstants.space24),
 
@@ -362,25 +362,25 @@ class _TestPlayerViewState extends State<TestPlayerView> {
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppConstants.accentIndigo.withValues(alpha: 0.15) : AppConstants.cardDark,
+                            color: isSelected ? AppConstants.accentIndigo.withValues(alpha: 0.12) : AppConstants.cardDark,
                             borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-                            border: Border.all(color: isSelected ? AppConstants.accentIndigo : AppConstants.cardBorder, width: isSelected ? 1.5 : 1.0),
+                            border: Border.all(color: isSelected ? AppConstants.accentIndigo : AppConstants.cardBorder, width: isSelected ? 2.0 : 1.0),
                           ),
                           child: Row(
                             children: [
                               Container(
-                                width: 30,
-                                height: 30,
+                                width: 32,
+                                height: 32,
                                 decoration: BoxDecoration(
-                                  color: isSelected ? AppConstants.accentIndigo : AppConstants.primaryDark,
+                                  color: isSelected ? AppConstants.accentIndigo : AppConstants.surfaceElevated,
                                   shape: BoxShape.circle,
                                 ),
                                 child: Center(
-                                  child: Text(opt.optionKey, style: TextStyle(color: isSelected ? AppConstants.textPrimary : AppConstants.textSecondary, fontWeight: FontWeight.bold, fontSize: 13)),
+                                  child: Text(opt.optionKey, style: TextStyle(color: isSelected ? Colors.white : AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 13)),
                                 ),
                               ),
                               const SizedBox(width: 14),
-                              Expanded(child: Text(opt.optionText, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14.5, height: 1.3))),
+                              Expanded(child: Text(opt.optionText, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14.5, height: 1.3, fontWeight: FontWeight.w500))),
                             ],
                           ),
                         ),

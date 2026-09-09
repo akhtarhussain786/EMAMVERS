@@ -350,13 +350,20 @@ class RankCard extends StatelessWidget {
           const SizedBox(height: AppConstants.space16),
           Text('#$rank', style: const TextStyle(color: AppConstants.onAccent, fontSize: 44, fontWeight: FontWeight.w800, height: 1.0)),
           const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 4,
             children: [
-              const Icon(Icons.arrow_upward, color: AppConstants.accentEmerald, size: 14),
-              const SizedBox(width: 4),
-              Text(rankImprovementText, style: const TextStyle(color: AppConstants.onAccent, fontSize: 12.5, fontWeight: FontWeight.bold)),
-              const SizedBox(width: 12),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.arrow_upward, color: AppConstants.accentEmerald, size: 14),
+                  const SizedBox(width: 4),
+                  Text(rankImprovementText, style: const TextStyle(color: AppConstants.onAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+                ],
+              ),
               Text('• Best Rank: #$bestRank', style: const TextStyle(color: AppConstants.onAccent, fontSize: 12)),
             ],
           ),
