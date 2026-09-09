@@ -65,7 +65,6 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
     // A rejected token anywhere in the app returns the user to the login screen
     // instead of surfacing repeated "Unauthorized" errors.
     ApiService.onUnauthorized = _handleSessionExpired;
-    _startAutomatedTour();
   }
 
   void _startAutomatedTour() {
