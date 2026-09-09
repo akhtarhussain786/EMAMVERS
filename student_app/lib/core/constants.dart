@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 
 class AppConstants {
   /// Host used for on-device debug builds. Override at build time:
-  ///   flutter run --dart-define=API_HOST=192.168.1.50:8000
-  static const String _defaultDevHost = '10.0.2.2:8000';
+  ///   flutter run --dart-define=API_HOST=192.168.31.120
+  static const String _defaultDevHost = '192.168.31.120';
   static const String hostLanIp =
       String.fromEnvironment('API_HOST', defaultValue: _defaultDevHost);
 
@@ -29,76 +29,74 @@ class AppConstants {
     return 'http://127.0.0.1/EXAMVERSE/api';
   }
 
-  // ── EXAMVERSE Colour System — Light theme: white + dark yellow ──────────
-  // Every pair below is checked against WCAG AA (4.5:1 for body text).
-  // Names are kept from the previous dark theme so all 600+ call sites keep
-  // working; only the values changed.
-
+  // ── EXAMVERSE Modern UI Colour System — Royal Blue & Clean Surfaces ─────
   static const Color primaryDark = Color(0xFFFFFFFF);      // page background
-  static const Color scaffoldDark = Color(0xFFFCFAF4);     // app bars, chrome
-  static const Color cardDark = Color(0xFFFCFAF4);         // card surface
-  static const Color surfaceElevated = Color(0xFFF5F0E1);  // raised surface
-  static const Color cardBorder = Color(0xFFE3DBC5);       // hairline border
+  static const Color scaffoldDark = Color(0xFFF8FAFC);     // app bars, chrome
+  static const Color cardDark = Color(0xFFFFFFFF);         // card surface
+  static const Color surfaceElevated = Color(0xFFF1F5F9);  // raised surface
+  static const Color cardBorder = Color(0xFFE2E8F0);       // hairline border
 
-  // Signature accent: dark yellow. 4.92:1 on white, and white text on it is
-  // also 4.92:1, so it works both as ink and as a button fill.
-  static const Color accentYellow = Color(0xFF8A6D00);
-  static const Color accentYellowDeep = Color(0xFF6B5400);
-  static const Color accentYellowSoft = Color(0xFFC9A227);
+  // Signature brand accents (Royal Blue & Electric Blue from Design Mockup)
+  static const Color accentBlue = Color(0xFF1D4ED8);
+  static const Color accentCyan = Color(0xFF2563EB);
+  static const Color accentIndigo = Color(0xFF1E40AF);
+  static const Color accentYellow = Color(0xFFD97706);
+  static const Color accentYellowDeep = Color(0xFFB45309);
+  static const Color accentYellowSoft = Color(0xFFF59E0B);
+  static const Color accentPurple = Color(0xFF7C3AED);
+  static const Color accentViolet = Color(0xFF7C3AED);
+  static const Color accentEmerald = Color(0xFF10B981);
+  static const Color accentGreen = Color(0xFF10B981);
+  static const Color accentAmber = Color(0xFFF59E0B);
+  static const Color accentRose = Color(0xFFEF4444);
 
-  // Legacy accent names now resolve to the yellow family or an accessible
-  // status colour, so existing widgets stay readable on a light background.
-  static const Color accentCyan = accentYellow;
-  static const Color accentBlue = accentYellowDeep;
-  static const Color accentPurple = Color(0xFF6D28D9);
-  static const Color accentViolet = Color(0xFF6D28D9);
-  static const Color accentIndigo = accentYellow;
-  static const Color accentEmerald = Color(0xFF15803D);
-  static const Color accentGreen = Color(0xFF15803D);
-  static const Color accentAmber = Color(0xFFB45309);
-  static const Color accentRose = Color(0xFFB91C1C);
-
-  // Typography — dark ink on light ground.
-  static const Color textPrimary = Color(0xFF1A1A1A);      // 17.4:1 on white
-  static const Color textSecondary = Color(0xFF54524B);    //  7.8:1 on white
-  static const Color textMuted = Color(0xFF726F65);        //  5.0:1 on white
+  // Typography — high-contrast modern dark ink
+  static const Color textPrimary = Color(0xFF0F172A);
+  static const Color textSecondary = Color(0xFF475569);
+  static const Color textMuted = Color(0xFF64748B);
 
   /// Ink to place on top of a filled accent surface.
   static const Color onAccent = Color(0xFFFFFFFF);
 
-  // Curated Gradients
+  // Curated Gradients from Image 2
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [accentYellow, accentYellowDeep],
+    colors: [Color(0xFF003884), Color(0xFF1D4ED8)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
+  static const LinearGradient heroGradient = LinearGradient(
+    colors: [Color(0xFF00152E), Color(0xFF003884), Color(0xFF1D4ED8)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
   static const LinearGradient aiGradient = LinearGradient(
-    colors: [accentPurple, accentYellowDeep],
+    colors: [Color(0xFF7C3AED), Color(0xFF1D4ED8)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient readinessGradient = LinearGradient(
-    colors: [accentYellow, accentYellowSoft],
+    colors: [Color(0xFF2563EB), Color(0xFF38BDF8)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient emeraldGradient = LinearGradient(
-    colors: [Color(0xFF15803D), Color(0xFF22A354)],
+    colors: [Color(0xFF059669), Color(0xFF10B981)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient goldGradient = LinearGradient(
-    colors: [accentYellowDeep, accentYellow],
+    colors: [Color(0xFFD97706), Color(0xFFF59E0B)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient darkCardGradient = LinearGradient(
-    colors: [Color(0xFFFCFAF4), Color(0xFFF5F0E1)],
+    colors: [Color(0xFFFFFFFF), Color(0xFFF8FAFC)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

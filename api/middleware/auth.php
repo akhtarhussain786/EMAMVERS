@@ -4,8 +4,8 @@ require_once __DIR__ . '/../utils/response.php';
 
 class AuthMiddleware {
     /** Roles that are treated as staff for the 'admin' requirement. */
-    /** Staff roles, matching the admins.role ENUM in schema.sql. */
-    private static $adminRoles = ['super_admin', 'content_operator', 'reviewer', 'finance_operator'];
+    /** Staff roles, matching the admins.role ENUM in schema.sql plus admin token alias. */
+    private static $adminRoles = ['admin', 'super_admin', 'content_operator', 'reviewer', 'finance_operator'];
 
     /**
      * Requires a valid bearer token. Returns the normalised claim set

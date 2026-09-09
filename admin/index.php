@@ -17,28 +17,33 @@ $currentAdmin = $_SESSION['admin_user'] ?? [
 ];
 
 $page = isset($_GET['page']) ? trim($_GET['page']) : 'dashboard';
-$allowedPages = ['dashboard', 'users', 'question_review', 'question_bank', 'map_locations', 'taxonomy', 'patterns', 'questions', 'tests', 'challenges', 'cms', 'audits', 'ai_generator', 'marketplace', 'creators'];
+$allowedPages = ['dashboard', 'users', 'teacher_applications', 'question_review', 'question_duplicates', 'question_bank', 'map_locations', 'taxonomy', 'patterns', 'questions', 'tests', 'challenges', 'cms', 'audits', 'ai_generator', 'marketplace', 'creators', 'referrals', 'subscriptions', 'settings'];
 
 if (!in_array($page, $allowedPages)) {
     $page = 'dashboard';
 }
 
 $titleMap = [
-    'dashboard'     => 'Operational Dashboard & Analytics Summary',
-    'users'         => '👥 Registered Student & Candidate Directory',
-    'question_review' => '📝 Teacher Question Submissions & Review',
-    'question_bank'   => '🏦 Question Bank Health & Top-up Targets',
-    'map_locations' => '🗺️ Map Learning Locations & Geography Bank',
-    'taxonomy'      => 'Exam Taxonomy & Organization Governance',
-    'patterns'      => 'Universal Test Pattern Builder',
-    'questions'     => 'Question Bank & Multilingual Repository',
-    'tests'         => 'Test Series Inventory & Builder',
-    'challenges'    => 'Monthly National Flagship Challenges',
-    'cms'           => 'Content CMS Hub (Current Affairs, Jobs, Topper Wall)',
-    'audits'        => 'System Governance & Audit Logs',
-    'ai_generator'  => '🤖 AI Question Generator & API Key Manager',
-    'marketplace'   => '🏪 Study Materials Marketplace',
-    'creators'      => '👨‍🏫 Creator Accounts & Payout Management',
+    'dashboard'            => 'Operational Dashboard & Analytics Summary',
+    'users'                => '👥 Registered Student & Candidate Directory',
+    'teacher_applications' => '🎓 Teacher KYC & Credential Verification Queue',
+    'question_review'      => '📝 Teacher Question Submissions & Review',
+    'question_duplicates'  => '🔍 Question Duplicate Governance & Review Center',
+    'question_bank'        => '🏦 Question Bank Health & Top-up Targets',
+    'map_locations'        => '🗺️ Map Learning Locations & Geography Bank',
+    'taxonomy'             => 'Exam Taxonomy & Organization Governance',
+    'patterns'             => 'Universal Test Pattern Builder',
+    'questions'            => 'Question Bank & Multilingual Repository',
+    'tests'                => 'Test Series Inventory & Builder',
+    'challenges'           => 'Monthly National Flagship Challenges',
+    'cms'                  => 'Content CMS Hub (Current Affairs, Jobs, Topper Wall)',
+    'audits'               => 'System Governance & Audit Logs',
+    'ai_generator'         => '🤖 AI Question Generator & API Key Manager',
+    'marketplace'          => '🏪 Study Materials Marketplace',
+    'creators'             => '👨‍🏫 Creator Accounts & Payout Management',
+    'referrals'            => '🎁 Referral & Growth Platform Dashboard',
+    'subscriptions'        => '💳 Subscription Plans, Pricing & Entitlement Ledger',
+    'settings'             => '⚙️ Gateway & Platform Configuration Settings',
 ];
 
 $title = isset($titleMap[$page]) ? $titleMap[$page] : 'Admin Control Center';
@@ -52,7 +57,7 @@ $title = isset($titleMap[$page]) ? $titleMap[$page] : 'Admin Control Center';
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?v=<?php echo time(); ?>">
     <meta name="csrf-token" content="<?php echo htmlspecialchars(adminCsrfToken(), ENT_QUOTES); ?>">
     <script>
         // Attach the CSRF token to every same-origin admin AJAX call.

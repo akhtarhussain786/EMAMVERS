@@ -270,6 +270,14 @@ class _ResultViewState extends State<ResultView> {
                               decoration: BoxDecoration(color: isCorr ? AppConstants.accentEmerald.withValues(alpha: 0.2) : AppConstants.accentRose.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
                               child: Text(isCorr ? 'CORRECT (+${sol['positive_marks']})' : 'WRONG (-${sol['negative_marks']})', style: TextStyle(color: isCorr ? AppConstants.accentEmerald : AppConstants.accentRose, fontSize: 10.5, fontWeight: FontWeight.w800)),
                             ),
+                            const Spacer(),
+                            IconButton(
+                              icon: const Icon(Icons.flag_outlined, size: 18, color: AppConstants.textMuted),
+                              tooltip: 'Report Question / Answer Error',
+                              constraints: const BoxConstraints(),
+                              padding: EdgeInsets.zero,
+                              onPressed: () => _showReportQuestionDialog(context, int.tryParse('${sol['question_id']}') ?? 0, 'Q${sol['question_order']}'),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 8),
@@ -316,6 +324,136 @@ class _ResultViewState extends State<ResultView> {
         const SizedBox(height: 2),
         Text(label, style: const TextStyle(color: AppConstants.onAccent, fontSize: 10.5)),
       ],
+    );
+  }
+
+  void _showReportQuestionDialog(BuildContext context, int questionId, String questionLabel) {
+    if (questionId <= 0) return;
+    String selectedReason = 'wrong_key';
+    final commentCtrl = TextEditingController();
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppConstants.cardDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppConstants.radiusHero)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(modalCtx).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Report $questionLabel', style: const TextStyle(color: AppConstants.onAccent, fontSize: 17, fontWeight: FontWeight.bold)),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: AppConstants.textMuted, size: 20),
+                        onPressed: () => Navigator.pop(modalCtx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text('Help us keep test content 100% accurate. Flag discrepancies below:', style: TextStyle(color: AppConstants.textSecondary, fontSize: 12.5)),
+                  const SizedBox(height: 16),
+                  const Text('Dispute Reason', style: TextStyle(color: AppConstants.textPrimary, fontSize: 12, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedReason,
+                    dropdownColor: AppConstants.surfaceElevated,
+                    style: const TextStyle(color: AppConstants.textPrimary, fontSize: 13),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: AppConstants.surfaceElevated,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppConstants.cardBorder)),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'wrong_key', child: Text('Incorrect Answer Key / Wrong Option')),
+                      DropdownMenuItem(value: 'incorrect_question', child: Text('Ambiguous or Incomplete Question')),
+                      DropdownMenuItem(value: 'duplicate', child: Text('Duplicate / Repeated Question in Test')),
+                      DropdownMenuItem(value: 'poor_explanation', child: Text('Inaccurate or Poor Explanation')),
+                      DropdownMenuItem(value: 'other', child: Text('Other Content Issue')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setModalState(() => selectedReason = val);
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  const Text('Details / Explanation (Optional)', style: TextStyle(color: AppConstants.textPrimary, fontSize: 12, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: commentCtrl,
+                    maxLines: 3,
+                    style: const TextStyle(color: AppConstants.textPrimary, fontSize: 13),
+                    decoration: InputDecoration(
+                      hintText: 'e.g. Option B is correct according to standard textbook...',
+                      hintStyle: const TextStyle(color: AppConstants.textMuted, fontSize: 12),
+                      filled: true,
+                      fillColor: AppConstants.surfaceElevated,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppConstants.cardBorder)),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppConstants.accentCyan,
+                        foregroundColor: AppConstants.primaryDark,
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: isSubmitting
+                          ? null
+                          : () async {
+                              setModalState(() => isSubmitting = true);
+                              try {
+                                await ApiService.post('/v1/questions/$questionId/report', {
+                                  'reason': selectedReason,
+                                  'comment': commentCtrl.text.trim(),
+                                });
+                                if (!context.mounted) return;
+                                Navigator.pop(modalCtx);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Report submitted to content moderation team. Thank you!'),
+                                    backgroundColor: AppConstants.accentEmerald,
+                                  ),
+                                );
+                              } catch (e) {
+                                setModalState(() => isSubmitting = false);
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Failed to submit report: $e'),
+                                    backgroundColor: AppConstants.accentRose,
+                                  ),
+                                );
+                              }
+                            },
+                      child: isSubmitting
+                          ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppConstants.primaryDark))
+                          : const Text('Submit Report', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

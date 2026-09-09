@@ -204,16 +204,29 @@ class TestEngineController {
         $db = Database::getConnection();
         $attempt = self::requireOwnedAttempt($db, $attemptId, $userId);
 
-        $stmt = $db->prepare("
-            SELECT aq.question_id, aq.question_order, aq.positive_marks, aq.negative_marks, aq.section_id,
-                   aq.option_order, q.question_type, q.difficulty, s.name AS section_name
-            FROM attempt_questions aq
-            JOIN questions q ON aq.question_id = q.id
-            LEFT JOIN subjects s ON q.subject_id = s.id
-            WHERE aq.attempt_id = ?
-            ORDER BY aq.question_order ASC
-        ");
-        $stmt->execute([$attemptId]);
+        if (($attempt['assembly_mode'] ?? 'fixed') === 'randomised') {
+            $stmt = $db->prepare("
+                SELECT aq.question_id, aq.question_order, aq.positive_marks, aq.negative_marks, aq.section_id,
+                       aq.option_order, q.question_type, q.difficulty, s.name AS section_name
+                FROM attempt_questions aq
+                JOIN questions q ON aq.question_id = q.id
+                LEFT JOIN subjects s ON q.subject_id = s.id
+                WHERE aq.attempt_id = ?
+                ORDER BY aq.question_order ASC
+            ");
+            $stmt->execute([$attemptId]);
+        } else {
+            $stmt = $db->prepare("
+                SELECT tq.question_id, tq.question_order, tq.positive_marks, tq.negative_marks, tq.section_id,
+                       NULL AS option_order, q.question_type, q.difficulty, s.name AS section_name
+                FROM test_questions tq
+                JOIN questions q ON tq.question_id = q.id
+                LEFT JOIN subjects s ON q.subject_id = s.id
+                WHERE tq.test_id = ?
+                ORDER BY tq.question_order ASC
+            ");
+            $stmt->execute([$attempt['test_id']]);
+        }
         $questions = $stmt->fetchAll();
 
         if ($questions) {
@@ -535,6 +548,10 @@ class TestEngineController {
         foreach ($testQuestions as $tq) $maxObtainable += floatval($tq['positive_marks']);
         self::upsertExamTwin($db, $userId, $attempt['exam_id'], $totalScore, $maxObtainable, $accuracy,
                              $correctCount, count($testQuestions), $totalTimeSpent);
+
+        // 9. Check and trigger referral reward qualification
+        require_once __DIR__ . '/ReferralController.php';
+        ReferralController::qualifyReferral($userId);
 
         Response::json([
             'attempt_id' => intval($attemptId),

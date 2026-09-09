@@ -158,29 +158,51 @@ class MarketplaceController {
             return;
         }
 
-        // Paid materials require a real settlement. Until a gateway is wired in,
-        // refuse rather than silently recording an unpaid purchase as completed
-        // (which would credit the creator a payable balance for no money).
-        if (!Config::bool('PAYMENTS_ENABLED', false) && !Config::bool('PAYMENTS_MOCK', false)) {
-            Response::json(null, 'Paid purchases are not available yet — payment processing is not configured.', 'error', 503);
-            return;
-        }
-        if (Config::bool('PAYMENTS_ENABLED', false)) {
-            // Real gateway integration goes here (verify signature, capture, then
-            // record the purchase). Refuse until that exists so no unverified
-            // payment is ever marked completed.
-            Response::json(null, 'Payment gateway integration is not implemented.', 'error', 503);
-            return;
-        }
-
-        // Sandbox settlement — local testing only (PAYMENTS_MOCK=true).
-        $body = json_decode(file_get_contents('php://input'), true);
-        $paymentMethod = 'sandbox_' . ($body['payment_method'] ?? 'upi');
-        $txnId = 'SANDBOX_' . strtoupper(bin2hex(random_bytes(8)));
+        require_once __DIR__ . '/../services/PaymentService.php';
+        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+        $action = $body['action'] ?? 'pay'; // 'create_order' or 'pay' / 'verify'
 
         $price = floatval($material['price']);
         $platformFee = round($price * 0.20, 2);       // 20% platform commission
         $creatorEarning = round($price - $platformFee, 2);
+
+        // If client is initiating checkout order
+        if ($action === 'create_order') {
+            $orderRes = PaymentService::createOrder($price, "mat_receipt_{$id}_" . time(), [
+                'material_id' => $id,
+                'user_id' => $userId,
+                'title' => $material['title']
+            ]);
+            if (!$orderRes['success']) {
+                Response::error($orderRes['message'] ?? 'Failed to initialize payment', 502);
+            }
+            Response::json($orderRes, 'Payment order created');
+            return;
+        }
+
+        $paymentMode = PaymentService::getMode();
+        $isLive = PaymentService::isEnabled() && $paymentMode !== 'mock';
+
+        if ($isLive) {
+            $orderId = trim($body['razorpay_order_id'] ?? '');
+            $paymentId = trim($body['razorpay_payment_id'] ?? '');
+            $signature = trim($body['razorpay_signature'] ?? '');
+
+            if (empty($orderId) || empty($paymentId) || empty($signature)) {
+                Response::error('Razorpay payment details (order_id, payment_id, signature) required', 400);
+            }
+
+            if (!PaymentService::verifySignature($orderId, $paymentId, $signature)) {
+                Response::error('Invalid payment signature verification failed', 400);
+            }
+
+            $paymentMethod = 'razorpay';
+            $txnId = $paymentId;
+        } else {
+            // Mock sandbox payment
+            $paymentMethod = 'sandbox_' . ($body['payment_method'] ?? 'upi');
+            $txnId = 'SANDBOX_' . strtoupper(bin2hex(random_bytes(8)));
+        }
 
         $db->beginTransaction();
         try {

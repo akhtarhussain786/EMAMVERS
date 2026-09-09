@@ -31,6 +31,11 @@ require_once __DIR__ . '/controllers/NotebookController.php';
 require_once __DIR__ . '/controllers/TeacherController.php';
 require_once __DIR__ . '/controllers/QuestionReviewController.php';
 require_once __DIR__ . '/controllers/PracticeController.php';
+require_once __DIR__ . '/controllers/TeacherApplicationController.php';
+require_once __DIR__ . '/controllers/TeacherVerificationAdminController.php';
+require_once __DIR__ . '/controllers/QuestionGovernanceController.php';
+require_once __DIR__ . '/controllers/TestManagementController.php';
+require_once __DIR__ . '/controllers/ReferralController.php';
 
 // Extract URI path
 $requestUri = $_SERVER['REQUEST_URI'];
@@ -149,7 +154,15 @@ if (($path === '/v1/health' || $path === '/health') && $method === 'GET') {
 } elseif ($path === '/v1/practice/start' && $method === 'POST') {
     PracticeController::start();
 
-// ── TEACHER: QUESTION AUTHORING ───────────────────────────────────────────
+// ── TEACHER: QUESTION AUTHORING & KYC APPLICATION ─────────────────────────
+} elseif ($path === '/v1/teacher/application' && $method === 'GET') {
+    TeacherApplicationController::getApplication();
+} elseif ($path === '/v1/teacher/application' && $method === 'POST') {
+    TeacherApplicationController::saveDraft();
+} elseif ($path === '/v1/teacher/application/documents' && $method === 'POST') {
+    TeacherApplicationController::uploadDocument();
+} elseif ($path === '/v1/teacher/application/submit' && $method === 'POST') {
+    TeacherApplicationController::submitApplication();
 } elseif ($path === '/v1/teacher/dashboard' && $method === 'GET') {
     TeacherController::dashboard();
 } elseif ($path === '/v1/teacher/taxonomy' && $method === 'GET') {
@@ -159,6 +172,22 @@ if (($path === '/v1/health' || $path === '/health') && $method === 'GET') {
 } elseif ($path === '/v1/teacher/questions' && $method === 'GET') {
     TeacherController::myQuestions();
 
+// ── ADMIN: TEACHER KYC VERIFICATION (PRD §15) ────────────────────────────
+} elseif ($path === '/v1/admin/teacher-applications' && $method === 'GET') {
+    TeacherVerificationAdminController::listApplications();
+} elseif (matchRoute('/v1/admin/teacher-applications/{id}', $path, $params) && $method === 'GET') {
+    TeacherVerificationAdminController::getApplicationDetail($params['id']);
+} elseif (matchRoute('/v1/admin/teacher-documents/{id}/view', $path, $params) && $method === 'GET') {
+    TeacherVerificationAdminController::viewDocument($params['id']);
+} elseif (matchRoute('/v1/admin/teacher-documents/{id}/status', $path, $params) && $method === 'POST') {
+    TeacherVerificationAdminController::updateDocumentStatus($params['id']);
+} elseif (matchRoute('/v1/admin/teacher-applications/{id}/request-changes', $path, $params) && $method === 'POST') {
+    TeacherVerificationAdminController::requestChanges($params['id']);
+} elseif (matchRoute('/v1/admin/teacher-applications/{id}/approve', $path, $params) && $method === 'POST') {
+    TeacherVerificationAdminController::approve($params['id']);
+} elseif (matchRoute('/v1/admin/teacher-applications/{id}/reject', $path, $params) && $method === 'POST') {
+    TeacherVerificationAdminController::reject($params['id']);
+
 // ── ADMIN: TEACHER QUESTION REVIEW ────────────────────────────────────────
 } elseif ($path === '/v1/admin/question-submissions' && $method === 'GET') {
     QuestionReviewController::listSubmissions();
@@ -166,6 +195,32 @@ if (($path === '/v1/health' || $path === '/health') && $method === 'GET') {
     QuestionReviewController::approve($params['id']);
 } elseif (matchRoute('/v1/admin/question-submissions/{id}/reject', $path, $params) && $method === 'POST') {
     QuestionReviewController::reject($params['id']);
+
+// ── QUESTION GOVERNANCE, DUPLICATES & REPORTS (PRD §16) ───────────────────
+} elseif (matchRoute('/v1/admin/questions/{id}/duplicates', $path, $params) && $method === 'GET') {
+    QuestionGovernanceController::getDuplicateCandidates($params['id']);
+} elseif ($path === '/v1/admin/question-duplicates/decision' && $method === 'POST') {
+    QuestionGovernanceController::recordDuplicateDecision();
+} elseif (matchRoute('/v1/questions/{id}/report', $path, $params) && $method === 'POST') {
+    QuestionGovernanceController::submitReport($params['id']);
+} elseif ($path === '/v1/admin/question-reports' && $method === 'GET') {
+    QuestionGovernanceController::listReports();
+} elseif (matchRoute('/v1/admin/question-reports/{id}/resolve', $path, $params) && $method === 'POST') {
+    QuestionGovernanceController::resolveReport($params['id']);
+
+// ── TEST MANAGEMENT & REGRADE (PRD §8) ────────────────────────────────────
+} elseif (matchRoute('/v1/admin/tests/{id}/validate', $path, $params) && $method === 'POST') {
+    TestManagementController::validateTest($params['id']);
+} elseif (matchRoute('/v1/admin/tests/{id}/publish', $path, $params) && $method === 'POST') {
+    TestManagementController::publishTest($params['id']);
+} elseif (matchRoute('/v1/admin/tests/{id}/regrade', $path, $params) && $method === 'POST') {
+    TestManagementController::createRegradeJob($params['id']);
+
+// ── REFERRAL & GROWTH (PRD §17) ───────────────────────────────────────────
+} elseif ($path === '/v1/referrals/me' && $method === 'GET') {
+    ReferralController::getMyReferrals();
+} elseif ($path === '/v1/referrals/validate-code' && $method === 'POST') {
+    ReferralController::validateCode();
 
 // ── ADMIN: TEACHER ACCOUNTS ───────────────────────────────────────────────
 } elseif ($path === '/v1/admin/teachers' && $method === 'GET') {

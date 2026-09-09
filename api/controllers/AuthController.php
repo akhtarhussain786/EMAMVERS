@@ -149,6 +149,13 @@ class AuthController {
         $userId = $db->lastInsertId();
         $token = AuthToken::generate($userId, 'student');
 
+        // Check and attribute referral if provided
+        $referralCode = trim($input['referral_code'] ?? '');
+        if ($referralCode) {
+            require_once __DIR__ . '/ReferralController.php';
+            ReferralController::attributeReferral($userId, $referralCode);
+        }
+
         // Fetch inserted user
         $stmtUser = $db->prepare("
             SELECT u.id, u.full_name, u.email, u.mobile, u.state_id, u.qualification_id, s.name as state_name, q.name as qualification_name
@@ -197,14 +204,21 @@ class AuthController {
         $stmt = $db->prepare("INSERT INTO user_otps (mobile_or_email, otp_code, expires_at) VALUES (:identity, :otp, NOW() + INTERVAL 10 MINUTE)");
         $stmt->execute(['identity' => $identity, 'otp' => self::hashOtp($identity, $otp)]);
 
-        // Delivery (SMS/email) is not wired up yet. Outside debug the code is
-        // never returned to the client; it is written to the error log so a
-        // local operator can still complete the flow.
+        // Dispatch OTP via configured SMS Gateway service
+        require_once __DIR__ . '/../services/SmsService.php';
+        $smsResult = SmsService::sendOtp($identity, $otp);
+
         if (Config::isDebug()) {
-            Response::json(['dev_otp' => $otp], 'OTP generated. Debug mode: code returned in dev_otp.');
+            Response::json([
+                'dev_otp' => $otp,
+                'sms_status' => $smsResult
+            ], 'OTP generated. Debug mode: code returned in dev_otp.');
         }
 
-        error_log("EXAMVERSE OTP for {$identity}: {$otp}");
+        if (!$smsResult['success'] && $smsResult['provider'] !== 'dev_mock') {
+            Response::error('Failed to send SMS: ' . $smsResult['message'], 502);
+        }
+
         Response::json(null, 'If that account exists, an OTP has been sent.');
     }
 
