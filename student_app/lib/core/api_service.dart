@@ -26,7 +26,11 @@ class ApiService {
 
   static Map<String, String> get _headers => {
     'Content-Type': 'application/json',
-    if (authToken != null) 'Authorization': 'Bearer $authToken',
+    if (authToken != null && authToken!.isNotEmpty) ...{
+      'Authorization': 'Bearer $authToken',
+      'X-Auth-Token': '$authToken',
+      'X-Authorization': 'Bearer $authToken',
+    },
   };
 
   // ── Session persistence ────────────────────────────────────────────────
