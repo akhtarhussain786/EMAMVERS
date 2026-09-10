@@ -25,8 +25,12 @@ class _ReferralsViewState extends State<ReferralsView> {
     try {
       final res = await ApiService.getAuth('/v1/referrals/me');
       if (!mounted) return;
-      if (res != null && res['status'] == 'success') {
-        setState(() => _data = res['data']);
+      if (res != null) {
+        setState(() {
+          if (res is Map<String, dynamic>) {
+            _data = res.containsKey('data') && res['data'] is Map<String, dynamic> ? res['data'] : res;
+          }
+        });
       }
     } catch (e) {
       if (!mounted) return;
