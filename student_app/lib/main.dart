@@ -119,6 +119,9 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
         '/creator-dashboard': (_) => const CreatorDashboardView(),
         '/marketplace': (_) => const MarketplaceScreen(),
         '/current-affairs': (_) => const CurrentAffairsView(),
+        '/become-teacher': (_) => const BecomeTeacherView(),
+        '/map-learning': (_) => const MapLearningHomeView(),
+        '/mistake-notebook': (_) => const MistakeNotebookView(),
       },
       home: !isAuthenticated
           ? LoginSignupView(

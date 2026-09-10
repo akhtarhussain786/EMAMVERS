@@ -148,7 +148,7 @@ class QuestionGovernanceController {
 
         // Audit log
         $audit = $db->prepare("
-            INSERT INTO audit_logs (admin_id, action, target_type, target_id, details)
+            INSERT INTO admin_audit_logs (admin_id, action, entity_type, entity_id, details)
             VALUES (?, 'QUESTION_DUPLICATE_DECISION', 'questions', ?, ?)
         ");
         $audit->execute([$adminId, $questionA, json_encode([

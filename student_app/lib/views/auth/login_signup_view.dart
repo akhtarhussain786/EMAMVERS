@@ -302,8 +302,8 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                         ActionChip(
                           avatar: const Icon(Icons.school, size: 16, color: AppConstants.accentCyan),
                           label: const Text('Demo Student', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                          backgroundColor: AppConstants.accentCyan.withOpacity(0.1),
-                          side: BorderSide(color: AppConstants.accentCyan.withOpacity(0.3)),
+                          backgroundColor: AppConstants.accentCyan.withValues(alpha: 0.1),
+                          side: BorderSide(color: AppConstants.accentCyan.withValues(alpha: 0.3)),
                           onPressed: () {
                             emailMobileController.text = 'demo@examverse.com';
                             passwordController.text = 'student123';
@@ -313,8 +313,8 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                         ActionChip(
                           avatar: const Icon(Icons.psychology, size: 16, color: AppConstants.accentGreen),
                           label: const Text('Demo Teacher', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                          backgroundColor: AppConstants.accentGreen.withOpacity(0.1),
-                          side: BorderSide(color: AppConstants.accentGreen.withOpacity(0.3)),
+                          backgroundColor: AppConstants.accentGreen.withValues(alpha: 0.1),
+                          side: BorderSide(color: AppConstants.accentGreen.withValues(alpha: 0.3)),
                           onPressed: () {
                             emailMobileController.text = 'neha.sharma@example.com';
                             passwordController.text = 'teacher123';

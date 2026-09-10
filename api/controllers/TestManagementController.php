@@ -176,7 +176,7 @@ class TestManagementController {
 
             // Audit
             $audit = $db->prepare("
-                INSERT INTO audit_logs (admin_id, action, target_type, target_id, details)
+                INSERT INTO admin_audit_logs (admin_id, action, entity_type, entity_id, details)
                 VALUES (?, 'TEST_PUBLISH_VERSION_LOCKED', 'tests', ?, ?)
             ");
             $audit->execute([$adminId, $testId, json_encode(['version_no' => $newVer, 'version_id' => $versionId])]);
@@ -297,7 +297,7 @@ class TestManagementController {
 
             // 5. Audit
             $audit = $db->prepare("
-                INSERT INTO audit_logs (admin_id, action, target_type, target_id, details)
+                INSERT INTO admin_audit_logs (admin_id, action, entity_type, entity_id, details)
                 VALUES (?, 'TEST_REGRADE_JOB_EXECUTED', 'regrade_jobs', ?, ?)
             ");
             $audit->execute([$adminId, $jobId, json_encode([

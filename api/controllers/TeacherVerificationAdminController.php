@@ -145,7 +145,7 @@ class TeacherVerificationAdminController {
 
         // Audit log document view
         $audit = $db->prepare("
-            INSERT INTO audit_logs (admin_id, action, target_type, target_id, details)
+            INSERT INTO admin_audit_logs (admin_id, action, entity_type, entity_id, details)
             VALUES (?, 'VIEW_TEACHER_KYC_DOCUMENT', 'teacher_documents', ?, ?)
         ");
         $audit->execute([$adminId, $docId, json_encode(['doc_type' => $doc['document_type'], 'app_id' => $doc['application_id']])]);
@@ -240,7 +240,7 @@ class TeacherVerificationAdminController {
 
             // Audit
             $audit = $db->prepare("
-                INSERT INTO audit_logs (admin_id, action, target_type, target_id, details)
+                INSERT INTO admin_audit_logs (admin_id, action, entity_type, entity_id, details)
                 VALUES (?, 'TEACHER_APPLICATION_REQUEST_CHANGES', 'teacher_applications', ?, ?)
             ");
             $audit->execute([$adminId, $appId, json_encode(['reason' => $reasonCode, 'message' => $message, 'doc_ids' => $docIds])]);
@@ -293,7 +293,7 @@ class TeacherVerificationAdminController {
             $notif->execute([$app['user_id'], "Your teacher application has been rejected. Reason: $message"]);
 
             $audit = $db->prepare("
-                INSERT INTO audit_logs (admin_id, action, target_type, target_id, details)
+                INSERT INTO admin_audit_logs (admin_id, action, entity_type, entity_id, details)
                 VALUES (?, 'TEACHER_APPLICATION_REJECT', 'teacher_applications', ?, ?)
             ");
             $audit->execute([$adminId, $appId, json_encode(['reason' => $reasonCode, 'message' => $message])]);
@@ -404,7 +404,7 @@ class TeacherVerificationAdminController {
 
             // 5. Audit log
             $audit = $db->prepare("
-                INSERT INTO audit_logs (admin_id, action, target_type, target_id, details)
+                INSERT INTO admin_audit_logs (admin_id, action, entity_type, entity_id, details)
                 VALUES (?, 'TEACHER_APPLICATION_APPROVE', 'teacher_applications', ?, ?)
             ");
             $audit->execute([$adminId, $appId, json_encode(['note' => $note, 'user_id' => $userId])]);

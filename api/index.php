@@ -42,6 +42,8 @@ $requestUri = $_SERVER['REQUEST_URI'];
 $basePath = '/EXAMVERSE/api';
 if (strpos($requestUri, $basePath) === 0) {
     $requestUri = substr($requestUri, strlen($basePath));
+} elseif (strpos($requestUri, '/api') === 0) {
+    $requestUri = substr($requestUri, strlen('/api'));
 }
 $path = parse_url($requestUri, PHP_URL_PATH);
 $path = rtrim($path, '/');

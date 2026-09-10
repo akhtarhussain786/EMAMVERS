@@ -14,11 +14,33 @@ class AuthMiddleware {
     public static function getAuthenticatedUser($requiredType = null) {
         $token = AuthToken::tokenFromRequest();
         if (!$token) {
+            if ($requiredType === 'admin' && self::hasAdminPanelSession()) {
+                $user = $_SESSION['admin_user'] ?? [];
+                return [
+                    'sub'     => $user['id'] ?? 1,
+                    'id'      => $user['id'] ?? 1,
+                    'user_id' => $user['id'] ?? 1,
+                    'type'    => $user['role'] ?? 'super_admin',
+                    'extra'   => $user,
+                    'payload' => $user,
+                ];
+            }
             Response::error('Unauthorized: Missing or malformed token', 401);
         }
 
         $payload = AuthToken::verify($token);
         if (!$payload) {
+            if ($requiredType === 'admin' && self::hasAdminPanelSession()) {
+                $user = $_SESSION['admin_user'] ?? [];
+                return [
+                    'sub'     => $user['id'] ?? 1,
+                    'id'      => $user['id'] ?? 1,
+                    'user_id' => $user['id'] ?? 1,
+                    'type'    => $user['role'] ?? 'super_admin',
+                    'extra'   => $user,
+                    'payload' => $user,
+                ];
+            }
             Response::error('Unauthorized: Invalid or expired token', 401);
         }
 
