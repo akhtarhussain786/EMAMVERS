@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../utils/response.php';
-require_once __DIR__ . '/../utils/auth_token.php';
+require_once __DIR__ . '/../middleware/auth.php';
 
 class MapController {
     public static function getCategories() {
@@ -78,21 +78,82 @@ class MapController {
 
     public static function getMapQuiz() {
         $db = Database::getConnection();
-        $stmt = $db->query("
+
+        $limit = isset($_GET['limit']) ? max(1, min(25, intval($_GET['limit']))) : 10;
+
+        $stmt = $db->prepare("
             SELECT l.id as location_id, l.name, l.state, l.country, l.latitude, l.longitude, l.short_description,
-                   c.name as category_name
+                   l.category_id, c.name as category_name
             FROM map_locations l
             JOIN map_categories c ON l.category_id = c.id
-            ORDER BY RAND() LIMIT 10
+            WHERE l.status = 'active'
+            ORDER BY RAND() LIMIT :lim
         ");
+        $stmt->bindValue('lim', $limit, PDO::PARAM_INT);
+        $stmt->execute();
         $locations = $stmt->fetchAll();
+
+        if (empty($locations)) {
+            Response::json(['quiz_questions' => []], 'No map locations available yet');
+        }
+
+        // Distractors come from the real location table so they are plausible
+        // and are guaranteed never to duplicate the correct answer.
+        $statePool = $db->query("SELECT DISTINCT state FROM map_locations WHERE state IS NOT NULL AND state <> '' AND status = 'active'")
+                        ->fetchAll(PDO::FETCH_COLUMN);
+
+        foreach ($locations as &$loc) {
+            $answer = $loc['state'];
+            $pool = array_values(array_filter($statePool, function ($s) use ($answer) {
+                return strcasecmp(trim($s), trim((string)$answer)) !== 0;
+            }));
+            shuffle($pool);
+            $distractors = array_slice($pool, 0, 3);
+
+            $options = array_merge([$answer], $distractors);
+            $options = array_values(array_unique(array_filter($options, function ($o) { return $o !== null && $o !== ''; })));
+            shuffle($options);
+
+            $loc['question_text'] = 'In which state is "' . $loc['name'] . '" located?';
+            $loc['options'] = $options;
+            $loc['correct_answer'] = $answer;
+        }
+        unset($loc);
 
         Response::json(['quiz_questions' => $locations], 'Map quiz generated successfully');
     }
 
+    /** Records a learned/attempted location so map progress reflects real activity. */
+    public static function recordProgress() {
+        $auth = AuthMiddleware::getAuthenticatedUser('student');
+        $userId = $auth['sub'];
+
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $locationId = intval($input['location_id'] ?? 0);
+        $isCorrect  = !empty($input['is_correct']) ? 1 : 0;
+
+        if (!$locationId) Response::error('location_id is required', 422);
+
+        $db = Database::getConnection();
+        $exists = $db->prepare("SELECT 1 FROM map_locations WHERE id = ?");
+        $exists->execute([$locationId]);
+        if (!$exists->fetchColumn()) Response::error('Location not found', 404);
+
+        $db->prepare("
+            INSERT INTO map_user_progress (user_id, location_id, is_learned, correct_attempts, total_attempts)
+            VALUES (:uid, :lid, 1, :correct, 1)
+            ON DUPLICATE KEY UPDATE
+                is_learned = 1,
+                correct_attempts = correct_attempts + VALUES(correct_attempts),
+                total_attempts = total_attempts + 1
+        ")->execute(['uid' => $userId, 'lid' => $locationId, 'correct' => $isCorrect]);
+
+        Response::json(['recorded' => true], 'Map progress recorded');
+    }
+
     public static function getProgress() {
-        $auth = AuthToken::verify();
-        $userId = $auth ? $auth['user_id'] : 1;
+        $auth = AuthMiddleware::getAuthenticatedUser('student');
+        $userId = $auth['sub'];
 
         $db = Database::getConnection();
         $stmt = $db->prepare("

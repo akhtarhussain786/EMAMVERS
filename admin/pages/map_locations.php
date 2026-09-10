@@ -42,7 +42,7 @@ $categories = $db->query("SELECT * FROM map_categories ORDER BY name ASC")->fetc
 ?>
 
 <?php if ($message): ?>
-<div style="padding: 12px; margin-bottom: 20px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; border-radius: 8px; color: #38bdf8;">
+<div style="padding: 12px; margin-bottom: 20px; background: rgba(138, 109, 0, 0.15); border: 1px solid var(--accent-blue); border-radius: 8px; color: var(--accent-blue);">
     <?php echo htmlspecialchars($message); ?>
 </div>
 <?php endif; ?>
@@ -56,11 +56,11 @@ $categories = $db->query("SELECT * FROM map_categories ORDER BY name ASC")->fetc
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
             <div>
                 <label style="color: #94a3b8; display: block; margin-bottom: 6px;">Location Name *</label>
-                <input type="text" name="name" required style="width: 100%; padding: 10px; background: #080d18; border: 1px solid rgba(148,163,184,0.2); color: white; border-radius: 6px;">
+                <input type="text" name="name" required style="width: 100%; padding: 10px; background: var(--bg-card); border: 1px solid rgba(148,163,184,0.2); color: white; border-radius: 6px;">
             </div>
             <div>
                 <label style="color: #94a3b8; display: block; margin-bottom: 6px;">Category *</label>
-                <select name="category_id" required style="width: 100%; padding: 10px; background: #080d18; border: 1px solid rgba(148,163,184,0.2); color: white; border-radius: 6px;">
+                <select name="category_id" required style="width: 100%; padding: 10px; background: var(--bg-card); border: 1px solid rgba(148,163,184,0.2); color: white; border-radius: 6px;">
                     <?php foreach ($categories as $cat): ?>
                         <option value="<?php echo $cat['id']; ?>"><?php echo htmlspecialchars($cat['name']); ?></option>
                     <?php endforeach; ?>
@@ -68,44 +68,44 @@ $categories = $db->query("SELECT * FROM map_categories ORDER BY name ASC")->fetc
             </div>
             <div>
                 <label style="color: #94a3b8; display: block; margin-bottom: 6px;">State / Region</label>
-                <input type="text" name="state" placeholder="e.g. Gujarat" style="width: 100%; padding: 10px; background: #080d18; border: 1px solid rgba(148,163,184,0.2); color: white; border-radius: 6px;">
+                <input type="text" name="state" placeholder="e.g. Gujarat" style="width: 100%; padding: 10px; background: var(--bg-card); border: 1px solid rgba(148,163,184,0.2); color: white; border-radius: 6px;">
             </div>
             <div>
                 <label style="color: #94a3b8; display: block; margin-bottom: 6px;">Country</label>
-                <input type="text" name="country" value="India" style="width: 100%; padding: 10px; background: #080d18; border: 1px solid rgba(148,163,184,0.2); color: white; border-radius: 6px;">
+                <input type="text" name="country" value="India" style="width: 100%; padding: 10px; background: var(--bg-card); border: 1px solid rgba(148,163,184,0.2); color: white; border-radius: 6px;">
             </div>
             <div>
                 <label style="color: #94a3b8; display: block; margin-bottom: 6px;">Latitude *</label>
-                <input type="number" step="any" name="latitude" required placeholder="e.g. 21.1243" style="width: 100%; padding: 10px; background: #080d18; border: 1px solid rgba(148,163,184,0.2); color: white; border-radius: 6px;">
+                <input type="number" step="any" name="latitude" required placeholder="e.g. 21.1243" style="width: 100%; padding: 10px; background: var(--bg-card); border: 1px solid rgba(148,163,184,0.2); color: white; border-radius: 6px;">
             </div>
             <div>
                 <label style="color: #94a3b8; display: block; margin-bottom: 6px;">Longitude *</label>
-                <input type="number" step="any" name="longitude" required placeholder="e.g. 70.8242" style="width: 100%; padding: 10px; background: #080d18; border: 1px solid rgba(148,163,184,0.2); color: white; border-radius: 6px;">
+                <input type="number" step="any" name="longitude" required placeholder="e.g. 70.8242" style="width: 100%; padding: 10px; background: var(--bg-card); border: 1px solid rgba(148,163,184,0.2); color: white; border-radius: 6px;">
             </div>
         </div>
 
         <div style="margin-bottom: 16px;">
             <label style="color: #94a3b8; display: block; margin-bottom: 6px;">Short Description</label>
-            <input type="text" name="short_description" placeholder="Short 1-line overview" style="width: 100%; padding: 10px; background: #080d18; border: 1px solid rgba(148,163,184,0.2); color: white; border-radius: 6px;">
+            <input type="text" name="short_description" placeholder="Short 1-line overview" style="width: 100%; padding: 10px; background: var(--bg-card); border: 1px solid rgba(148,163,184,0.2); color: white; border-radius: 6px;">
         </div>
 
         <div style="margin-bottom: 16px;">
             <label style="color: #94a3b8; display: block; margin-bottom: 6px;">Important Facts (Dot separated)</label>
-            <textarea name="important_facts" rows="2" placeholder="Fact 1. Fact 2. Fact 3." style="width: 100%; padding: 10px; background: #080d18; border: 1px solid rgba(148,163,184,0.2); color: white; border-radius: 6px;"></textarea>
+            <textarea name="important_facts" rows="2" placeholder="Fact 1. Fact 2. Fact 3." style="width: 100%; padding: 10px; background: var(--bg-card); border: 1px solid rgba(148,163,184,0.2); color: white; border-radius: 6px;"></textarea>
         </div>
 
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px;">
             <div>
                 <label style="color: #94a3b8; display: block; margin-bottom: 6px;">Exam Relevance</label>
-                <input type="text" name="exam_relevance" placeholder="High — Asked 14 times in SSC CGL" style="width: 100%; padding: 10px; background: #080d18; border: 1px solid rgba(148,163,184,0.2); color: white; border-radius: 6px;">
+                <input type="text" name="exam_relevance" placeholder="High — Asked 14 times in SSC CGL" style="width: 100%; padding: 10px; background: var(--bg-card); border: 1px solid rgba(148,163,184,0.2); color: white; border-radius: 6px;">
             </div>
             <div>
                 <label style="color: #94a3b8; display: block; margin-bottom: 6px;">PYQ Count</label>
-                <input type="number" name="pyq_count" value="10" style="width: 100%; padding: 10px; background: #080d18; border: 1px solid rgba(148,163,184,0.2); color: white; border-radius: 6px;">
+                <input type="number" name="pyq_count" value="10" style="width: 100%; padding: 10px; background: var(--bg-card); border: 1px solid rgba(148,163,184,0.2); color: white; border-radius: 6px;">
             </div>
         </div>
 
-        <button type="submit" style="padding: 10px 24px; background: linear-gradient(135deg, #38bdf8, #0284c7); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">
+        <button type="submit" style="padding: 10px 24px; background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo)); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">
             + Save Location
         </button>
     </form>
@@ -132,10 +132,10 @@ $categories = $db->query("SELECT * FROM map_categories ORDER BY name ASC")->fetc
             <tr>
                 <td>#<?php echo $loc['id']; ?></td>
                 <td><strong><?php echo htmlspecialchars($loc['name']); ?></strong></td>
-                <td><span style="padding: 3px 8px; background: rgba(56,189,248,0.15); color: #38bdf8; border-radius: 4px; font-size: 12px;"><?php echo htmlspecialchars($loc['category_name']); ?></span></td>
+                <td><span style="padding: 3px 8px; background: rgba(56,189,248,0.15); color: var(--accent-blue); border-radius: 4px; font-size: 12px;"><?php echo htmlspecialchars($loc['category_name']); ?></span></td>
                 <td><?php echo htmlspecialchars($loc['state'] ? $loc['state'] . ', ' . $loc['country'] : $loc['country']); ?></td>
                 <td style="font-family: monospace; font-size: 12px; color: #94a3b8;"><?php echo $loc['latitude']; ?>, <?php echo $loc['longitude']; ?></td>
-                <td><span style="color: #22c55e; font-weight: bold;"><?php echo $loc['pyq_count']; ?> PYQs</span></td>
+                <td><span style="color: var(--accent-emerald); font-weight: bold;"><?php echo $loc['pyq_count']; ?> PYQs</span></td>
                 <td style="font-size: 12px; color: #94a3b8;"><?php echo htmlspecialchars($loc['exam_relevance']); ?></td>
             </tr>
             <?php endforeach; ?>

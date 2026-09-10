@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../utils/response.php';
+require_once __DIR__ . '/../middleware/auth.php';
 
 class DiscoveryController {
     public static function getHomeData() {
@@ -38,7 +39,42 @@ class DiscoveryController {
         // 6. Topper Story
         $topper = $db->query("SELECT id, student_name, photo_url, exam_name, year, verified_rank, story_text FROM topper_stories WHERE is_verified = 1 ORDER BY id DESC LIMIT 1")->fetch();
 
+        // Optional auth: anonymous visitors simply get no resume card.
+        $viewer = AuthMiddleware::getOptionalUser();
+        $resume = null;
+        if ($viewer) {
+            $rStmt = $db->prepare("
+                SELECT att.id AS attempt_id, att.started_at, t.title AS test_title,
+                       e.title AS exam_title, ep.total_duration_seconds,
+                       (SELECT COUNT(*) FROM attempt_answers aa WHERE aa.attempt_id = att.id AND aa.is_answered = 1) AS answered,
+                       COALESCE(
+                         (SELECT COUNT(*) FROM attempt_questions aq WHERE aq.attempt_id = att.id),
+                         (SELECT COUNT(*) FROM test_questions tq WHERE tq.test_id = att.test_id)
+                       ) AS total_questions
+                FROM test_attempts att
+                JOIN tests t ON att.test_id = t.id
+                JOIN exams e ON t.exam_id = e.id
+                LEFT JOIN exam_patterns ep ON t.pattern_id = ep.id
+                WHERE att.user_id = ? AND att.status = 'in_progress'
+                ORDER BY att.id DESC LIMIT 1
+            ");
+            $rStmt->execute([$viewer['sub']]);
+            $row = $rStmt->fetch();
+            if ($row) {
+                $total = max(1, (int)$row['total_questions']);
+                $resume = [
+                    'attempt_id'      => (int)$row['attempt_id'],
+                    'test_title'      => $row['test_title'],
+                    'exam_title'      => $row['exam_title'],
+                    'answered'        => (int)$row['answered'],
+                    'total_questions' => (int)$row['total_questions'],
+                    'percent_complete'=> (int)round(((int)$row['answered'] / $total) * 100),
+                ];
+            }
+        }
+
         Response::json([
+            'resume_attempt' => $resume,
             'categories' => $categories,
             'featured_exams' => $exams,
             'monthly_challenge' => $challenge,
@@ -91,7 +127,10 @@ class DiscoveryController {
 
         // Get available test series
         $stmtTests = $db->prepare("
-            SELECT t.id, t.title, t.slug, t.test_type, t.is_paid, t.price, ep.total_questions, ep.total_marks, ep.total_duration_seconds
+            SELECT t.id, t.title, t.slug, t.test_type, t.is_paid, t.price, t.is_randomised,
+                   ep.total_questions, ep.total_marks, ep.total_duration_seconds,
+                   -- Real cohort size, so the UI never has to invent one.
+                   (SELECT COUNT(*) FROM test_attempts a WHERE a.test_id = t.id AND a.status = 'evaluated') AS total_attempts
             FROM tests t
             JOIN exam_patterns ep ON t.pattern_id = ep.id
             WHERE t.exam_id = :exam_id AND t.status = 'published'

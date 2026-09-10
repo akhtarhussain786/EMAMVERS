@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'core/api_service.dart';
 import 'core/constants.dart';
 import 'widgets/premium_nav_bar.dart';
 import 'views/auth/login_signup_view.dart';
@@ -15,21 +17,30 @@ import 'views/marketplace/marketplace_screen.dart';
 import 'views/creator/become_creator_view.dart';
 import 'views/creator/creator_dashboard_view.dart';
 import 'views/current_affairs/current_affairs_view.dart';
-import 'views/learning/learning_app_shell.dart';
+import 'views/teacher/teacher_dashboard_view.dart';
+import 'views/teacher/become_teacher_view.dart';
+import 'views/map_learning/map_learning_home_view.dart';
+import 'views/notebook/mistake_notebook_view.dart';
+import 'views/practice/build_practice_view.dart';
 
-void main() {
-  runApp(const ExamVerseApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Resume a stored session so "Remember me" survives an app restart.
+  final hasSession = await ApiService.restoreSession();
+  runApp(ExamVerseApp(initiallyAuthenticated: hasSession));
 }
 
 class ExamVerseApp extends StatefulWidget {
-  const ExamVerseApp({super.key});
+  final bool initiallyAuthenticated;
+  const ExamVerseApp({super.key, this.initiallyAuthenticated = false});
 
   @override
   State<ExamVerseApp> createState() => _ExamVerseAppState();
 }
 
 class _ExamVerseAppState extends State<ExamVerseApp> {
-  bool isAuthenticated = false;
+  late bool isAuthenticated = widget.initiallyAuthenticated;
+  late String accountType = ApiService.accountType;
   int currentTabIndex = 0;
 
   // Active sub-routes
@@ -37,8 +48,40 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
   int? selectedTestId;
   int? activeAttemptId;
   bool isPlayingTest = false;
+  bool isBuildingPractice = false;
+  int? practiceAttemptId;
+  int? practiceDurationMinutes;
   bool isViewingResult = false;
   bool isViewingInstructions = false;
+
+  @override
+  void initState() {
+    super.initState();
+    ApiService.onUnauthorized = _handleSessionExpired;
+  }
+
+  void _handleSessionExpired() {
+    if (!mounted || !isAuthenticated) return;
+    ApiService.clearSession();
+    setState(() {
+      isAuthenticated = false;
+      accountType = 'student';
+      isPlayingTest = false;
+      isBuildingPractice = false;
+      practiceAttemptId = null;
+      isViewingResult = false;
+      isViewingInstructions = false;
+      selectedExamId = null;
+      selectedTestId = null;
+      activeAttemptId = null;
+    });
+  }
+
+  @override
+  void dispose() {
+    ApiService.onUnauthorized = null;
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,17 +89,29 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
       title: 'EXAMVERSE',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        brightness: Brightness.dark,
+        brightness: Brightness.light,
         scaffoldBackgroundColor: AppConstants.primaryDark,
-        primaryColor: AppConstants.accentIndigo,
+        primaryColor: AppConstants.accentYellow,
         cardColor: AppConstants.cardDark,
-        textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
-        colorScheme: const ColorScheme.dark(
-          primary: AppConstants.accentIndigo,
-          secondary: AppConstants.accentPurple,
+        textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme)
+            .apply(bodyColor: AppConstants.textPrimary, displayColor: AppConstants.textPrimary),
+        colorScheme: const ColorScheme.light(
+          primary: AppConstants.accentYellow,
+          onPrimary: AppConstants.onAccent,
+          secondary: AppConstants.accentYellowDeep,
+          onSecondary: AppConstants.onAccent,
           surface: AppConstants.cardDark,
-          background: AppConstants.primaryDark,
+          onSurface: AppConstants.textPrimary,
         ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: AppConstants.scaffoldDark,
+          foregroundColor: AppConstants.textPrimary,
+          elevation: 0,
+          iconTheme: IconThemeData(color: AppConstants.textPrimary),
+        ),
+        iconTheme: const IconThemeData(color: AppConstants.textPrimary),
+        dividerColor: AppConstants.cardBorder,
+        progressIndicatorTheme: const ProgressIndicatorThemeData(color: AppConstants.accentYellow),
         useMaterial3: true,
       ),
       routes: {
@@ -64,24 +119,56 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
         '/creator-dashboard': (_) => const CreatorDashboardView(),
         '/marketplace': (_) => const MarketplaceScreen(),
         '/current-affairs': (_) => const CurrentAffairsView(),
-        '/learning-app': (_) => const LearningAppShell(),
+        '/become-teacher': (_) => const BecomeTeacherView(),
+        '/map-learning': (_) => const MapLearningHomeView(),
+        '/mistake-notebook': (_) => const MistakeNotebookView(),
       },
-      home: const LearningAppShell(),
+      home: !isAuthenticated
+          ? LoginSignupView(
+              onAuthenticated: (type) => setState(() {
+                isAuthenticated = true;
+                accountType = type;
+              }),
+            )
+          : accountType == 'teacher'
+              ? TeacherDashboardView(onLogout: _handleSessionExpired)
+              : _buildAuthenticatedShell(),
     );
   }
 
   Widget _buildAuthenticatedShell() {
-    if (isPlayingTest && selectedTestId != null) {
+    if (isPlayingTest && (selectedTestId != null || practiceAttemptId != null)) {
       return TestPlayerView(
-        testId: selectedTestId!,
+        testId: selectedTestId ?? 0,
+        existingAttemptId: practiceAttemptId,
+        existingDurationMinutes: practiceDurationMinutes,
         onTestSubmitted: (attId) {
           setState(() {
             isPlayingTest = false;
+            practiceAttemptId = null;
+            practiceDurationMinutes = null;
             activeAttemptId = attId;
             isViewingResult = true;
           });
         },
-        onExit: () => setState(() => isPlayingTest = false),
+        onExit: () => setState(() {
+          isPlayingTest = false;
+          practiceAttemptId = null;
+          practiceDurationMinutes = null;
+        }),
+      );
+    }
+
+    if (isBuildingPractice) {
+      return BuildPracticeView(
+        onStarted: (attemptId, minutes) {
+          setState(() {
+            isBuildingPractice = false;
+            practiceAttemptId = attemptId;
+            practiceDurationMinutes = minutes;
+            isPlayingTest = true;
+          });
+        },
       );
     }
 
@@ -142,6 +229,11 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
             },
             onOpenAiCoach: () => setState(() => currentTabIndex = 2),
             onOpenLeaderboard: () => setState(() => currentTabIndex = 3),
+            onBuildPractice: () => setState(() => isBuildingPractice = true),
+            onResumeAttempt: (attemptId) => setState(() {
+              practiceAttemptId = attemptId;
+              isPlayingTest = true;
+            }),
           ),
           const MarketplaceScreen(),
           const AiCoachView(),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants.dart';
+import '../results/result_view.dart';
 import '../../core/api_service.dart';
 import '../../widgets/design_system_widgets.dart';
 
@@ -12,6 +13,7 @@ class TestHistoryView extends StatefulWidget {
 
 class _TestHistoryViewState extends State<TestHistoryView> {
   bool isLoading = true;
+  String? loadError;
   List<dynamic> history = [];
 
   @override
@@ -23,25 +25,44 @@ class _TestHistoryViewState extends State<TestHistoryView> {
   void _loadHistory() async {
     try {
       final res = await ApiService.get('/v1/passport');
+      if (!mounted) return;
       setState(() {
-        history = res['recent_attempts'] as List? ?? _getFallbackHistory();
+        // The passport payload exposes history under 'recent_attempts'.
+        history = (res is Map ? res['recent_attempts'] : null) as List? ?? [];
         isLoading = false;
+        loadError = null;
       });
-    } catch (_) {
+    } catch (e) {
+      if (!mounted) return;
+      // Showing invented scores and ranks here would be worse than showing
+      // nothing — a candidate must never see a fabricated rank.
       setState(() {
-        history = _getFallbackHistory();
+        history = [];
         isLoading = false;
+        loadError = e.toString().replaceAll('Exception: ', '');
       });
     }
   }
 
-  List<dynamic> _getFallbackHistory() {
-    return [
-      {'test_title': 'SSC CGL Full Mock Test 04', 'started_at': '24 Aug 2026', 'score': '156/200', 'rank': '#124', 'accuracy_percentage': '83%'},
-      {'test_title': 'Quant Sectional Quiz 12', 'started_at': '21 Aug 2026', 'score': '44/50', 'rank': '#89', 'accuracy_percentage': '88%'},
-      {'test_title': 'Reasoning Speed Test 08', 'started_at': '18 Aug 2026', 'score': '48/50', 'rank': '#45', 'accuracy_percentage': '96%'},
-      {'test_title': 'General Awareness PYP 2023', 'started_at': '15 Aug 2026', 'score': '32/50', 'rank': '#210', 'accuracy_percentage': '64%'},
-    ];
+  /// Opens the scorecard for a past attempt.
+  void _openResult(dynamic item) {
+    final id = item is Map ? (item['attempt_id'] ?? item['id']) : null;
+    if (id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('This attempt has no scorecard to open.'),
+        backgroundColor: AppConstants.accentAmber,
+      ));
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ResultView(
+          attemptId: id is int ? id : int.tryParse(id.toString()) ?? 0,
+          onHome: () => Navigator.pop(context),
+        ),
+      ),
+    );
   }
 
   @override
@@ -50,18 +71,22 @@ class _TestHistoryViewState extends State<TestHistoryView> {
       backgroundColor: AppConstants.primaryDark,
       appBar: AppBar(
         backgroundColor: AppConstants.scaffoldDark,
-        title: const Text('Test History', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        title: const Text('Test History', style: TextStyle(color: AppConstants.onAccent, fontSize: 18, fontWeight: FontWeight.bold)),
         elevation: 0,
       ),
       body: SafeArea(
         child: isLoading
             ? const Center(child: CircularProgressIndicator(color: AppConstants.accentCyan))
             : history.isEmpty
-                ? const EmptyStateWidget(icon: Icons.history, title: 'No Test History Yet', description: 'Attempt mock tests to track your exam performance history here.')
+                ? EmptyStateWidget(
+                    icon: loadError != null ? Icons.cloud_off : Icons.history,
+                    title: loadError != null ? 'Could not load history' : 'No Test History Yet',
+                    description: loadError ?? 'Attempt mock tests to track your exam performance history here.',
+                  )
                 : ListView.separated(
                     padding: const EdgeInsets.all(AppConstants.space16),
                     itemCount: history.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: AppConstants.space12),
+                    separatorBuilder: (_, _) => const SizedBox(height: AppConstants.space12),
                     itemBuilder: (context, index) {
                       final item = history[index];
                       final title = item['test_title'] ?? item['title'] ?? 'Mock Test';
@@ -78,7 +103,7 @@ class _TestHistoryViewState extends State<TestHistoryView> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Expanded(
-                                  child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                                  child: Text(title, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 15, fontWeight: FontWeight.bold)),
                                 ),
                                 Text(date, style: const TextStyle(color: AppConstants.textMuted, fontSize: 11.5)),
                               ],
@@ -90,7 +115,7 @@ class _TestHistoryViewState extends State<TestHistoryView> {
                                 _buildMetric('Score', scoreStr, AppConstants.accentCyan),
                                 _buildMetric('Rank', rankStr, AppConstants.accentPurple),
                                 _buildMetric('Accuracy', accStr, AppConstants.accentEmerald),
-                                SecondaryButton(label: 'View', onPressed: () {}),
+                                SecondaryButton(label: 'View', onPressed: () => _openResult(item)),
                               ],
                             ),
                           ],

@@ -2,6 +2,8 @@
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../utils/response.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../utils/crypto.php';
+require_once __DIR__ . '/../config/config.php';
 
 class AiController {
 
@@ -10,10 +12,20 @@ class AiController {
     public static function listKeys() {
         AuthMiddleware::getAuthenticatedUser('admin');
         $db = Database::getConnection();
-        $stmt = $db->query("SELECT id, label, provider, is_active, usage_count, last_used_at, created_at,
-                            CONCAT(SUBSTR(api_key_encrypted,1,8),'••••••••••••••',SUBSTR(api_key_encrypted,-4)) as masked_key
+        $stmt = $db->query("SELECT id, label, provider, is_active, usage_count, last_used_at, created_at, api_key_encrypted
                             FROM ai_api_keys ORDER BY created_at DESC");
-        Response::json($stmt->fetchAll(PDO::FETCH_ASSOC), 'API keys fetched');
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($rows as &$row) {
+            // Masked from the decrypted value so the mask never leaks the
+            // leading bytes of the stored representation.
+            $row['masked_key'] = Crypto::mask(Crypto::decrypt($row['api_key_encrypted']));
+            $row['needs_reencryption'] = Crypto::isLegacy($row['api_key_encrypted']);
+            unset($row['api_key_encrypted']);
+        }
+        unset($row);
+
+        Response::json($rows, 'API keys fetched');
     }
 
     public static function saveKey() {
@@ -32,8 +44,8 @@ class AiController {
             return;
         }
 
-        // Simple XOR obfuscation for storage (not true encryption — use proper vault in prod)
-        $encrypted = base64_encode($apiKey);
+        // AES-256-GCM at rest, keyed from APP_KEY.
+        $encrypted = Crypto::encrypt($apiKey);
 
         $db = Database::getConnection();
         // Deactivate others of same provider first if this will be active
@@ -73,7 +85,7 @@ class AiController {
         $subjectId  = intval($body['subject_id'] ?? 0);
         $sectionName = trim($body['section_name'] ?? 'General');
         $difficulty = $body['difficulty'] ?? 'medium';
-        $count      = min(intval($body['count'] ?? 5), 30);
+        $count      = min(intval($body['count'] ?? 5), 15); // >15 exceeds the request timeout; chunk larger jobs
         $language   = $body['language'] ?? 'en';
         $topic      = trim($body['topic'] ?? '');
 
@@ -89,7 +101,7 @@ class AiController {
             return;
         }
 
-        $apiKey   = base64_decode($keyRow['api_key_encrypted']);
+        $apiKey   = Crypto::decrypt($keyRow['api_key_encrypted']);
         $provider = $keyRow['provider'];
 
         // Get exam & subject info for prompt
@@ -156,8 +168,11 @@ Generate {$count} questions now:";
             // Validate and store each question
             foreach ($parsed as $q) {
                 if (empty($q['question_text']) || empty($q['option_a']) || empty($q['correct_option'])) continue;
-                $qs = $db->prepare("INSERT INTO ai_generated_questions (batch_id, question_text, option_a, option_b, option_c, option_d, correct_option, explanation, difficulty, review_status) VALUES (?,?,?,?,?,?,?,?,'medium','pending')");
-                $qs->execute([$batchId, $q['question_text'], $q['option_a'], $q['option_b'] ?? '', $q['option_c'] ?? '', $q['option_d'] ?? '', strtoupper($q['correct_option']), $q['explanation'] ?? '']);
+                $correct = strtoupper(trim($q['correct_option']));
+                if (!in_array($correct, ['A', 'B', 'C', 'D'], true)) continue;
+
+                $qs = $db->prepare("INSERT INTO ai_generated_questions (batch_id, question_text, option_a, option_b, option_c, option_d, correct_option, explanation, difficulty, review_status) VALUES (?,?,?,?,?,?,?,?,?,'pending')");
+                $qs->execute([$batchId, $q['question_text'], $q['option_a'], $q['option_b'] ?? '', $q['option_c'] ?? '', $q['option_d'] ?? '', $correct, $q['explanation'] ?? '', $difficulty]);
                 $q['id'] = $db->lastInsertId();
                 $generatedQuestions[] = $q;
             }
@@ -169,7 +184,9 @@ Generate {$count} questions now:";
         } catch (Exception $e) {
             $error = $e->getMessage();
             $db->prepare("UPDATE ai_question_batches SET status='error', error_message=?, raw_response=? WHERE id=?")->execute([$error, $rawResponse, $batchId]);
-            Response::json(['batch_id' => $batchId, 'error' => $error], 'AI generation failed: '.$error, 'error', 500);
+            error_log('EXAMVERSE AI generation failed (batch ' . $batchId . '): ' . $error);
+            $clientMessage = Config::isDebug() ? $error : 'The AI provider request failed. See the batch record for details.';
+            Response::json(['batch_id' => $batchId, 'error' => $clientMessage], 'AI generation failed: ' . $clientMessage, 'error', 502);
             return;
         }
 
@@ -486,8 +503,9 @@ Generate {$count} questions now:";
     // ─── PRIVATE: API CALLERS ─────────────────────────────────────────
 
     private static function callGemini(string $apiKey, string $prompt): string {
-        $cleanKey = urlencode(trim($apiKey));
-        $url     = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={$cleanKey}";
+        // Model is configurable so it can be moved without a code change.
+        $model = Config::get('GEMINI_MODEL', 'gemini-3.6-flash');
+        $url   = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
         $payload = json_encode([
             'contents'         => [['parts' => [['text' => $prompt]]]],
             'generationConfig' => ['temperature' => 0.7, 'maxOutputTokens' => 8192]
@@ -497,13 +515,16 @@ Generate {$count} questions now:";
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => $payload,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 60,
-            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+            CURLOPT_TIMEOUT => 300, // measured ~16s/question on gemini-3.6-flash (a thinking model),
+            // Sent as a header so the key never lands in proxy or access logs.
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'x-goog-api-key: ' . trim($apiKey)],
         ]);
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
         curl_close($ch);
 
+        if ($response === false) throw new Exception('Gemini request failed: ' . $curlError);
         if ($httpCode !== 200) throw new Exception("Gemini API error {$httpCode}: " . substr($response, 0, 300));
 
         $decoded = json_decode($response, true);
@@ -515,7 +536,7 @@ Generate {$count} questions now:";
     private static function callOpenAI($apiKey, $prompt) {
         $url = "https://api.openai.com/v1/chat/completions";
         $payload = json_encode([
-            'model' => 'gpt-4o-mini',
+            'model' => Config::get('OPENAI_MODEL', 'gpt-4o-mini'),
             'messages' => [['role' => 'user', 'content' => $prompt]],
             'temperature' => 0.7,
             'max_tokens' => 8192
@@ -525,13 +546,15 @@ Generate {$count} questions now:";
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => $payload,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 60,
+            CURLOPT_TIMEOUT => 300, // measured ~16s/question on gemini-3.6-flash (a thinking model),
             CURLOPT_HTTPHEADER => ['Content-Type: application/json', "Authorization: Bearer {$apiKey}"],
         ]);
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
         curl_close($ch);
 
+        if ($response === false) throw new Exception('OpenAI request failed: ' . $curlError);
         if ($httpCode !== 200) throw new Exception("OpenAI API error {$httpCode}: " . substr($response, 0, 300));
 
         $decoded = json_decode($response, true);

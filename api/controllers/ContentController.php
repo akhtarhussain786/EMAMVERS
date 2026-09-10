@@ -2,6 +2,8 @@
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../utils/response.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../utils/crypto.php';
+require_once __DIR__ . '/../utils/rate_limit.php';
 
 class ContentController {
 
@@ -101,6 +103,10 @@ class ContentController {
     // ─── AI QUIZ GENERATION BASED ON ARTICLE CONTENT ──────────────────
 
     public static function generateArticleQuiz($id) {
+        // This endpoint calls a paid AI provider. Left open, anyone could loop
+        // it with ?force=1 and burn the operator's API credits.
+        $caller = AuthMiddleware::requireUserOrAdminSession();
+
         $db = Database::getConnection();
 
         $stmt = $db->prepare("SELECT * FROM current_affairs WHERE id=?");
@@ -112,7 +118,12 @@ class ContentController {
             return;
         }
 
-        $forceNew = isset($_GET['force']) && $_GET['force'] === '1';
+        // Only staff may bypass the cache and force a fresh (billable) generation.
+        $forceNew = $caller['is_admin'] && isset($_GET['force']) && $_GET['force'] === '1';
+
+        if ($forceNew) {
+            RateLimit::enforce('quiz_force', $caller['user_id'] ?? 'admin-session', 30, 3600);
+        }
 
         // Check if cached questions exist and forceNew is false
         if (!$forceNew) {
@@ -137,7 +148,10 @@ class ContentController {
             return;
         }
 
-        $apiKey   = base64_decode($keyRow['api_key_encrypted']);
+        // Generation is billable, so cap how often any one caller can trigger it.
+        RateLimit::enforce('quiz_generate', $caller['user_id'] ?? 'admin-session', 20, 3600);
+
+        $apiKey   = Crypto::decrypt($keyRow['api_key_encrypted']);
         $provider = $keyRow['provider'];
 
         $articleText = "TITLE: " . $article['title'] . "\n\n"
@@ -260,36 +274,90 @@ Generate 4 questions now:";
         $userId = $authUser['sub'];
 
         $db = Database::getConnection();
-        
-        $stmtExams = $db->query("SELECT id, title, slug FROM exams WHERE status = 'active'")->fetchAll();
-        
-        $passportEntries = [];
-        foreach ($stmtExams as $exam) {
-            $stmtAtt = $db->prepare("
-                SELECT att.score, att.accuracy_percentage, att.central_rank, att.state_rank, att.percentile, att.submitted_at
+
+        // Best evaluated attempt per exam, in one pass instead of a query per exam.
+        $stmt = $db->prepare("
+            SELECT e.id   AS exam_id,
+                   e.title AS exam_title,
+                   best.score, best.accuracy_percentage, best.central_rank,
+                   best.state_rank, best.percentile, best.submitted_at
+            FROM exams e
+            LEFT JOIN (
+                SELECT t.exam_id,
+                       att.score, att.accuracy_percentage, att.central_rank,
+                       att.state_rank, att.percentile, att.submitted_at,
+                       ROW_NUMBER() OVER (PARTITION BY t.exam_id ORDER BY att.score DESC, att.submitted_at DESC) AS rn
                 FROM test_attempts att
                 JOIN tests t ON att.test_id = t.id
-                WHERE att.user_id = :uid AND t.exam_id = :eid AND att.status = 'evaluated'
-                ORDER BY att.score DESC LIMIT 1
-            ");
-            $stmtAtt->execute(['uid' => $userId, 'eid' => $exam['id']]);
-            $bestAtt = $stmtAtt->fetch();
+                WHERE att.user_id = :uid AND att.status = 'evaluated'
+            ) best ON best.exam_id = e.id AND best.rn = 1
+            WHERE e.status = 'active'
+            ORDER BY e.id ASC
+        ");
+        $stmt->execute(['uid' => $userId]);
 
+        $passportEntries = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $hasAttempt = $row['submitted_at'] !== null;
             $passportEntries[] = [
-                'exam_id' => $exam['id'],
-                'exam_title' => $exam['title'],
-                'best_score' => $bestAtt ? floatval($bestAtt['score']) : 0.00,
-                'accuracy' => $bestAtt ? floatval($bestAtt['accuracy_percentage']) : 0.00,
-                'central_rank' => $bestAtt ? $bestAtt['central_rank'] : null,
-                'state_rank' => $bestAtt ? $bestAtt['state_rank'] : null,
-                'status' => $bestAtt ? 'Verified Attempt' : 'In Progress'
+                'exam_id'      => intval($row['exam_id']),
+                'exam_title'   => $row['exam_title'],
+                'best_score'   => $hasAttempt ? floatval($row['score']) : 0.00,
+                'accuracy'     => $hasAttempt ? floatval($row['accuracy_percentage']) : 0.00,
+                'central_rank' => $hasAttempt ? $row['central_rank'] : null,
+                'state_rank'   => $hasAttempt ? $row['state_rank'] : null,
+                'percentile'   => $hasAttempt ? floatval($row['percentile']) : null,
+                'status'       => $hasAttempt ? 'Verified Attempt' : 'In Progress',
             ];
         }
 
+        // Recent attempt history — the Test History screen reads this key.
+        $histStmt = $db->prepare("
+            SELECT att.id AS attempt_id, att.score, att.accuracy_percentage, att.central_rank,
+                   att.correct_count, att.wrong_count, att.unattempted_count,
+                   att.started_at, att.submitted_at,
+                   t.title AS test_title, e.title AS exam_title
+            FROM test_attempts att
+            JOIN tests t ON att.test_id = t.id
+            JOIN exams e ON t.exam_id = e.id
+            WHERE att.user_id = :uid AND att.status = 'evaluated'
+            ORDER BY att.submitted_at DESC
+            LIMIT 25
+        ");
+        $histStmt->execute(['uid' => $userId]);
+        $recentAttempts = $histStmt->fetchAll();
+
+        // Aggregate XP figures used by the passport/profile screens.
+        $sumStmt = $db->prepare("
+            SELECT COUNT(*) AS tests_taken,
+                   COALESCE(SUM(att.score), 0) AS total_score,
+                   COALESCE(SUM(att.correct_count), 0) AS total_correct,
+                   COALESCE(SUM(att.correct_count + att.wrong_count), 0) AS total_attempted
+            FROM test_attempts att
+            WHERE att.user_id = :uid AND att.status = 'evaluated'
+        ");
+        $sumStmt->execute(['uid' => $userId]);
+        $totals = $sumStmt->fetch() ?: ['tests_taken' => 0, 'total_score' => 0, 'total_correct' => 0, 'total_attempted' => 0];
+
+        $nameStmt = $db->prepare("SELECT full_name FROM users WHERE id = ?");
+        $nameStmt->execute([$userId]);
+        $holderName = $nameStmt->fetchColumn();
+
         Response::json([
-            'passport_holder' => $authUser['extra']['name'] ?? 'Candidate',
-            'passport_id' => 'EXAMVERSE-PASS-' . str_pad($userId, 6, '0', STR_PAD_LEFT),
-            'entries' => $passportEntries
+            'passport_holder' => $holderName ?: ($authUser['extra']['name'] ?? 'Candidate'),
+            'passport_id'     => 'EXAMVERSE-PASS-' . str_pad($userId, 6, '0', STR_PAD_LEFT),
+            'entries'         => $passportEntries,
+            'recent_attempts' => $recentAttempts,
+            'summary'         => [
+                'tests_taken'      => intval($totals['tests_taken']),
+                'total_score'      => round(floatval($totals['total_score']), 2),
+                'questions_solved' => intval($totals['total_correct']),
+                'overall_accuracy' => intval($totals['total_attempted']) > 0
+                    ? round((intval($totals['total_correct']) / intval($totals['total_attempted'])) * 100, 2)
+                    : 0.0,
+                'tests_xp'         => intval($totals['tests_taken']) * 50,
+                'accuracy_xp'      => intval($totals['total_correct']) * 5,
+            ],
         ], 'Preparation Passport loaded');
     }
 

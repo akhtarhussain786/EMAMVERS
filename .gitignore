@@ -28,3 +28,17 @@ student_app/android/build/
 # PHP / Environment
 vendor/
 .env
+
+# Uploaded creator materials (served via API only)
+storage/materials/*
+!storage/materials/.gitignore
+
+# Uploaded teacher KYC documents (served via API only)
+storage/teacher_docs/*
+!storage/teacher_docs/.gitignore
+!storage/teacher_docs/.htaccess
+
+# Runtime rate-limiter counters
+api/storage/ratelimit/*
+!api/storage/ratelimit/.gitignore
+

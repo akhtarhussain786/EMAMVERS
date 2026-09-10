@@ -32,11 +32,13 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
   void _loadInstructions() async {
     try {
       final res = await ApiService.get('/v1/tests/${widget.testId}/instructions');
+      if (!mounted) return;
       setState(() {
         instructionsData = res;
         isLoading = false;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() => isLoading = false);
     }
   }
@@ -48,8 +50,8 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
         backgroundColor: AppConstants.primaryDark,
         appBar: AppBar(
           backgroundColor: AppConstants.cardDark,
-          title: const Text('Test Instructions', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-          leading: IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: widget.onCancel),
+          title: const Text('Test Instructions', style: TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+          leading: IconButton(icon: const Icon(Icons.close, color: AppConstants.textPrimary), onPressed: widget.onCancel),
         ),
         body: const Padding(
           padding: EdgeInsets.all(AppConstants.space24),
@@ -61,8 +63,8 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
     final title = instructionsData?['title'] ?? 'Test Instructions';
     final examTitle = instructionsData?['exam_title'] ?? '';
     final durationMins = instructionsData?['total_duration_seconds'] != null ? (instructionsData!['total_duration_seconds'] / 60).round() : 60;
-    final totalQs = instructionsData?['total_questions'] ?? 100;
-    final totalMarks = instructionsData?['total_marks'] ?? 200;
+    final totalQs = instructionsData?['total_questions'] ?? 0;
+    final totalMarks = instructionsData?['total_marks'] ?? 0;
     final posMarks = instructionsData?['default_positive_marks'] ?? 2.0;
     final negMarks = instructionsData?['default_negative_marks'] ?? 0.5;
 
@@ -71,8 +73,8 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
       appBar: AppBar(
         backgroundColor: AppConstants.cardDark,
         elevation: 0,
-        title: const Text('Test Instructions', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-        leading: IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: widget.onCancel),
+        title: const Text('Test Instructions', style: TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+        leading: IconButton(icon: const Icon(Icons.close, color: AppConstants.textPrimary), onPressed: widget.onCancel),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -80,7 +82,7 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+            Text(title, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 22, fontWeight: FontWeight.w800)),
             const SizedBox(height: 4),
             Text(examTitle, style: const TextStyle(color: AppConstants.accentBlue, fontSize: 13.5, fontWeight: FontWeight.w700)),
             const SizedBox(height: AppConstants.space20),
@@ -89,9 +91,9 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
             Container(
               padding: const EdgeInsets.all(AppConstants.space16),
               decoration: BoxDecoration(
-                gradient: AppConstants.darkCardGradient,
+                color: AppConstants.surfaceElevated,
                 borderRadius: BorderRadius.circular(AppConstants.radiusCard),
-                border: Border.all(color: AppConstants.accentIndigo.withOpacity(0.4)),
+                border: Border.all(color: AppConstants.cardBorder),
                 boxShadow: AppConstants.cardShadow,
               ),
               child: Row(
@@ -106,7 +108,7 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
             ),
             const SizedBox(height: AppConstants.space24),
 
-            const Text('General Guidelines & Exam Rules:', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('General Guidelines & Exam Rules:', style: TextStyle(color: AppConstants.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: AppConstants.space12),
             _ruleBullet('The countdown timer at the top right of the screen displays remaining test time.'),
             _ruleBullet('You can navigate between questions using the Question Palette.'),
@@ -140,9 +142,9 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
   Widget _infoTile(String label, String value) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14.5)),
+        Text(value, style: const TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.w800, fontSize: 14.5)),
         const SizedBox(height: 2),
-        Text(label, style: const TextStyle(color: AppConstants.textMuted, fontSize: 11)),
+        Text(label, style: const TextStyle(color: AppConstants.textSecondary, fontSize: 11)),
       ],
     );
   }

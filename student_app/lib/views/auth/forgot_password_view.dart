@@ -39,11 +39,12 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
         'identity': _identityController.text.trim(),
       });
       _showSnackBar(res['message'] ?? 'OTP sent successfully', isError: false);
+      if (!mounted) return;
       setState(() => _step = 2);
     } catch (e) {
       _showSnackBar(e.toString().replaceAll('Exception: ', ''));
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -60,6 +61,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
         'otp': _otpController.text.trim(),
       });
       _showSnackBar('OTP Verified Successfully!', isError: false);
+      if (!mounted) return;
       setState(() => _step = 3);
     } catch (e) {
       _showSnackBar(e.toString().replaceAll('Exception: ', ''));
@@ -81,6 +83,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
         'otp': _otpController.text.trim(),
         'new_password': _newPasswordController.text.trim(),
       });
+      if (!mounted) return;
       setState(() => _step = 4);
     } catch (e) {
       _showSnackBar(e.toString().replaceAll('Exception: ', ''));
@@ -97,7 +100,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: AppConstants.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -121,7 +124,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: const [
-                      Text('Forgot Password', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+                      Text('Forgot Password', style: TextStyle(color: AppConstants.onAccent, fontSize: 22, fontWeight: FontWeight.w800)),
                       SizedBox(height: 2),
                       Text('Secure Account Recovery', style: TextStyle(color: AppConstants.textSecondary, fontSize: 12.5)),
                     ],

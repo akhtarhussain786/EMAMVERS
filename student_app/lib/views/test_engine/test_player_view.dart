@@ -10,11 +10,18 @@ class TestPlayerView extends StatefulWidget {
   final Function(int attemptId) onTestSubmitted;
   final VoidCallback onExit;
 
+  /// Set when the attempt already exists (a custom practice test built by the
+  /// student). The player then resumes it instead of starting a new one.
+  final int? existingAttemptId;
+  final int? existingDurationMinutes;
+
   const TestPlayerView({
     super.key,
     required this.testId,
     required this.onTestSubmitted,
     required this.onExit,
+    this.existingAttemptId,
+    this.existingDurationMinutes,
   });
 
   @override
@@ -23,14 +30,22 @@ class TestPlayerView extends StatefulWidget {
 
 class _TestPlayerViewState extends State<TestPlayerView> {
   bool isLoading = true;
+  String? loadError;
   int attemptId = 0;
   List<QuestionItem> questions = [];
   int currentIndex = 0;
-  String selectedLanguage = 'en';
+  String selectedLanguage = 'both';
+  bool isSubmitting = false;
 
   // Timer
   int remainingSeconds = 3600;
   Timer? _timer;
+
+  // Per-question time tracking and answer autosave.
+  Timer? _autosaveTimer;
+  DateTime _questionEnteredAt = DateTime.now();
+  final Set<int> _dirtyQuestionIds = <int>{};
+  bool _isFlushing = false;
 
   @override
   void initState() {
@@ -41,21 +56,40 @@ class _TestPlayerViewState extends State<TestPlayerView> {
   @override
   void dispose() {
     _timer?.cancel();
+    _autosaveTimer?.cancel();
     super.dispose();
   }
 
   void _startAttempt() async {
     try {
-      final res = await ApiService.post('/v1/tests/${widget.testId}/attempts', {});
+      // A custom practice attempt is already assembled; resume it by id.
+      final res = widget.existingAttemptId != null
+          ? await ApiService.get('/v1/attempts/${widget.existingAttemptId}/paper')
+          : await ApiService.post('/v1/tests/${widget.testId}/attempts', {});
+      if (!mounted) return;
       setState(() {
-        attemptId = res['attempt_id'];
+        attemptId = res['attempt_id'] as int;
         questions = (res['questions'] as List? ?? []).map((q) => QuestionItem.fromJson(q)).toList();
-        remainingSeconds = res['test']['total_duration_seconds'] ?? 3600;
+        // The server computes remaining time from the attempt's start, so
+        // reopening a test cannot hand back a fresh full-length timer.
+        remainingSeconds = (res['remaining_seconds'] as int?)
+            ?? (widget.existingDurationMinutes != null
+                ? widget.existingDurationMinutes! * 60
+                : null)
+            ?? (res['test']?['total_duration_seconds'] as int?)
+            ?? 3600;
         isLoading = false;
+        loadError = null;
       });
+      _questionEnteredAt = DateTime.now();
       _initTimer();
-    } catch (_) {
-      setState(() => isLoading = false);
+      _initAutosave();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        isLoading = false;
+        loadError = e.toString().replaceAll('Exception: ', '');
+      });
     }
   }
 
@@ -70,6 +104,55 @@ class _TestPlayerViewState extends State<TestPlayerView> {
     });
   }
 
+  /// Answers previously lived only in memory and were never sent to the server,
+  /// so every submitted attempt scored zero. Flush pending changes periodically.
+  void _initAutosave() {
+    _autosaveTimer = Timer.periodic(const Duration(seconds: 15), (_) => _flushPendingAnswers());
+  }
+
+  /// Charges elapsed time to the question currently on screen.
+  void _accrueTimeOnCurrentQuestion() {
+    if (currentIndex >= questions.length) return;
+    final now = DateTime.now();
+    final elapsed = now.difference(_questionEnteredAt).inSeconds;
+    if (elapsed > 0) {
+      questions[currentIndex].timeSpentSeconds += elapsed;
+      _dirtyQuestionIds.add(questions[currentIndex].id);
+    }
+    _questionEnteredAt = now;
+  }
+
+  Map<String, dynamic> _payloadFor(QuestionItem q) => {
+    'question_id': q.id,
+    'selected_option_key': q.selectedOption,
+    'is_marked_for_review': q.isMarkedForReview ? 1 : 0,
+    'time_spent_seconds': q.pendingTimeSeconds,
+  };
+
+  /// Sends changed answers to the server. Time is only cleared once the write
+  /// succeeds, so a failed autosave is retried rather than lost.
+  Future<void> _flushPendingAnswers() async {
+    if (_isFlushing || attemptId == 0) return;
+    _accrueTimeOnCurrentQuestion();
+    if (_dirtyQuestionIds.isEmpty) return;
+
+    _isFlushing = true;
+    final batch = questions.where((q) => _dirtyQuestionIds.contains(q.id)).toList();
+    try {
+      await ApiService.put('/v1/attempts/$attemptId/answers', {
+        'responses': batch.map(_payloadFor).toList(),
+      });
+      for (final q in batch) {
+        q.commitPendingTime();
+      }
+      _dirtyQuestionIds.removeAll(batch.map((q) => q.id));
+    } catch (_) {
+      // Left dirty on purpose: the next autosave tick or the final submit retries.
+    } finally {
+      _isFlushing = false;
+    }
+  }
+
   String _formatTimer(int seconds) {
     final m = seconds ~/ 60;
     final s = seconds % 60;
@@ -77,50 +160,80 @@ class _TestPlayerViewState extends State<TestPlayerView> {
   }
 
   void _onOptionSelected(String optionKey) {
+    _accrueTimeOnCurrentQuestion();
     setState(() {
       questions[currentIndex].selectedOption = optionKey;
       questions[currentIndex].isAnswered = true;
+      _dirtyQuestionIds.add(questions[currentIndex].id);
     });
   }
 
   void _onMarkForReview() {
+    _accrueTimeOnCurrentQuestion();
     setState(() {
       questions[currentIndex].isMarkedForReview = !questions[currentIndex].isMarkedForReview;
+      _dirtyQuestionIds.add(questions[currentIndex].id);
     });
   }
 
   void _onClearResponse() {
+    _accrueTimeOnCurrentQuestion();
     setState(() {
       questions[currentIndex].selectedOption = null;
       questions[currentIndex].isAnswered = false;
+      _dirtyQuestionIds.add(questions[currentIndex].id);
     });
+  }
+
+  void _goToQuestion(int index) {
+    if (index < 0 || index >= questions.length) return;
+    _accrueTimeOnCurrentQuestion();
+    setState(() => currentIndex = index);
+    _questionEnteredAt = DateTime.now();
+    _flushPendingAnswers();
   }
 
   void _onSaveAndNext() {
     if (currentIndex < questions.length - 1) {
-      setState(() => currentIndex++);
+      _goToQuestion(currentIndex + 1);
     } else {
+      _flushPendingAnswers();
       _showSubmitDialog(context);
     }
   }
 
   void _submitFinalAttempt() async {
-    try {
-      final responses = questions.map((q) {
-        return {
-          'question_id': q.id,
-          'selected_option': q.selectedOption,
-          'is_marked_review': q.isMarkedForReview ? 1 : 0,
-        };
-      }).toList();
+    if (isSubmitting) return;
+    setState(() => isSubmitting = true);
 
+    _timer?.cancel();
+    _autosaveTimer?.cancel();
+    _accrueTimeOnCurrentQuestion();
+
+    try {
+      // Send every answer with the submission. The server persists these before
+      // scoring, so an autosave that never landed cannot cost the candidate marks.
       await ApiService.post('/v1/attempts/$attemptId/submit', {
-        'responses': responses,
+        'responses': questions.map(_payloadFor).toList(),
       });
 
       if (mounted) widget.onTestSubmitted(attemptId);
-    } catch (_) {
-      if (mounted) widget.onTestSubmitted(attemptId);
+    } catch (e) {
+      if (!mounted) return;
+      // Do not navigate to a result that was never recorded.
+      setState(() => isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not submit: ${e.toString().replaceAll('Exception: ', '')}'),
+          backgroundColor: AppConstants.accentRose,
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'Retry',
+            textColor: AppConstants.onAccent,
+            onPressed: _submitFinalAttempt,
+          ),
+        ),
+      );
     }
   }
 
@@ -131,8 +244,8 @@ class _TestPlayerViewState extends State<TestPlayerView> {
         backgroundColor: AppConstants.primaryDark,
         appBar: AppBar(
           backgroundColor: AppConstants.cardDark,
-          title: const Text('Loading Test Engine...', style: TextStyle(color: Colors.white, fontSize: 16)),
-          leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: widget.onExit),
+          title: const Text('Loading Test Engine...', style: TextStyle(color: AppConstants.onAccent, fontSize: 16)),
+          leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppConstants.onAccent), onPressed: widget.onExit),
         ),
         body: const Padding(
           padding: EdgeInsets.all(AppConstants.space24),
@@ -149,7 +262,7 @@ class _TestPlayerViewState extends State<TestPlayerView> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text('No questions found for this test.', style: TextStyle(color: Colors.white70)),
+              const Text('No questions found for this test.', style: TextStyle(color: AppConstants.textSecondary)),
               const SizedBox(height: 16),
               ElevatedButton(onPressed: widget.onExit, child: const Text('Back')),
             ],
@@ -165,10 +278,10 @@ class _TestPlayerViewState extends State<TestPlayerView> {
       appBar: AppBar(
         backgroundColor: AppConstants.cardDark,
         elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: widget.onExit),
+        leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppConstants.textPrimary), onPressed: widget.onExit),
         title: Row(
           children: [
-            Text('Q ${currentIndex + 1}/${questions.length}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+            Text('Q ${currentIndex + 1}/${questions.length}', style: const TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 15)),
             const SizedBox(width: 12),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -199,14 +312,15 @@ class _TestPlayerViewState extends State<TestPlayerView> {
             value: selectedLanguage,
             dropdownColor: AppConstants.cardDark,
             underline: const SizedBox(),
-            icon: const Icon(Icons.language, color: Colors.white, size: 20),
+            icon: const Icon(Icons.language, color: AppConstants.textPrimary, size: 20),
             items: const [
-              DropdownMenuItem(value: 'en', child: Text('English', style: TextStyle(color: Colors.white, fontSize: 12))),
-              DropdownMenuItem(value: 'hi', child: Text('हिन्दी', style: TextStyle(color: Colors.white, fontSize: 12))),
+              DropdownMenuItem(value: 'both', child: Text('Eng + हिंदी', style: TextStyle(color: AppConstants.textPrimary, fontSize: 12, fontWeight: FontWeight.bold))),
+              DropdownMenuItem(value: 'en', child: Text('English', style: TextStyle(color: AppConstants.textPrimary, fontSize: 12))),
+              DropdownMenuItem(value: 'hi', child: Text('हिन्दी', style: TextStyle(color: AppConstants.textPrimary, fontSize: 12))),
             ],
-            onChanged: (v) => setState(() => selectedLanguage = v ?? 'en'),
+            onChanged: (v) => setState(() => selectedLanguage = v ?? 'both'),
           ),
-          IconButton(icon: const Icon(Icons.grid_view_rounded, color: Colors.white), onPressed: () => _openQuestionPalette(context)),
+          IconButton(icon: const Icon(Icons.grid_view_rounded, color: AppConstants.textPrimary), onPressed: () => _openQuestionPalette(context)),
           IconButton(icon: const Icon(Icons.exit_to_app_rounded, color: AppConstants.accentRose), onPressed: () => _showSubmitDialog(context)),
         ],
       ),
@@ -234,44 +348,13 @@ class _TestPlayerViewState extends State<TestPlayerView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      currentQuestion.questionText,
-                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600, height: 1.4),
-                    ),
+                    _buildQuestionStem(currentQuestion),
                     const SizedBox(height: AppConstants.space24),
 
                     // Options List
-                    ...currentQuestion.options.map((opt) {
-                      final isSelected = currentQuestion.selectedOption == opt.optionKey;
-                      return GestureDetector(
-                        onTap: () => _onOptionSelected(opt.optionKey),
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: isSelected ? AppConstants.accentIndigo.withValues(alpha: 0.15) : AppConstants.cardDark,
-                            borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-                            border: Border.all(color: isSelected ? AppConstants.accentIndigo : AppConstants.cardBorder, width: isSelected ? 1.5 : 1.0),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 30,
-                                height: 30,
-                                decoration: BoxDecoration(
-                                  color: isSelected ? AppConstants.accentIndigo : AppConstants.primaryDark,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Center(
-                                  child: Text(opt.optionKey, style: TextStyle(color: isSelected ? Colors.white : AppConstants.textSecondary, fontWeight: FontWeight.bold, fontSize: 13)),
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(child: Text(opt.optionText, style: const TextStyle(color: Colors.white, fontSize: 14.5, height: 1.3))),
-                            ],
-                          ),
-                        ),
-                      );
+                    ...['A', 'B', 'C', 'D'].map((optKey) {
+                      final isSelected = currentQuestion.selectedOption == optKey;
+                      return _buildOptionTile(currentQuestion, optKey, isSelected);
                     }),
                   ],
                 ),
@@ -306,7 +389,7 @@ class _TestPlayerViewState extends State<TestPlayerView> {
                     onPressed: _onSaveAndNext,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppConstants.accentIndigo,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppConstants.onAccent,
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
@@ -332,7 +415,7 @@ class _TestPlayerViewState extends State<TestPlayerView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Question Palette', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+              const Text('Question Palette', style: TextStyle(color: AppConstants.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
               const SizedBox(height: AppConstants.space16),
               Expanded(
                 child: GridView.builder(
@@ -352,11 +435,11 @@ class _TestPlayerViewState extends State<TestPlayerView> {
                     return GestureDetector(
                       onTap: () {
                         Navigator.pop(context);
-                        setState(() => currentIndex = i);
+                        _goToQuestion(i);
                       },
                       child: Container(
                         decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppConstants.cardBorder)),
-                        child: Center(child: Text('${i + 1}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13))),
+                        child: Center(child: Text('${i + 1}', style: const TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 13))),
                       ),
                     );
                   },
@@ -379,7 +462,7 @@ class _TestPlayerViewState extends State<TestPlayerView> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: AppConstants.cardDark,
-          title: const Text('Submit Test Attempt?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          title: const Text('Submit Test Attempt?', style: TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -397,7 +480,7 @@ class _TestPlayerViewState extends State<TestPlayerView> {
                 Navigator.pop(context);
                 _submitFinalAttempt();
               },
-              style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentEmerald, foregroundColor: Colors.white),
+              style: ElevatedButton.styleFrom(backgroundColor: AppConstants.accentEmerald, foregroundColor: AppConstants.onAccent),
               child: const Text('Confirm & Submit', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
@@ -413,6 +496,123 @@ class _TestPlayerViewState extends State<TestPlayerView> {
         Text(label, style: const TextStyle(color: AppConstants.textSecondary, fontSize: 13)),
         Text(val, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14)),
       ],
+    );
+  }
+
+  Widget _buildQuestionStem(QuestionItem q) {
+    if (selectedLanguage == 'both') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // English Stem
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 2, right: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(color: AppConstants.accentBlue.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(4)),
+                child: const Text('ENG', style: TextStyle(color: AppConstants.accentBlue, fontSize: 10, fontWeight: FontWeight.bold)),
+              ),
+              Expanded(
+                child: Text(
+                  q.englishQuestionText,
+                  style: const TextStyle(color: AppConstants.textPrimary, fontSize: 15.5, fontWeight: FontWeight.w700, height: 1.4),
+                ),
+              ),
+            ],
+          ),
+          if (q.hasHindi) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Divider(color: AppConstants.cardBorder, height: 1),
+            ),
+            // Hindi Stem
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 2, right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(color: AppConstants.accentEmerald.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(4)),
+                  child: const Text('हिन्दी', style: TextStyle(color: AppConstants.accentEmerald, fontSize: 10, fontWeight: FontWeight.bold)),
+                ),
+                Expanded(
+                  child: Text(
+                    q.hindiQuestionText,
+                    style: const TextStyle(color: AppConstants.textPrimary, fontSize: 15.5, fontWeight: FontWeight.w700, height: 1.4),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      );
+    } else {
+      final text = selectedLanguage == 'hi' ? q.hindiQuestionText : q.englishQuestionText;
+      return Text(
+        text,
+        style: const TextStyle(color: AppConstants.textPrimary, fontSize: 16, fontWeight: FontWeight.w700, height: 1.4),
+      );
+    }
+  }
+
+  Widget _buildOptionTile(QuestionItem q, String optKey, bool isSelected) {
+    String enText = '';
+    String hiText = '';
+    final enOpt = q.options.where((o) => o.optionKey == optKey && o.language == 'en').toList();
+    if (enOpt.isNotEmpty) enText = enOpt.first.optionText;
+    final hiOpt = q.options.where((o) => o.optionKey == optKey && o.language == 'hi').toList();
+    if (hiOpt.isNotEmpty) hiText = hiOpt.first.optionText;
+
+    if (enText.isEmpty && hiText.isNotEmpty) enText = hiText;
+    if (hiText.isEmpty && enText.isNotEmpty) hiText = enText;
+
+    return GestureDetector(
+      onTap: () => _onOptionSelected(optKey),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isSelected ? AppConstants.accentIndigo.withValues(alpha: 0.12) : AppConstants.cardDark,
+          borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+          border: Border.all(color: isSelected ? AppConstants.accentIndigo : AppConstants.cardBorder, width: isSelected ? 2.0 : 1.0),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: isSelected ? AppConstants.accentIndigo : AppConstants.surfaceElevated,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(optKey, style: TextStyle(color: isSelected ? Colors.white : AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 13)),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: selectedLanguage == 'both'
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(enText, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+                        if (hiText.isNotEmpty && hiText != enText) ...[
+                          const SizedBox(height: 3),
+                          Text(hiText, style: const TextStyle(color: AppConstants.textSecondary, fontSize: 13.5, fontWeight: FontWeight.w500)),
+                        ],
+                      ],
+                    )
+                  : Text(
+                      selectedLanguage == 'hi' ? hiText : enText,
+                      style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14.5, height: 1.3, fontWeight: FontWeight.w500),
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

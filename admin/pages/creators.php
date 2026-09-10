@@ -182,37 +182,37 @@ $payouts = $db->query("
 .creators-page { display:flex; flex-direction:column; gap:20px; }
 .stats-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; }
 .stat-card { padding:18px; border-radius:14px; text-align:center; }
-.stat-purple { background:linear-gradient(135deg,rgba(99,102,241,.2),rgba(168,85,247,.1)); border:1px solid rgba(99,102,241,.3); }
-.stat-green  { background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(16,185,129,.1)); border:1px solid rgba(34,197,94,.25); }
-.stat-orange { background:linear-gradient(135deg,rgba(249,115,22,.15),rgba(251,191,36,.1)); border:1px solid rgba(249,115,22,.25); }
-.stat-red    { background:linear-gradient(135deg,rgba(239,68,68,.15),rgba(239,68,68,.05)); border:1px solid rgba(239,68,68,.2); }
-.stat-val { font-size:24px; font-weight:800; margin-bottom:4px; }
-.stat-lbl { font-size:11px; color:rgba(255,255,255,.5); text-transform:uppercase; letter-spacing:.5px; }
-.section-card { background:rgba(255,255,255,.03); border:1px solid rgba(99,102,241,.25); border-radius:14px; padding:20px; }
-.section-card-title { font-size:15px; font-weight:700; margin:0 0 16px; }
+.stat-purple { background:#faf5ff; border:1.5px solid #e9d5ff; }
+.stat-green  { background:#f0fdf4; border:1.5px solid #bbf7d0; }
+.stat-orange { background:#fff7ed; border:1.5px solid #fed7aa; }
+.stat-red    { background:#fef2f2; border:1.5px solid #fecaca; }
+.stat-val { font-size:24px; font-weight:800; color:#0f172a; margin-bottom:4px; }
+.stat-lbl { font-size:11px; color:#475569; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
+.section-card { background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+.section-card-title { font-size:15px; font-weight:700; color:#0f172a; margin:0 0 16px; }
 .filter-tabs { display:flex; gap:8px; flex-wrap:wrap; }
-.filter-tab { padding:7px 16px; border-radius:8px; font-size:13px; font-weight:600; color:rgba(255,255,255,.5); text-decoration:none; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.07); transition:all .2s; }
-.filter-tab.active,.filter-tab:hover { background:rgba(99,102,241,.2); color:#818cf8; border-color:rgba(99,102,241,.4); }
-.table-card { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07); border-radius:14px; overflow:hidden; }
+.filter-tab { padding:7px 16px; border-radius:8px; font-size:13px; font-weight:600; color:#475569; text-decoration:none; background:#ffffff; border:1.5px solid #cbd5e1; transition:all .2s; }
+.filter-tab.active,.filter-tab:hover { background:#e0e7ff; color:#4338ca; border-color:#818cf8; }
+.table-card { background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
 .table-wrap { overflow-x:auto; }
 .admin-table { width:100%; border-collapse:collapse; font-size:13px; }
-.admin-table th { padding:12px; text-align:left; font-size:10px; font-weight:700; color:rgba(255,255,255,.35); text-transform:uppercase; background:rgba(255,255,255,.03); border-bottom:1px solid rgba(255,255,255,.06); }
-.admin-table td { padding:12px; border-bottom:1px solid rgba(255,255,255,.04); color:rgba(255,255,255,.8); vertical-align:top; }
-.creator-name { font-weight:700; font-size:14px; }
-.sub-text { font-size:11px; color:rgba(255,255,255,.4); margin-top:2px; }
-.price-tag { color:#4ade80; font-weight:700; }
+.admin-table th { padding:12px; text-align:left; font-size:11px; font-weight:700; color:#475569; text-transform:uppercase; background:#f8fafc; border-bottom:2px solid #e2e8f0; letter-spacing:0.5px; }
+.admin-table td { padding:12px; border-bottom:1px solid #f1f5f9; color:#1e293b; font-weight:500; vertical-align:top; }
+.creator-name { font-weight:700; font-size:14px; color:#0f172a; }
+.sub-text { font-size:11px; color:#64748b; margin-top:2px; }
+.price-tag { color:#15803d; font-weight:700; }
 .actions-cell { display:flex; gap:6px; flex-wrap:wrap; }
-.badge { padding:3px 8px; border-radius:5px; font-size:11px; font-weight:600; }
-.badge-success { background:rgba(34,197,94,.15); color:#4ade80; }
-.badge-warning { background:rgba(251,191,36,.15); color:#fbbf24; }
-.badge-danger  { background:rgba(239,68,68,.12); color:#f87171; }
-.badge-neutral { background:rgba(255,255,255,.08); color:rgba(255,255,255,.5); }
+.badge { padding:4px 9px; border-radius:6px; font-size:11px; font-weight:600; }
+.badge-success { background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; }
+.badge-warning { background:#fef3c7; color:#b45309; border:1px solid #fde68a; }
+.badge-danger  { background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; }
+.badge-neutral { background:#f1f5f9; color:#475569; border:1px solid #e2e8f0; }
 .btn-xs { padding:5px 12px; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer; border:none; }
-.btn-activate { background:rgba(34,197,94,.15); color:#4ade80; }
-.btn-activate:hover { background:rgba(34,197,94,.25); }
-.btn-danger-xs { background:rgba(239,68,68,.1); color:#f87171; }
-.btn-danger-xs:hover { background:rgba(239,68,68,.2); }
-.empty-state { padding:40px; text-align:center; color:rgba(255,255,255,.3); }
+.btn-activate { background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; }
+.btn-activate:hover { background:#bbf7d0; }
+.btn-danger-xs { background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; }
+.btn-danger-xs:hover { background:#fecaca; }
+.empty-state { padding:40px; text-align:center; color:#64748b; font-size:14px; }
 .ml-4 { margin-left:4px; }
 </style>
 
@@ -254,7 +254,7 @@ function showToast(msg, type = 'success') {
     t.textContent = msg;
     Object.assign(t.style, {
         position:'fixed', bottom:'28px', right:'28px', zIndex:'9999',
-        background: type==='success' ? 'rgba(34,197,94,0.95)' : 'rgba(239,68,68,0.95)',
+        background: type==='success' ? 'rgba(21,128,61,0.95)' : 'rgba(239,68,68,0.95)',
         color:'white', padding:'14px 22px', borderRadius:'12px',
         fontWeight:'600', fontSize:'14px', maxWidth:'380px',
         boxShadow:'0 8px 32px rgba(0,0,0,0.4)'

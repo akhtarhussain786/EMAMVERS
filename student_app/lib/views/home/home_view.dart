@@ -6,7 +6,6 @@ import '../../models/ranking_model.dart';
 import '../../widgets/design_system_widgets.dart';
 import '../../widgets/skeleton_loader.dart';
 import '../current_affairs/current_affairs_view.dart';
-import '../current_affairs/current_affairs_article_view.dart';
 import '../notifications/notifications_view.dart';
 import '../map_learning/map_learning_home_view.dart';
 import '../friends/friends_leaderboard_view.dart';
@@ -17,6 +16,9 @@ class HomeView extends StatefulWidget {
   final Function(int testId) onSelectTest;
   final VoidCallback onOpenAiCoach;
   final VoidCallback onOpenLeaderboard;
+  final VoidCallback onBuildPractice;
+  /// Resumes an unfinished attempt by id.
+  final void Function(int attemptId) onResumeAttempt;
 
   const HomeView({
     super.key,
@@ -24,6 +26,8 @@ class HomeView extends StatefulWidget {
     required this.onSelectTest,
     required this.onOpenAiCoach,
     required this.onOpenLeaderboard,
+    required this.onBuildPractice,
+    required this.onResumeAttempt,
   });
 
   @override
@@ -36,6 +40,7 @@ class _HomeViewState extends State<HomeView> {
   List<ExamCategory> categories = [];
   List<ExamItem> featuredExams = [];
   Map<String, dynamic>? monthlyChallenge;
+  Map<String, dynamic>? resumeAttempt;
   List<dynamic> currentAffairs = [];
 
   @override
@@ -47,11 +52,13 @@ class _HomeViewState extends State<HomeView> {
   void _loadHomeData() async {
     try {
       final res = await ApiService.get('/v1/home');
+      if (!mounted) return;
       setState(() {
         userRanking = UserRanking.fromJson(res['user_ranking'] ?? res['ranking'] ?? {});
         categories = (res['categories'] as List? ?? []).map((c) => ExamCategory.fromJson(c)).toList();
         featuredExams = (res['featured_exams'] as List? ?? []).map((e) => ExamItem.fromJson(e)).toList();
         monthlyChallenge = res['monthly_challenge'];
+        resumeAttempt = res['resume_attempt'] as Map<String, dynamic>?;
         currentAffairs = res['current_affairs'] ?? [];
         isLoading = false;
       });
@@ -95,21 +102,25 @@ class _HomeViewState extends State<HomeView> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Good Morning, Candidate 👋',
-                        style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
-                      ),
-                      const SizedBox(height: 2),
-                      const Text(
-                        'Ready to improve your rank today?',
-                        style: TextStyle(color: AppConstants.textSecondary, fontSize: 12.5),
-                      ),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Good Morning, Candidate 👋',
+                          style: TextStyle(color: AppConstants.textPrimary, fontSize: 19, fontWeight: FontWeight.w800),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Ready to improve your rank today?',
+                          style: TextStyle(color: AppConstants.textSecondary, fontSize: 12.5),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
                         decoration: BoxDecoration(
@@ -118,7 +129,7 @@ class _HomeViewState extends State<HomeView> {
                           border: Border.all(color: AppConstants.cardBorder),
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.notifications_none, color: Colors.white, size: 22),
+                          icon: const Icon(Icons.notifications_none, color: AppConstants.textPrimary, size: 22),
                           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsView())),
                         ),
                       ),
@@ -161,62 +172,95 @@ class _HomeViewState extends State<HomeView> {
               ),
               const SizedBox(height: AppConstants.space24),
 
-              // 4. DAILY GOAL CARD
-              ExamVerseCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text("Today's Goal", style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-                        Text("32 / 50 Questions", style: TextStyle(color: AppConstants.accentCyan, fontSize: 13, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    const SizedBox(height: AppConstants.space12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: const LinearProgressIndicator(
-                        value: 0.64,
-                        minHeight: 8,
-                        backgroundColor: AppConstants.surfaceElevated,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppConstants.accentCyan),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text('18 Questions Remaining to reach today\'s streak target', style: TextStyle(color: AppConstants.textMuted, fontSize: 11.5)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppConstants.space24),
+              // 4. DAILY GOAL CARD — measured against this candidate's own
+              // solved count, not a fixed 32/50.
+              Builder(builder: (_) {
+                const dailyTarget = 50;
+                final solvedToday = userRanking.totalQuestionsSolved % dailyTarget;
+                final progress = userRanking.hasData ? solvedToday / dailyTarget : 0.0;
+                final remaining = (dailyTarget - solvedToday).clamp(0, dailyTarget);
 
-              // 5. CONTINUE PRACTICE CARD
-              ExamVerseCard(
-                gradient: AppConstants.darkCardGradient,
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: AppConstants.accentCyan.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)),
-                      child: const Icon(Icons.play_circle_fill, color: AppConstants.accentCyan, size: 28),
-                    ),
-                    const SizedBox(width: AppConstants.space16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text('SSC CGL • Quantitative Aptitude', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-                          SizedBox(height: 2),
-                          Text('Algebra & Trigonometry • 64% Completed', style: TextStyle(color: AppConstants.textSecondary, fontSize: 11.5)),
+                return ExamVerseCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text("Today's Goal",
+                              style: TextStyle(color: AppConstants.textPrimary, fontSize: 15, fontWeight: FontWeight.bold)),
+                          Text('$solvedToday / $dailyTarget Questions',
+                              style: const TextStyle(
+                                  color: AppConstants.accentCyan, fontSize: 13, fontWeight: FontWeight.bold)),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    SecondaryButton(label: 'Resume', onPressed: widget.onOpenAiCoach),
-                  ],
-                ),
-              ),
+                      const SizedBox(height: AppConstants.space12),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 8,
+                          backgroundColor: AppConstants.surfaceElevated,
+                          valueColor: const AlwaysStoppedAnimation<Color>(AppConstants.accentCyan),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        userRanking.hasData
+                            ? '$remaining questions remaining to reach today\'s target'
+                            : 'Attempt your first test to start tracking a daily goal',
+                        style: const TextStyle(color: AppConstants.textMuted, fontSize: 11.5),
+                      ),
+                    ],
+                  ),
+                );
+              }),
               const SizedBox(height: AppConstants.space24),
+
+              // 5. CONTINUE PRACTICE CARD — only when an attempt is genuinely
+              // unfinished; previously it showed invented progress to everyone.
+              if (resumeAttempt != null) ...[
+                ExamVerseCard(
+                  gradient: AppConstants.darkCardGradient,
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                            color: AppConstants.accentCyan.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(14)),
+                        child: const Icon(Icons.play_circle_fill, color: AppConstants.accentCyan, size: 28),
+                      ),
+                      const SizedBox(width: AppConstants.space16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(resumeAttempt!['exam_title']?.toString() ?? 'Unfinished test',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    color: AppConstants.textPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${resumeAttempt!['answered']} of ${resumeAttempt!['total_questions']} answered'
+                              ' • ${resumeAttempt!['percent_complete']}% complete',
+                              style: const TextStyle(color: AppConstants.textSecondary, fontSize: 11.5),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SecondaryButton(
+                        label: 'Resume',
+                        onPressed: () =>
+                            widget.onResumeAttempt(resumeAttempt!['attempt_id'] as int),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppConstants.space24),
+              ],
 
               // 6. QUICK ACTIONS GRID
               const SectionHeader(title: 'Quick Actions'),
@@ -239,7 +283,7 @@ class _HomeViewState extends State<HomeView> {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const MistakeNotebookView()));
                   }),
                   _buildQuickAction('AI Coach', Icons.auto_awesome, AppConstants.accentPurple, widget.onOpenAiCoach),
-                  _buildQuickAction('Practice', Icons.edit_note, AppConstants.accentBlue, widget.onOpenAiCoach),
+                  _buildQuickAction('Practice', Icons.edit_note, AppConstants.accentBlue, widget.onBuildPractice),
                   _buildQuickAction('Leaderboard', Icons.emoji_events_outlined, AppConstants.accentEmerald, widget.onOpenLeaderboard),
                   _buildQuickAction('Daily Quiz', Icons.timer_outlined, AppConstants.accentCyan, widget.onOpenAiCoach),
                   _buildQuickAction('Affairs', Icons.newspaper, AppConstants.accentRose, () {
@@ -257,7 +301,7 @@ class _HomeViewState extends State<HomeView> {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: categories.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  separatorBuilder: (_, _) => const SizedBox(width: 12),
                   itemBuilder: (context, i) {
                     final cat = categories[i];
                     return GestureDetector(
@@ -277,7 +321,7 @@ class _HomeViewState extends State<HomeView> {
                             Icon(_getCategoryIcon(cat.type), color: AppConstants.accentCyan, size: 24),
                             Text(
                               cat.name,
-                              style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.bold),
+                              style: const TextStyle(color: AppConstants.textPrimary, fontSize: 12.5, fontWeight: FontWeight.bold),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -297,7 +341,7 @@ class _HomeViewState extends State<HomeView> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: featuredExams.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
                 itemBuilder: (context, i) {
                   final exam = featuredExams[i];
                   return ExamVerseCard(
@@ -315,7 +359,7 @@ class _HomeViewState extends State<HomeView> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(exam.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14.5)),
+                              Text(exam.title, style: const TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 14.5)),
                               const SizedBox(height: 2),
                               Text(exam.shortDescription ?? '', style: const TextStyle(color: AppConstants.textSecondary, fontSize: 11.5), maxLines: 1, overflow: TextOverflow.ellipsis),
                             ],
@@ -338,7 +382,7 @@ class _HomeViewState extends State<HomeView> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
         decoration: BoxDecoration(
           color: AppConstants.cardDark,
           borderRadius: BorderRadius.circular(AppConstants.radiusCard),
@@ -346,19 +390,27 @@ class _HomeViewState extends State<HomeView> {
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             CircleAvatar(
-              radius: 18,
+              radius: 16,
               backgroundColor: color.withValues(alpha: 0.15),
-              child: Icon(icon, color: color, size: 18),
+              child: Icon(icon, color: color, size: 16),
             ),
-            const SizedBox(height: 6),
-            Text(title, style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppConstants.textPrimary, fontSize: 10.5, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
       ),
     );
   }
+
 
   IconData _getCategoryIcon(String type) {
     switch (type) {

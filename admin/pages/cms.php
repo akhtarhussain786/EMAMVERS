@@ -65,7 +65,7 @@ $toppers = $db->query("SELECT * FROM topper_stories ORDER BY id DESC")->fetchAll
                                     ✓ <?php echo $ca['quiz_count']; ?> AI MCQs
                                 </span>
                             <?php else: ?>
-                                <button class="btn btn-sm" onclick="generateQuizForArticle(<?php echo $ca['id']; ?>)" style="background:rgba(99,102,241,0.15); color:#818cf8; border:none; padding:4px 8px; border-radius:6px; font-size:11px; cursor:pointer;">
+                                <button class="btn btn-sm" onclick="generateQuizForArticle(<?php echo $ca['id']; ?>)" style="background:rgba(99,102,241,0.15); color:var(--accent-blue); border:none; padding:4px 8px; border-radius:6px; font-size:11px; cursor:pointer;">
                                     🤖 Generate AI Quiz
                                 </button>
                             <?php endif; ?>
@@ -168,7 +168,7 @@ function showToast(msg, type = 'success') {
     t.textContent = msg;
     Object.assign(t.style, {
         position: 'fixed', bottom: '28px', right: '28px', zIndex: '9999',
-        background: type === 'success' ? 'rgba(34,197,94,0.95)' : 'rgba(239,68,68,0.95)',
+        background: type === 'success' ? 'rgba(21,128,61,0.95)' : 'rgba(239,68,68,0.95)',
         color: 'white', padding: '14px 22px', borderRadius: '12px',
         fontWeight: '600', fontSize: '14px', maxWidth: '420px',
         boxShadow: '0 8px 32px rgba(0,0,0,0.4)'

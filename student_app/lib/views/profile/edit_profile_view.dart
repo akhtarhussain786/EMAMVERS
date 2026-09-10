@@ -23,12 +23,14 @@ class _EditProfileViewState extends State<EditProfileView> {
   void initState() {
     super.initState();
     if (widget.userData != null) {
-      _nameController.text = widget.userData!['full_name'] ?? 'Rahul Kumar';
+      _nameController.text = widget.userData!['full_name']?.toString() ?? '';
       _emailController.text = widget.userData!['email'] ?? 'demo@examverse.com';
-      _mobileController.text = widget.userData!['mobile'] ?? '9876543210';
+      // Placeholder numbers must not be pre-filled into a real profile field.
+      final mobile = widget.userData!['mobile']?.toString() ?? '';
+      _mobileController.text = mobile.startsWith('NA-') ? '' : mobile;
       _examController.text = widget.userData!['target_exam'] ?? 'SSC CGL';
     } else {
-      _nameController.text = 'Rahul Kumar';
+      _nameController.text = '';
       _emailController.text = 'demo@examverse.com';
       _mobileController.text = '9876543210';
       _examController.text = 'SSC CGL';
@@ -68,7 +70,7 @@ class _EditProfileViewState extends State<EditProfileView> {
       backgroundColor: AppConstants.primaryDark,
       appBar: AppBar(
         backgroundColor: AppConstants.scaffoldDark,
-        title: const Text('Edit Profile', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        title: const Text('Edit Profile', style: TextStyle(color: AppConstants.onAccent, fontSize: 18, fontWeight: FontWeight.bold)),
         elevation: 0,
       ),
       body: SafeArea(

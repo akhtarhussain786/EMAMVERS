@@ -88,7 +88,7 @@ $statesList = $db->query("SELECT id, name FROM states ORDER BY name ASC")->fetch
 <div style="display: flex; flex-direction: column; gap: 1.5rem;">
 
     <?php if ($message): ?>
-        <div style="padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; background: <?php echo $messageType === 'success' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'; ?>; color: <?php echo $messageType === 'success' ? '#10b981' : '#ef4444'; ?>; border: 1px solid <?php echo $messageType === 'success' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'; ?>;">
+        <div style="padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; background: <?php echo $messageType === 'success' ? 'rgba(21, 128, 61, 0.15)' : 'rgba(239, 68, 68, 0.15)'; ?>; color: <?php echo $messageType === 'success' ? 'var(--accent-emerald)' : 'var(--accent-danger)'; ?>; border: 1px solid <?php echo $messageType === 'success' ? 'rgba(21, 128, 61, 0.3)' : 'rgba(239, 68, 68, 0.3)'; ?>;">
             ✓ <?php echo htmlspecialchars($message); ?>
         </div>
     <?php endif; ?>
@@ -101,15 +101,15 @@ $statesList = $db->query("SELECT id, name FROM states ORDER BY name ASC")->fetch
         </div>
         <div class="metric-card">
             <div class="metric-title">Active Candidates</div>
-            <div class="metric-value" style="color: #10b981;"><?php echo number_format($activeUsers); ?></div>
+            <div class="metric-value" style="color: var(--accent-emerald);"><?php echo number_format($activeUsers); ?></div>
         </div>
         <div class="metric-card">
             <div class="metric-title">Suspended Accounts</div>
-            <div class="metric-value" style="color: #ef4444;"><?php echo number_format($suspendedUsers); ?></div>
+            <div class="metric-value" style="color: var(--accent-danger);"><?php echo number_format($suspendedUsers); ?></div>
         </div>
         <div class="metric-card">
             <div class="metric-title">Verified Profiles</div>
-            <div class="metric-value" style="color: #38bdf8;"><?php echo number_format($verifiedUsers); ?></div>
+            <div class="metric-value" style="color: var(--accent-blue);"><?php echo number_format($verifiedUsers); ?></div>
         </div>
     </div>
 
@@ -180,19 +180,19 @@ $statesList = $db->query("SELECT id, name FROM states ORDER BY name ASC")->fetch
                     <?php foreach ($users as $u): ?>
                         <tr>
                             <td>
-                                <span style="font-weight: 700; color: #38bdf8; font-family: monospace;">#USR-<?php echo sprintf('%05d', $u['id']); ?></span>
+                                <span style="font-weight: 700; color: var(--accent-blue); font-family: monospace;">#USR-<?php echo sprintf('%05d', $u['id']); ?></span>
                             </td>
                             <td>
                                 <div style="display: flex; align-items: center; gap: 12px;">
-                                    <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #38bdf8); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 14px;">
+                                    <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-indigo), var(--accent-blue)); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 14px;">
                                         <?php echo strtoupper(substr($u['full_name'], 0, 1)); ?>
                                     </div>
                                     <div>
                                         <div style="font-weight: 700; color: #ffffff; font-size: 14px;"><?php echo htmlspecialchars($u['full_name']); ?></div>
                                         <?php if ($u['is_verified']): ?>
-                                            <span style="font-size: 10px; color: #10b981; background: rgba(16, 185, 129, 0.15); padding: 2px 6px; border-radius: 4px; font-weight: 600;">✓ Verified</span>
+                                            <span style="font-size: 10px; color: var(--accent-emerald); background: rgba(21, 128, 61, 0.15); padding: 2px 6px; border-radius: 4px; font-weight: 600;">✓ Verified</span>
                                         <?php else: ?>
-                                            <span style="font-size: 10px; color: #f59e0b; background: rgba(245, 158, 11, 0.15); padding: 2px 6px; border-radius: 4px; font-weight: 600;">Unverified</span>
+                                            <span style="font-size: 10px; color: var(--accent-amber); background: rgba(245, 158, 11, 0.15); padding: 2px 6px; border-radius: 4px; font-weight: 600;">Unverified</span>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -202,7 +202,7 @@ $statesList = $db->query("SELECT id, name FROM states ORDER BY name ASC")->fetch
                                 <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">📞 <?php echo htmlspecialchars($u['mobile']); ?></div>
                             </td>
                             <td>
-                                <div style="font-size: 12px; color: #38bdf8; font-weight: 600;"><?php echo htmlspecialchars($u['state_name'] ?: 'Not Specified'); ?></div>
+                                <div style="font-size: 12px; color: var(--accent-blue); font-weight: 600;"><?php echo htmlspecialchars($u['state_name'] ?: 'Not Specified'); ?></div>
                                 <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;"><?php echo htmlspecialchars($u['qualification_name'] ?: 'N/A'); ?></div>
                             </td>
                             <td>
@@ -212,11 +212,11 @@ $statesList = $db->query("SELECT id, name FROM states ORDER BY name ASC")->fetch
                             </td>
                             <td>
                                 <?php if ($u['status'] === 'active'): ?>
-                                    <span style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block;">
+                                    <span style="background: rgba(21, 128, 61, 0.15); color: var(--accent-emerald); border: 1px solid rgba(21, 128, 61, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block;">
                                         ● Active
                                     </span>
                                 <?php else: ?>
-                                    <span style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block;">
+                                    <span style="background: rgba(239, 68, 68, 0.15); color: var(--accent-danger); border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block;">
                                         ⛔ Suspended
                                     </span>
                                 <?php endif; ?>
@@ -231,12 +231,12 @@ $statesList = $db->query("SELECT id, name FROM states ORDER BY name ASC")->fetch
                                         <input type="hidden" name="user_id" value="<?php echo $u['id']; ?>">
                                         <?php if ($u['status'] === 'active'): ?>
                                             <input type="hidden" name="new_status" value="suspended">
-                                            <button type="submit" style="background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                            <button type="submit" style="background: rgba(239,68,68,0.15); color: var(--accent-danger); border: 1px solid rgba(239,68,68,0.3); padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer;">
                                                 Suspend
                                             </button>
                                         <?php else: ?>
                                             <input type="hidden" name="new_status" value="active">
-                                            <button type="submit" style="background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                                            <button type="submit" style="background: rgba(16,185,129,0.15); color: var(--accent-emerald); border: 1px solid rgba(16,185,129,0.3); padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer;">
                                                 Activate
                                             </button>
                                         <?php endif; ?>

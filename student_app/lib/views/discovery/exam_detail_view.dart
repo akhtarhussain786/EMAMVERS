@@ -36,6 +36,7 @@ class _ExamDetailViewState extends State<ExamDetailView> {
   void _loadExamDetail() async {
     try {
       final res = await ApiService.get('/v1/exams/${widget.examId}');
+      if (!mounted) return;
       setState(() {
         exam = res['exam'];
         pattern = res['pattern'];
@@ -43,6 +44,7 @@ class _ExamDetailViewState extends State<ExamDetailView> {
         isLoading = false;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() => isLoading = false);
     }
   }
@@ -55,8 +57,8 @@ class _ExamDetailViewState extends State<ExamDetailView> {
         appBar: AppBar(
           backgroundColor: AppConstants.cardDark,
           elevation: 0,
-          leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: widget.onBack),
-          title: const Text('Exam Details', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+          leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppConstants.textPrimary), onPressed: widget.onBack),
+          title: const Text('Exam Details', style: TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
         ),
         body: const Padding(
           padding: EdgeInsets.all(AppConstants.space20),
@@ -70,8 +72,8 @@ class _ExamDetailViewState extends State<ExamDetailView> {
       appBar: AppBar(
         backgroundColor: AppConstants.cardDark,
         elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: widget.onBack),
-        title: Text(exam?['title'] ?? 'Exam Detail', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+        leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppConstants.textPrimary), onPressed: widget.onBack),
+        title: Text(exam?['title'] ?? 'Exam Detail', style: const TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -85,7 +87,7 @@ class _ExamDetailViewState extends State<ExamDetailView> {
               decoration: BoxDecoration(
                 gradient: AppConstants.darkCardGradient,
                 borderRadius: BorderRadius.circular(AppConstants.radiusHero),
-                border: Border.all(color: AppConstants.accentIndigo.withOpacity(0.5)),
+                border: Border.all(color: AppConstants.accentIndigo.withValues(alpha: 0.5)),
                 boxShadow: AppConstants.cardShadow,
               ),
               child: Column(
@@ -97,7 +99,7 @@ class _ExamDetailViewState extends State<ExamDetailView> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppConstants.accentIndigo.withOpacity(0.25),
+                          color: AppConstants.accentIndigo.withValues(alpha: 0.25),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
@@ -107,13 +109,13 @@ class _ExamDetailViewState extends State<ExamDetailView> {
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(color: AppConstants.accentEmerald.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                        decoration: BoxDecoration(color: AppConstants.accentEmerald.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
                         child: const Text('VERIFIED SYLLABUS', style: TextStyle(color: AppConstants.accentEmerald, fontSize: 10, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
                   const SizedBox(height: AppConstants.space12),
-                  Text(exam?['title'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+                  Text(exam?['title'] ?? '', style: const TextStyle(color: AppConstants.textPrimary, fontSize: 22, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 8),
                   Text(
                     exam?['overview_text'] ?? exam?['short_description'] ?? '',
@@ -126,7 +128,7 @@ class _ExamDetailViewState extends State<ExamDetailView> {
 
             // Effective Pattern Snapshot (SRD EXAM-002)
             if (pattern != null) ...[
-              const Text('Effective Exam Pattern Snapshot', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+              const Text('Effective Exam Pattern Snapshot', style: TextStyle(color: AppConstants.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
               const SizedBox(height: AppConstants.space12),
               Container(
                 padding: const EdgeInsets.all(AppConstants.space16),
@@ -136,12 +138,14 @@ class _ExamDetailViewState extends State<ExamDetailView> {
                   border: Border.all(color: AppConstants.cardBorder),
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _patternMetric('Duration', '${(pattern!['total_duration_seconds'] / 60).round()} Mins'),
-                    _patternMetric('Questions', '${pattern!['total_questions']} Qs'),
-                    _patternMetric('Total Marks', '${pattern!['total_marks']} Marks'),
-                    _patternMetric('Marking', '+${pattern!['default_positive_marks']} / -${pattern!['default_negative_marks']}'),
+                    Expanded(child: _patternMetric('Duration', '${(pattern!['total_duration_seconds'] / 60).round()}m')),
+                    Container(width: 1, height: 28, color: AppConstants.cardBorder),
+                    Expanded(child: _patternMetric('Questions', '${pattern!['total_questions']} Qs')),
+                    Container(width: 1, height: 28, color: AppConstants.cardBorder),
+                    Expanded(child: _patternMetric('Marks', '${pattern!['total_marks']}')),
+                    Container(width: 1, height: 28, color: AppConstants.cardBorder),
+                    Expanded(child: _patternMetric('Marking', '+${pattern!['default_positive_marks']}/-${pattern!['default_negative_marks']}')),
                   ],
                 ),
               ),
@@ -149,22 +153,24 @@ class _ExamDetailViewState extends State<ExamDetailView> {
             ],
 
             // Available Test Series (SRD TS-001)
-            const Text('Available Test Series & Mocks', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+            const Text('Available Test Series & Mocks', style: TextStyle(color: AppConstants.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
             const SizedBox(height: AppConstants.space12),
             ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: tests.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
               itemBuilder: (context, i) {
                 final test = tests[i];
                 return TestCard(
                   title: test.title,
                   category: exam?['title'] ?? 'MOCK TEST',
-                  totalQuestions: test.totalQuestions ?? 100,
-                  totalMarks: (test.totalQuestions ?? 100) * 2,
+                  totalQuestions: test.totalQuestions ?? 0,
+                  totalMarks: (test.totalQuestions ?? 0) * 2,
                   durationMinutes: test.totalDurationSeconds != null ? (test.totalDurationSeconds! / 60).round() : 60,
-                  totalAttempts: 1240 + (i * 350),
+                  // Real evaluated-attempt count from the API.
+                  totalAttempts: test.totalAttempts,
+                  difficulty: test.testType.replaceAll('_', ' '),
                   isFree: !test.isPaid,
                   onTapStart: () => widget.onStartTest(test.id),
                 );
@@ -180,7 +186,7 @@ class _ExamDetailViewState extends State<ExamDetailView> {
   Widget _patternMetric(String label, String value) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+        Text(value, style: const TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.w800, fontSize: 15)),
         const SizedBox(height: 3),
         Text(label, style: const TextStyle(color: AppConstants.textMuted, fontSize: 11.5)),
       ],

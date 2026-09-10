@@ -40,7 +40,7 @@ class ChallengeController {
 
         if ($context === 'state' && $stateId) {
             $stmt = $db->prepare("
-                SELECT att.id as attempt_id, att.score, att.accuracy_percentage, att.total_time_spent_seconds, att.state_rank as rank,
+                SELECT att.id as attempt_id, att.score, att.accuracy_percentage, att.total_time_spent_seconds, att.state_rank as `rank`,
                        u.full_name, s.name as state_name, q.name as qualification_name
                 FROM test_attempts att
                 JOIN users u ON att.user_id = u.id
@@ -53,7 +53,7 @@ class ChallengeController {
             $stmt->execute(['test_id' => $testId, 'state_id' => $stateId]);
         } else {
             $stmt = $db->prepare("
-                SELECT att.id as attempt_id, att.score, att.accuracy_percentage, att.total_time_spent_seconds, att.central_rank as rank,
+                SELECT att.id as attempt_id, att.score, att.accuracy_percentage, att.total_time_spent_seconds, att.central_rank as `rank`,
                        u.full_name, s.name as state_name, q.name as qualification_name
                 FROM test_attempts att
                 JOIN users u ON att.user_id = u.id

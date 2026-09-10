@@ -12,18 +12,22 @@ class UserRanking {
   final int xpPoints;
 
   const UserRanking({
-    this.currentRank = 124,
-    this.previousRank = 142,
-    this.bestRank = 89,
-    this.percentile = 96.8,
-    this.totalQuestionsSolved = 1248,
-    this.correctAnswers = 1018,
-    this.incorrectAnswers = 230,
-    this.accuracy = 81.6,
-    this.testCount = 34,
-    this.streakDays = 7,
-    this.xpPoints = 1050,
+    this.currentRank = 0,
+    this.previousRank = 0,
+    this.bestRank = 0,
+    this.percentile = 0,
+    this.totalQuestionsSolved = 0,
+    this.correctAnswers = 0,
+    this.incorrectAnswers = 0,
+    this.accuracy = 0,
+    this.testCount = 0,
+    this.streakDays = 0,
+    this.xpPoints = 0,
   });
+
+  /// True when the candidate has no evaluated attempts yet, so screens can show
+  /// an empty state instead of a row of zeros pretending to be a ranking.
+  bool get hasData => testCount > 0 || totalQuestionsSolved > 0;
 
   int get rankImprovement => previousRank - currentRank;
   bool get isRankImproved => rankImprovement > 0;
@@ -35,23 +39,27 @@ class UserRanking {
   int get totalCalculatedXp => questionsXp + accuracyXp + testsXp + streakXp;
 
   factory UserRanking.fromJson(Map<String, dynamic> json) {
-    final solved = json['total_questions_solved'] ?? json['questions_solved'] ?? 1248;
-    final correct = json['correct_answers'] ?? 1018;
-    final incorrect = json['incorrect_answers'] ?? (solved - correct);
-    final acc = double.tryParse((json['accuracy'] ?? json['accuracy_percentage'] ?? 81.6).toString()) ?? 81.6;
+    int asInt(dynamic v) => v == null ? 0 : (v is int ? v : int.tryParse(v.toString()) ?? 0);
+    double asDouble(dynamic v) => v == null ? 0 : (v is num ? v.toDouble() : double.tryParse(v.toString()) ?? 0);
+
+    final solved = asInt(json['total_questions_solved'] ?? json['questions_solved']);
+    final correct = asInt(json['correct_answers']);
+    final incorrect = json['incorrect_answers'] != null
+        ? asInt(json['incorrect_answers'])
+        : (solved - correct).clamp(0, solved);
 
     return UserRanking(
-      currentRank: json['current_rank'] ?? json['rank'] ?? 124,
-      previousRank: json['previous_rank'] ?? 142,
-      bestRank: json['best_rank'] ?? 89,
-      percentile: double.tryParse((json['percentile'] ?? 96.8).toString()) ?? 96.8,
+      currentRank: asInt(json['current_rank'] ?? json['rank']),
+      previousRank: asInt(json['previous_rank']),
+      bestRank: asInt(json['best_rank']),
+      percentile: asDouble(json['percentile']),
       totalQuestionsSolved: solved,
       correctAnswers: correct,
       incorrectAnswers: incorrect,
-      accuracy: acc,
-      testCount: json['tests_attempted'] ?? json['test_count'] ?? 34,
-      streakDays: json['streak_days'] ?? json['streak'] ?? 7,
-      xpPoints: json['xp_points'] ?? json['xp'] ?? 1050,
+      accuracy: asDouble(json['accuracy'] ?? json['accuracy_percentage'] ?? json['overall_accuracy']),
+      testCount: asInt(json['tests_attempted'] ?? json['test_count'] ?? json['tests_taken']),
+      streakDays: asInt(json['streak_days'] ?? json['streak']),
+      xpPoints: asInt(json['xp_points'] ?? json['xp']),
     );
   }
 

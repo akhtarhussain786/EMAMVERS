@@ -31,12 +31,12 @@ class PremiumNavBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       decoration: BoxDecoration(
-        color: AppConstants.cardDark.withOpacity(0.95),
+        color: AppConstants.cardDark.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppConstants.cardBorder.withOpacity(0.8), width: 1.2),
+        border: Border.all(color: AppConstants.cardBorder.withValues(alpha: 0.8), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
+            color: Colors.black.withValues(alpha: 0.4),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -68,7 +68,7 @@ class PremiumNavBar extends StatelessWidget {
                 children: [
                   Icon(
                     isSelected ? item.activeIcon : item.icon,
-                    color: isSelected ? Colors.white : AppConstants.textMuted,
+                    color: isSelected ? AppConstants.onAccent : AppConstants.textMuted,
                     size: 22,
                   ),
                   if (isSelected) ...[
@@ -76,7 +76,7 @@ class PremiumNavBar extends StatelessWidget {
                     Text(
                       item.label,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppConstants.onAccent,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.3,

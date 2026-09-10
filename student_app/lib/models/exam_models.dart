@@ -63,6 +63,7 @@ class TestItem {
   final int? totalQuestions;
   final double? totalMarks;
   final int? totalDurationSeconds;
+  final int totalAttempts;
 
   TestItem({
     required this.id,
@@ -74,6 +75,7 @@ class TestItem {
     this.totalQuestions,
     this.totalMarks,
     this.totalDurationSeconds,
+    this.totalAttempts = 0,
   });
 
   factory TestItem.fromJson(Map<String, dynamic> json) {
@@ -87,6 +89,9 @@ class TestItem {
       totalQuestions: json['total_questions'],
       totalMarks: json['total_marks'] != null ? double.parse(json['total_marks'].toString()) : null,
       totalDurationSeconds: json['total_duration_seconds'],
+      totalAttempts: json['total_attempts'] is int
+          ? json['total_attempts']
+          : int.tryParse('${json['total_attempts'] ?? 0}') ?? 0,
     );
   }
 }
@@ -107,6 +112,18 @@ class QuestionItem {
   bool isMarkedForReview;
   int timeSpentSeconds;
 
+  /// Seconds already accepted by the server. The autosave endpoint *adds* the
+  /// value it receives, so only the un-synced delta may be sent.
+  int _syncedTimeSeconds = 0;
+
+  int get pendingTimeSeconds {
+    final delta = timeSpentSeconds - _syncedTimeSeconds;
+    return delta > 0 ? delta : 0;
+  }
+
+  /// Marks the current elapsed time as persisted. Call only after a successful save.
+  void commitPendingTime() => _syncedTimeSeconds = timeSpentSeconds;
+
   int get id => questionId;
   String? get selectedOption => selectedOptionKey;
   set selectedOption(String? val) => selectedOptionKey = val;
@@ -115,6 +132,31 @@ class QuestionItem {
   String get questionText {
     if (translations.isNotEmpty) return translations.first.questionText;
     return 'Question';
+  }
+
+  String textForLanguage(String lang) {
+    if (translations.isEmpty) return 'Question';
+    final match = translations.firstWhere(
+      (t) => t.language == lang,
+      orElse: () => translations.first,
+    );
+    return match.questionText;
+  }
+
+  String get englishQuestionText => textForLanguage('en');
+  String get hindiQuestionText => textForLanguage('hi');
+  bool get hasHindi => translations.any((t) => t.language == 'hi');
+
+  List<QuestionOption> optionsForLanguage(String lang) {
+    final filtered = options.where((o) => o.language == lang).toList();
+    if (filtered.isNotEmpty) return filtered;
+    final enOpts = options.where((o) => o.language == 'en').toList();
+    if (enOpts.isNotEmpty) return enOpts;
+    final byKey = <String, QuestionOption>{};
+    for (var o in options) {
+      byKey.putIfAbsent(o.optionKey, () => o);
+    }
+    return byKey.values.toList();
   }
 
   QuestionItem({

@@ -14,6 +14,7 @@ class LeaderboardView extends StatefulWidget {
 
 class _LeaderboardViewState extends State<LeaderboardView> {
   bool isLoading = true;
+  String? loadError;
   String currentTab = 'weekly';
   List<dynamic> leaderboard = [];
   UserRanking userRanking = const UserRanking();
@@ -28,28 +29,23 @@ class _LeaderboardViewState extends State<LeaderboardView> {
     setState(() => isLoading = true);
     try {
       final res = await ApiService.get('/v1/leaderboards/$currentTab');
+      if (!mounted) return;
       setState(() {
-        leaderboard = res['leaderboard'] ?? _getFallbackLeaderboard();
-        userRanking = UserRanking.fromJson(res['user_ranking'] ?? {});
+        leaderboard = (res is Map ? res['leaderboard'] : null) as List? ?? [];
+        userRanking = UserRanking.fromJson((res is Map ? res['user_ranking'] : null) ?? {});
         isLoading = false;
+        loadError = null;
       });
-    } catch (_) {
+    } catch (e) {
+      if (!mounted) return;
+      // No invented ranks: a fabricated leaderboard misleads candidates about
+      // where they actually stand.
       setState(() {
-        leaderboard = _getFallbackLeaderboard();
+        leaderboard = [];
         isLoading = false;
+        loadError = e.toString().replaceAll('Exception: ', '');
       });
     }
-  }
-
-  List<dynamic> _getFallbackLeaderboard() {
-    return [
-      {'rank': 1, 'full_name': 'Amit Sharma', 'state_name': 'Delhi', 'score': 192.5, 'accuracy': 98.2, 'xp': 2850},
-      {'rank': 2, 'full_name': 'Priya Patel', 'state_name': 'Gujarat', 'score': 188.0, 'accuracy': 96.5, 'xp': 2710},
-      {'rank': 3, 'full_name': 'Rohan Verma', 'state_name': 'UP', 'score': 184.5, 'accuracy': 94.8, 'xp': 2620},
-      {'rank': 4, 'full_name': 'Ananya Singh', 'state_name': 'Bihar', 'score': 178.0, 'accuracy': 92.1, 'xp': 2450},
-      {'rank': 5, 'full_name': 'Vikram Rathore', 'state_name': 'Rajasthan', 'score': 172.5, 'accuracy': 89.4, 'xp': 2310},
-      {'rank': 124, 'full_name': 'Rahul Kumar (You)', 'state_name': 'Delhi', 'score': 156.0, 'accuracy': 81.6, 'xp': 1050},
-    ];
   }
 
   @override
@@ -69,7 +65,7 @@ class _LeaderboardViewState extends State<LeaderboardView> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: const [
-                      Text('National Leaderboard', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+                      Text('National Leaderboard', style: TextStyle(color: AppConstants.textPrimary, fontSize: 20, fontWeight: FontWeight.w800)),
                       SizedBox(height: 2),
                       Text('Verified All-India Central AIR & State Ranks', style: TextStyle(color: AppConstants.textSecondary, fontSize: 12)),
                     ],
@@ -77,7 +73,9 @@ class _LeaderboardViewState extends State<LeaderboardView> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(color: AppConstants.accentAmber.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
-                    child: const Text('128K+ LIVE', style: TextStyle(color: AppConstants.accentAmber, fontSize: 11, fontWeight: FontWeight.bold)),
+                    // Real cohort size, not an invented "128K+".
+                    child: Text('${leaderboard.length} RANKED',
+                        style: const TextStyle(color: AppConstants.accentAmber, fontSize: 11, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
@@ -111,7 +109,7 @@ class _LeaderboardViewState extends State<LeaderboardView> {
                           child: Center(
                             child: Text(
                               tab[0].toUpperCase() + tab.substring(1),
-                              style: TextStyle(color: isSelected ? Colors.white : AppConstants.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
+                              style: TextStyle(color: isSelected ? AppConstants.textPrimary : AppConstants.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
@@ -131,22 +129,22 @@ class _LeaderboardViewState extends State<LeaderboardView> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('YOUR CURRENT RANK', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                        const Text('YOUR CURRENT RANK', style: TextStyle(color: AppConstants.onAccent, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
                         const SizedBox(height: 2),
-                        Text('#${userRanking.currentRank}', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+                        Text('#${userRanking.currentRank}', style: const TextStyle(color: AppConstants.onAccent, fontSize: 22, fontWeight: FontWeight.w800)),
                       ],
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
-                      child: Text('↑ ${userRanking.rankImprovement} Positions', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                      decoration: BoxDecoration(color: AppConstants.onAccent.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
+                      child: Text('↑ ${userRanking.rankImprovement} Positions', style: const TextStyle(color: AppConstants.onAccent, fontSize: 11, fontWeight: FontWeight.bold)),
                     ),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        const Text('ACCURACY', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                        const Text('ACCURACY', style: TextStyle(color: AppConstants.onAccent, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
                         const SizedBox(height: 2),
-                        Text('${userRanking.accuracy}%', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+                        Text('${userRanking.accuracy}%', style: const TextStyle(color: AppConstants.onAccent, fontSize: 22, fontWeight: FontWeight.w800)),
                       ],
                     ),
                   ],
@@ -158,9 +156,17 @@ class _LeaderboardViewState extends State<LeaderboardView> {
               Expanded(
                 child: isLoading
                     ? const SkeletonListLoader(count: 6, itemHeight: 65)
+                    : leaderboard.isEmpty
+                    ? EmptyStateWidget(
+                        icon: loadError != null ? Icons.cloud_off : Icons.leaderboard_outlined,
+                        title: loadError != null ? 'Could not load rankings' : 'No Rankings Yet',
+                        description: loadError ?? 'Rankings appear once candidates have completed this test.',
+                        buttonLabel: loadError != null ? 'Try again' : null,
+                        onButtonPressed: loadError != null ? _loadLeaderboard : null,
+                      )
                     : ListView.separated(
                         itemCount: leaderboard.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        separatorBuilder: (_, _) => const SizedBox(height: 10),
                         itemBuilder: (context, i) {
                           final item = leaderboard[i];
                           final rank = item['rank'] ?? (i + 1);
@@ -192,14 +198,14 @@ class _LeaderboardViewState extends State<LeaderboardView> {
                                 CircleAvatar(
                                   radius: 16,
                                   backgroundColor: AppConstants.primaryDark,
-                                  child: Text((item['full_name'] ?? 'C')[0].toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                  child: Text((item['full_name'] ?? 'C')[0].toUpperCase(), style: const TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 12)),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(item['full_name'] ?? 'Candidate', style: TextStyle(color: isUser ? AppConstants.accentCyan : Colors.white, fontWeight: FontWeight.bold, fontSize: 13.5)),
+                                      Text(item['full_name'] ?? 'Candidate', style: TextStyle(color: isUser ? AppConstants.accentCyan : AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 13.5)),
                                       const SizedBox(height: 2),
                                       Text('${item['state_name'] ?? 'India'} • ${item['accuracy']}% Acc', style: const TextStyle(color: AppConstants.textMuted, fontSize: 11)),
                                     ],

@@ -6,6 +6,7 @@
  */
 require_once __DIR__ . '/_guard.php';
 require_once __DIR__ . '/../../api/config/db.php';
+require_once __DIR__ . '/../../api/utils/crypto.php';
 
 $db  = Database::getConnection();
 $action = $_GET['action'] ?? 'list';
@@ -15,11 +16,17 @@ switch ($action) {
     // ── LIST KEYS ──────────────────────────────────────────────────────
     case 'list':
         $stmt = $db->query(
-            "SELECT id, label, provider, is_active, usage_count, last_used_at, created_at,
-             CONCAT(SUBSTR(api_key_encrypted,1,8),'••••••••••••••',SUBSTR(api_key_encrypted,-4)) AS masked_key
+            "SELECT id, label, provider, is_active, usage_count, last_used_at, created_at, api_key_encrypted
              FROM ai_api_keys ORDER BY created_at DESC"
         );
-        ajaxOk($stmt->fetchAll(PDO::FETCH_ASSOC), 'Keys fetched');
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($rows as &$row) {
+            $row['masked_key'] = Crypto::mask(Crypto::decrypt($row['api_key_encrypted']));
+            $row['needs_reencryption'] = Crypto::isLegacy($row['api_key_encrypted']);
+            unset($row['api_key_encrypted']);
+        }
+        unset($row);
+        ajaxOk($rows, 'Keys fetched');
         break;
 
     // ── SAVE NEW KEY ───────────────────────────────────────────────────
@@ -36,7 +43,7 @@ switch ($action) {
         // Deactivate existing keys for this provider
         $db->prepare("UPDATE ai_api_keys SET is_active=0 WHERE provider=?")->execute([$provider]);
 
-        $encrypted = base64_encode($apiKey);
+        $encrypted = Crypto::encrypt($apiKey);
         $stmt = $db->prepare(
             "INSERT INTO ai_api_keys (label, provider, api_key_encrypted, is_active, created_by)
              VALUES (?,?,?,1,?)"

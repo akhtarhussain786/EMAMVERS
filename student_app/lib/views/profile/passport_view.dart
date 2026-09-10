@@ -7,6 +7,8 @@ import 'bookmarks_view.dart';
 import 'wrong_questions_view.dart';
 import 'edit_profile_view.dart';
 import 'test_history_view.dart';
+import 'referrals_view.dart';
+import '../teacher/become_teacher_view.dart';
 
 class PassportView extends StatefulWidget {
   final VoidCallback? onLogout;
@@ -30,12 +32,14 @@ class _PassportViewState extends State<PassportView> {
   void _loadPassport() async {
     try {
       final res = await ApiService.get('/v1/passport');
+      if (!mounted) return;
       setState(() {
         userData = res;
         userRanking = UserRanking.fromJson(res ?? {});
         isLoading = false;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() => isLoading = false);
     }
   }
@@ -49,8 +53,8 @@ class _PassportViewState extends State<PassportView> {
       );
     }
 
-    final studentName = userData?['passport_holder'] ?? 'Rahul Kumar';
-    final targetExam = userData?['target_exam'] ?? 'Preparing for SSC CGL';
+    final studentName = userData?['passport_holder'] ?? 'Candidate';
+    final targetExam = userData?['target_exam'] ?? 'No target exam set yet';
 
     return Scaffold(
       backgroundColor: AppConstants.primaryDark,
@@ -73,7 +77,7 @@ class _PassportViewState extends State<PassportView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(studentName, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                        Text(studentName, style: const TextStyle(color: AppConstants.onAccent, fontSize: 20, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 2),
                         Text(targetExam, style: const TextStyle(color: AppConstants.textSecondary, fontSize: 13)),
                       ],
@@ -94,7 +98,9 @@ class _PassportViewState extends State<PassportView> {
               RankCard(
                 rank: userRanking.currentRank,
                 percentile: userRanking.percentile,
-                rankImprovementText: '↑ ${userRanking.rankImprovement} positions this week',
+                rankImprovementText: userRanking.previousRank > 0
+                    ? '↑ ${userRanking.rankImprovement} positions this week'
+                    : 'Attempt a test to start tracking your rank',
                 bestRank: userRanking.bestRank,
               ),
               const SizedBox(height: AppConstants.space24),
@@ -124,7 +130,7 @@ class _PassportViewState extends State<PassportView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Rank Contribution', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                    const Text('Rank Contribution', style: TextStyle(color: AppConstants.onAccent, fontSize: 15, fontWeight: FontWeight.bold)),
                     const SizedBox(height: AppConstants.space12),
                     _buildXpRow('Questions Solved', '+${userRanking.questionsXp} XP', AppConstants.accentCyan),
                     _buildXpRow('Accuracy Bonus', '+${userRanking.accuracyXp} XP', AppConstants.accentEmerald),
@@ -184,12 +190,30 @@ class _PassportViewState extends State<PassportView> {
               const SizedBox(height: 10),
 
               _buildOptionTile(
+                icon: Icons.card_giftcard_outlined,
+                title: 'Referrals & Free Pro',
+                subtitle: 'Invite aspirants and earn premium membership rewards',
+                color: AppConstants.accentEmerald,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReferralsView())),
+              ),
+              const SizedBox(height: 10),
+
+              _buildOptionTile(
+                icon: Icons.verified_user_outlined,
+                title: 'Become a Verified Teacher',
+                subtitle: 'Submit KYC and publish verified tests to students',
+                color: AppConstants.accentYellow,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BecomeTeacherView())),
+              ),
+              const SizedBox(height: 10),
+
+              _buildOptionTile(
                 icon: Icons.logout,
                 title: 'Log Out',
                 subtitle: 'Safely log out of your ExamVerse account',
                 color: AppConstants.textMuted,
                 onTap: () {
-                  ApiService.authToken = null;
+                  ApiService.clearSession();
                   if (widget.onLogout != null) widget.onLogout!();
                 },
               ),
@@ -226,7 +250,7 @@ class _PassportViewState extends State<PassportView> {
         children: [
           Icon(icon, size: 16, color: isUnlocked ? AppConstants.accentAmber : AppConstants.textMuted),
           const SizedBox(width: 6),
-          Text(label, style: TextStyle(color: isUnlocked ? Colors.white : AppConstants.textMuted, fontSize: 11.5, fontWeight: FontWeight.bold)),
+          Text(label, style: TextStyle(color: isUnlocked ? AppConstants.textPrimary : AppConstants.textMuted, fontSize: 11.5, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -253,7 +277,7 @@ class _PassportViewState extends State<PassportView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                Text(title, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 2),
                 Text(subtitle, style: const TextStyle(color: AppConstants.textMuted, fontSize: 11)),
               ],
