@@ -1,5 +1,3 @@
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
 import 'package:flutter/material.dart';
 
 class AppConstants {
@@ -9,28 +7,15 @@ class AppConstants {
   static const String hostLanIp =
       String.fromEnvironment('API_HOST', defaultValue: _defaultDevHost);
 
+  /// Staging server API base URL
+  static const String stagingBaseUrl = 'https://staging.yatharthinstitution.in/api';
+
   /// Base URL for the API.
-  ///
-  /// Release builds require `--dart-define=API_BASE_URL=https://...`; there is
-  /// deliberately no plaintext-HTTP fallback baked into a shipped binary.
   static String get apiBaseUrl {
     const envUrl = String.fromEnvironment('API_BASE_URL');
     if (envUrl.isNotEmpty) return envUrl;
 
-    if (kReleaseMode) {
-      throw StateError(
-        'API_BASE_URL is not configured. Build with '
-        '--dart-define=API_BASE_URL=https://your-server/EXAMVERSE/api',
-      );
-    }
-
-    if (kIsWeb) return 'http://localhost/EXAMVERSE/api';
-    if (Platform.isAndroid) {
-      final host = const String.fromEnvironment('API_HOST', defaultValue: '127.0.0.1');
-      if (host.startsWith('http://') || host.startsWith('https://')) return host;
-      return 'http://$host/EXAMVERSE/api';
-    }
-    return 'http://127.0.0.1/EXAMVERSE/api';
+    return stagingBaseUrl;
   }
 
 
