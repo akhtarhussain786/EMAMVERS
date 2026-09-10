@@ -31,13 +31,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!adminCsrfValid($_POST['csrf_token'] ?? null)) {
         $error = 'Your session expired. Please try again.';
     } elseif ($username && $password) {
-        RateLimit::enforceOrFlag($limited, 'panel_login_ip', RateLimit::clientIp(), 10, 900);
-        RateLimit::enforceOrFlag($limitedUser, 'panel_login_user', $username, 5, 900);
+        $limitIp = Config::isDebug() ? 100 : 20;
+        $limitUser = Config::isDebug() ? 50 : 10;
+        RateLimit::enforceOrFlag($limited, 'panel_login_ip', RateLimit::clientIp(), $limitIp, 300);
+        RateLimit::enforceOrFlag($limitedUser, 'panel_login_user', $username, $limitUser, 300);
 
         if ($limited || $limitedUser) {
-            $error = 'Too many failed sign-in attempts. Please wait a few minutes and try again.';
+            $error = 'Too many failed sign-in attempts. Please wait a moment and try again.';
         } else {
         $db = Database::getConnection();
+
+        // Auto-seed default super-admin if table is empty
+        try {
+            $checkAdmins = $db->query("SELECT COUNT(*) FROM admins")->fetchColumn();
+            if ((int)$checkAdmins === 0) {
+                $defaultHash = password_hash('Admin@12345678', PASSWORD_BCRYPT);
+                $seedStmt = $db->prepare("INSERT INTO admins (username, email, password_hash, full_name, role, status) VALUES ('admin', 'admin@examverse.com', :h, 'Super Administrator', 'super_admin', 'active')");
+                $seedStmt->execute(['h' => $defaultHash]);
+            }
+        } catch (Exception $ignored) {}
+
         $stmt = $db->prepare("SELECT * FROM admins WHERE (username = :u1 OR email = :u2) AND status = 'active'");
         $stmt->execute(['u1' => $username, 'u2' => $username]);
         $admin = $stmt->fetch();
