@@ -11,10 +11,26 @@ class AuthController {
         $states = $db->query("SELECT id, code, name FROM states ORDER BY name ASC")->fetchAll();
         $qualifications = $db->query("SELECT id, code, name FROM qualifications ORDER BY id ASC")->fetchAll();
         
+        $districtsByState = [
+            'Bihar' => ['Patna', 'Gaya', 'Muzaffarpur', 'Bhagalpur', 'Darbhanga', 'Purnia', 'Rohtas (Sasaram)', 'Begusarai', 'Saran (Chhapra)', 'Vaishali', 'Samastipur', 'Nalanda (Bihar Sharif)', 'Munger', 'Siwan', 'East Champaran (Motihari)', 'West Champaran (Bettiah)', 'Katihar', 'Bhojpur (Ara)', 'Madhubani', 'Saharsa', 'Nawada', 'Buxar', 'Kishanganj', 'Sitamarhi', 'Gopalganj', 'Jehanabad', 'Aurangabad', 'Banka', 'Khagaria', 'Jamui', 'Arwal', 'Lakhisarai', 'Sheikhpura', 'Kaimur (Bhabua)', 'Madhepura', 'Supaul', 'Sheohar', 'Araria'],
+            'Madhya Pradesh' => ['Bhopal', 'Indore', 'Gwalior', 'Jabalpur', 'Ujjain', 'Sagar', 'Rewa', 'Satna', 'Ratlam', 'Chhindwara', 'Dewas', 'Khandwa', 'Khargone', 'Shivpuri', 'Vidisha', 'Morena', 'Bhind', 'Sehore', 'Hoshangabad (Narmadapuram)', 'Katni', 'Singrauli', 'Damoh', 'Mandsaur', 'Neemuch', 'Shahdol', 'Betul', 'Guna', 'Dhar', 'Raisen', 'Balaghat', 'Seoni', 'Datia', 'Narsinghpur', 'Tikamgarh', 'Mandla', 'Barwani', 'Ashoknagar', 'Harda', 'Anuppur', 'Panna', 'Alirajpur', 'Burhanpur', 'Sidhi', 'Sheopur', 'Dindori', 'Umaria', 'Niwari'],
+            'Uttar Pradesh' => ['Lucknow', 'Kanpur Nagar', 'Varanasi', 'Prayagraj (Allahabad)', 'Agra', 'Meerut', 'Noida (Gautam Buddha Nagar)', 'Ghaziabad', 'Bareilly', 'Aligarh', 'Moradabad', 'Saharanpur', 'Gorakhpur', 'Faizabad (Ayodhya)', 'Jhansi', 'Muzaffarnagar', 'Mathura', 'Budaun', 'Rampur', 'Shahjahanpur', 'Firozabad', 'Mainpuri', 'Etawah', 'Unnao', 'Rae Bareli', 'Sitapur', 'Hardoi', 'Lakhimpur Kheri', 'Sultanpur', 'Barabanki', 'Bahraich', 'Basti', 'Azamgarh', 'Ballia', 'Jaunpur', 'Mirzapur', 'Sonbhadra', 'Deoria', 'Ghazipur'],
+            'Rajasthan' => ['Jaipur', 'Jodhpur', 'Kota', 'Bikaner', 'Ajmer', 'Udaipur', 'Bhilwara', 'Alwar', 'Bharatpur', 'Sikar', 'Pali', 'Sri Ganganagar', 'Chittorgarh', 'Jhunjhunu', 'Nagaur', 'Tonk', 'Hanumangarh', 'Beawar', 'Dausa', 'Sawai Madhopur', 'Churu', 'Barmer', 'Jaisalmer', 'Jalore', 'Banswara', 'Dungarpur', 'Pratapgarh', 'Rajsamand', 'Sirohi', 'Karauli', 'Dholpur', 'Bundi', 'Baran'],
+            'Delhi NCR' => ['New Delhi', 'Central Delhi', 'South Delhi', 'North Delhi', 'East Delhi', 'West Delhi', 'North East Delhi', 'South West Delhi', 'North West Delhi', 'South East Delhi', 'Shahdara'],
+            'Maharashtra' => ['Mumbai City', 'Mumbai Suburban', 'Pune', 'Nagpur', 'Thane', 'Nashik', 'Chhatrapati Sambhajinagar (Aurangabad)', 'Solapur', 'Amravati', 'Kolhapur', 'Navi Mumbai', 'Nanded', 'Sangli', 'Jalgaon', 'Akola', 'Latur', 'Dhule', 'Ahmednagar', 'Chandrapur', 'Parbhani', 'Satara', 'Beed', 'Yavatmal'],
+            'West Bengal' => ['Kolkata', 'North 24 Parganas', 'South 24 Parganas', 'Howrah', 'Hooghly', 'Purba Medinipur', 'Paschim Medinipur', 'Purba Bardhaman', 'Paschim Bardhaman', 'Murshidabad', 'Nadia', 'Malda', 'Jalpaiguri', 'Darjeeling', 'Siliguri', 'Birbhum', 'Bankura', 'Purulia', 'Cooch Behar'],
+            'Haryana' => ['Gurugram (Gurgaon)', 'Faridabad', 'Panipat', 'Ambala', 'Yamunanagar', 'Rohtak', 'Hisar', 'Karnal', 'Sonipat', 'Panchkula', 'Bhiwani', 'Sirsa', 'Jhajjar', 'Jind', 'Kurukshetra', 'Rewari', 'Kaithal', 'Palwal', 'Fatehabad', 'Mahendragarh', 'Nuh', 'Charkhi Dadri'],
+            'Punjab' => ['Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala', 'Bathinda', 'Mohali (SAS Nagar)', 'Hoshiarpur', 'Pathankot', 'Moga', 'Firozpur', 'Gurdaspur', 'Barnala', 'Sangrur', 'Kapurthala', 'Faridkot', 'Muktsar', 'Fatehgarh Sahib', 'Mansa', 'Rupnagar', 'Fazilka', 'Malerkotla'],
+            'Jharkhand' => ['Ranchi', 'Jamshedpur (East Singhbhum)', 'Dhanbad', 'Bokaro', 'Deoghar', 'Hazaribagh', 'Giridih', 'Ramgarh', 'Dumka', 'Palamu (Medininagar)', 'Chaibasa (West Singhbhum)', 'Godda', 'Sahebganj', 'Koderma', 'Chatra', 'Gumla', 'Latehar', 'Pakur', 'Garhwa', 'Simdega', 'Khunti', 'Lohardaga', 'Jamtara', 'Saraikela Kharsawan'],
+            'Chhattisgarh' => ['Raipur', 'Bhilai / Durg', 'Bilaspur', 'Korba', 'Rajnandgaon', 'Jagdalpur (Bastar)', 'Ambikapur (Surguja)', 'Raigarh', 'Dhamtari', 'Mahasamund', 'Kanker', 'Kawardha (Kabirdham)', 'Janjgir-Champa', 'Bemetara', 'Balod', 'Baloda Bazar', 'Gariaband', 'Mungeli', 'Surajpur', 'Balrampur', 'Kondagaon', 'Sukma', 'Bijapur', 'Narayanpur', 'Gaurela-Pendra-Marwahi', 'Manendragarh-Chirmiri-Bharatpur', 'Mohla-Manpur-Ambagarh Chowki', 'Sakti', 'Sarangarh-Bilaigarh', 'Khairagarh-Chhuikhadan-Gandai'],
+            'Uttarakhand' => ['Dehradun', 'Haridwar', 'Nainital', 'Udham Singh Nagar (Rudrapur)', 'Roorkee', 'Rishikesh', 'Haldwani', 'Pauri Garhwal', 'Tehri Garhwal', 'Almora', 'Pithoragarh', 'Chamoli', 'Uttarkashi', 'Bageshwar', 'Champawat', 'Rudraprayag']
+        ];
+        
         Response::json([
             'states' => $states,
-            'qualifications' => $qualifications
-        ], 'States and Qualifications loaded successfully');
+            'qualifications' => $qualifications,
+            'districts_by_state' => $districtsByState
+        ], 'States, Districts and Qualifications loaded successfully');
     }
 
     public static function login() {
@@ -157,10 +173,12 @@ class AuthController {
             }
         }
 
+        $district = isset($input['district']) ? trim($input['district']) : null;
+
         $passwordHash = password_hash($password, PASSWORD_BCRYPT);
         $stmt = $db->prepare("
-            INSERT INTO users (full_name, email, mobile, mobile_hash, password_hash, state_id, qualification_id, is_verified) 
-            VALUES (:full_name, :email, :mobile, :mobile_hash, :password_hash, :state_id, :qualification_id, 1)
+            INSERT INTO users (full_name, email, mobile, mobile_hash, password_hash, state_id, district, qualification_id, is_verified) 
+            VALUES (:full_name, :email, :mobile, :mobile_hash, :password_hash, :state_id, :district, :qualification_id, 1)
         ");
         $stmt->execute([
             'full_name' => $fullName,
@@ -169,6 +187,7 @@ class AuthController {
             'mobile_hash' => self::mobileHash($mobile),
             'password_hash' => $passwordHash,
             'state_id' => $stateId,
+            'district' => $district,
             'qualification_id' => $qualificationId
         ]);
 

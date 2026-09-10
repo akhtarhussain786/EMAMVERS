@@ -26,8 +26,71 @@ class _LoginSignupViewState extends State<LoginSignupView> {
 
   List<dynamic> states = [];
   List<dynamic> qualifications = [];
+  Map<String, List<String>> districtsByState = {};
+
   int? selectedStateId;
+  String? selectedStateName;
+  String? selectedDistrict;
   int? selectedQualId;
+
+  // Fallback comprehensive districts dictionary for instant responsiveness
+  static const Map<String, List<String>> _defaultDistrictsMap = {
+    'Bihar': [
+      'Patna', 'Gaya', 'Muzaffarpur', 'Bhagalpur', 'Darbhanga', 'Purnia', 'Rohtas (Sasaram)',
+      'Begusarai', 'Saran (Chhapra)', 'Vaishali', 'Samastipur', 'Nalanda (Bihar Sharif)',
+      'Munger', 'Siwan', 'East Champaran (Motihari)', 'West Champaran (Bettiah)', 'Katihar',
+      'Bhojpur (Ara)', 'Madhubani', 'Saharsa', 'Nawada', 'Buxar', 'Kishanganj', 'Sitamarhi',
+      'Gopalganj', 'Jehanabad', 'Aurangabad', 'Banka', 'Khagaria', 'Jamui', 'Arwal',
+      'Lakhisarai', 'Sheikhpura', 'Kaimur (Bhabua)', 'Madhepura', 'Supaul', 'Sheohar', 'Araria'
+    ],
+    'Madhya Pradesh': [
+      'Bhopal', 'Indore', 'Gwalior', 'Jabalpur', 'Ujjain', 'Sagar', 'Rewa', 'Satna',
+      'Ratlam', 'Chhindwara', 'Dewas', 'Khandwa', 'Khargone', 'Shivpuri', 'Vidisha',
+      'Morena', 'Bhind', 'Sehore', 'Hoshangabad (Narmadapuram)', 'Katni', 'Singrauli',
+      'Damoh', 'Mandsaur', 'Neemuch', 'Shahdol', 'Betul', 'Guna', 'Dhar', 'Raisen',
+      'Balaghat', 'Seoni', 'Datia', 'Narsinghpur', 'Tikamgarh', 'Mandla', 'Barwani',
+      'Ashoknagar', 'Harda', 'Anuppur', 'Panna', 'Alirajpur', 'Burhanpur', 'Sidhi',
+      'Sheopur', 'Dindori', 'Umaria', 'Niwari'
+    ],
+    'Uttar Pradesh': [
+      'Lucknow', 'Kanpur Nagar', 'Varanasi', 'Prayagraj (Allahabad)', 'Agra', 'Meerut',
+      'Noida (Gautam Buddha Nagar)', 'Ghaziabad', 'Bareilly', 'Aligarh', 'Moradabad',
+      'Saharanpur', 'Gorakhpur', 'Ayodhya (Faizabad)', 'Jhansi', 'Muzaffarnagar', 'Mathura',
+      'Budaun', 'Rampur', 'Shahjahanpur', 'Firozabad', 'Mainpuri', 'Etawah', 'Unnao',
+      'Rae Bareli', 'Sitapur', 'Hardoi', 'Lakhimpur Kheri', 'Sultanpur', 'Barabanki',
+      'Bahraich', 'Basti', 'Azamgarh', 'Ballia', 'Jaunpur', 'Mirzapur', 'Sonbhadra', 'Deoria'
+    ],
+    'Rajasthan': [
+      'Jaipur', 'Jodhpur', 'Kota', 'Bikaner', 'Ajmer', 'Udaipur', 'Bhilwara', 'Alwar',
+      'Bharatpur', 'Sikar', 'Pali', 'Sri Ganganagar', 'Chittorgarh', 'Jhunjhunu', 'Nagaur',
+      'Tonk', 'Hanumangarh', 'Beawar', 'Dausa', 'Sawai Madhopur', 'Churu', 'Barmer',
+      'Jaisalmer', 'Jalore', 'Banswara', 'Dungarpur', 'Pratapgarh', 'Rajsamand', 'Sirohi'
+    ],
+    'Delhi NCR': [
+      'New Delhi', 'Central Delhi', 'South Delhi', 'North Delhi', 'East Delhi', 'West Delhi',
+      'North East Delhi', 'South West Delhi', 'North West Delhi', 'South East Delhi', 'Shahdara'
+    ],
+    'Maharashtra': [
+      'Mumbai City', 'Mumbai Suburban', 'Pune', 'Nagpur', 'Thane', 'Nashik', 'Chhatrapati Sambhajinagar',
+      'Solapur', 'Amravati', 'Kolhapur', 'Navi Mumbai', 'Nanded', 'Sangli', 'Jalgaon', 'Akola'
+    ],
+    'Jharkhand': [
+      'Ranchi', 'Jamshedpur (East Singhbhum)', 'Dhanbad', 'Bokaro', 'Deoghar', 'Hazaribagh',
+      'Giridih', 'Ramgarh', 'Dumka', 'Palamu (Medininagar)', 'Chaibasa', 'Godda', 'Sahebganj'
+    ],
+    'Chhattisgarh': [
+      'Raipur', 'Bhilai / Durg', 'Bilaspur', 'Korba', 'Rajnandgaon', 'Jagdalpur (Bastar)',
+      'Ambikapur (Surguja)', 'Raigarh', 'Dhamtari', 'Mahasamund', 'Kanker'
+    ],
+    'Haryana': [
+      'Gurugram (Gurgaon)', 'Faridabad', 'Panipat', 'Ambala', 'Yamunanagar', 'Rohtak',
+      'Hisar', 'Karnal', 'Sonipat', 'Panchkula', 'Bhiwani', 'Sirsa', 'Kurukshetra', 'Rewari'
+    ],
+    'Uttarakhand': [
+      'Dehradun', 'Haridwar', 'Nainital', 'Udham Singh Nagar (Rudrapur)', 'Roorkee',
+      'Rishikesh', 'Haldwani', 'Pauri Garhwal', 'Almora', 'Pithoragarh', 'Chamoli'
+    ],
+  };
 
   @override
   void initState() {
@@ -70,26 +133,74 @@ class _LoginSignupViewState extends State<LoginSignupView> {
       setState(() {
         states = res['states'] ?? [];
         qualifications = res['qualifications'] ?? [];
-        if (states.isNotEmpty && selectedStateId == null) selectedStateId = states[0]['id'];
-        if (qualifications.isNotEmpty && selectedQualId == null) selectedQualId = qualifications[0]['id'];
+        if (res['districts_by_state'] is Map) {
+          final apiDistricts = res['districts_by_state'] as Map<String, dynamic>;
+          districtsByState = apiDistricts.map((k, v) => MapEntry(k, List<String>.from(v ?? [])));
+        } else {
+          districtsByState = _defaultDistrictsMap;
+        }
+
+        if (states.isNotEmpty && selectedStateId == null) {
+          // Default to Bihar or first state
+          final biharState = states.firstWhere((s) => (s['name'] ?? '').toString().contains('Bihar'), orElse: () => states[0]);
+          selectedStateId = biharState['id'] as int?;
+          selectedStateName = biharState['name'] as String?;
+          _updateDistrictsForState(selectedStateName);
+        }
+        if (qualifications.isNotEmpty && selectedQualId == null) {
+          selectedQualId = qualifications[0]['id'] as int?;
+        }
       });
     } catch (_) {
       if (mounted && states.isEmpty) {
         setState(() {
           states = [
-            {'id': 1, 'name': 'All India / Central'},
-            {'id': 2, 'name': 'Uttar Pradesh'},
-            {'id': 3, 'name': 'Bihar'},
-            {'id': 4, 'name': 'Rajasthan'},
-            {'id': 5, 'name': 'Madhya Pradesh'},
-            {'id': 6, 'name': 'Delhi NCR'},
-            {'id': 7, 'name': 'Maharashtra'},
-            {'id': 8, 'name': 'Haryana'},
+            {'id': 4, 'code': 'BR', 'name': 'Bihar'},
+            {'id': 6, 'code': 'MP', 'name': 'Madhya Pradesh'},
+            {'id': 3, 'code': 'UP', 'name': 'Uttar Pradesh'},
+            {'id': 5, 'code': 'RJ', 'name': 'Rajasthan'},
+            {'id': 1, 'code': 'DL', 'name': 'Delhi NCR'},
+            {'id': 2, 'code': 'MH', 'name': 'Maharashtra'},
+            {'id': 13, 'code': 'JH', 'name': 'Jharkhand'},
+            {'id': 14, 'code': 'CG', 'name': 'Chhattisgarh'},
+            {'id': 11, 'code': 'HR', 'name': 'Haryana'},
+            {'id': 20, 'code': 'UK', 'name': 'Uttarakhand'},
+            {'id': 33, 'code': 'ALL', 'name': 'All India / Other'},
           ];
-          selectedStateId = 1;
+          qualifications = [
+            {'id': 1, 'code': '10TH', 'name': '10th Pass (Matriculation)'},
+            {'id': 2, 'code': '12TH', 'name': '12th Pass (Intermediate / 10+2)'},
+            {'id': 4, 'code': 'GRAD', 'name': 'Graduation (BA / B.Sc / B.Com / Degree)'},
+            {'id': 5, 'code': 'ENGG', 'name': 'B.Tech / B.E. (Engineering)'},
+            {'id': 6, 'code': 'POSTGRAD', 'name': 'Post Graduation (MA / M.Sc / MCA)'},
+            {'id': 7, 'code': 'BED', 'name': 'B.Ed / D.El.Ed (Teaching Degree)'},
+            {'id': 3, 'code': 'DIPLOMA', 'name': 'Diploma / Polytechnic'},
+          ];
+          districtsByState = _defaultDistrictsMap;
+          selectedStateId = 4;
+          selectedStateName = 'Bihar';
+          _updateDistrictsForState('Bihar');
+          selectedQualId = 4;
         });
       }
     }
+  }
+
+  void _updateDistrictsForState(String? stateName) {
+    if (stateName == null) return;
+    final list = districtsByState[stateName] ?? _defaultDistrictsMap[stateName] ?? [];
+    setState(() {
+      if (list.isNotEmpty) {
+        selectedDistrict = list[0];
+      } else {
+        selectedDistrict = null;
+      }
+    });
+  }
+
+  List<String> _getDistrictsList() {
+    if (selectedStateName == null) return [];
+    return districtsByState[selectedStateName!] ?? _defaultDistrictsMap[selectedStateName!] ?? [];
   }
 
   void _showSnackBar(String msg) {
@@ -149,6 +260,7 @@ class _LoginSignupViewState extends State<LoginSignupView> {
         'mobile': identity.contains('@') ? '' : identity,
         'password': password,
         'state_id': selectedStateId,
+        'district': selectedDistrict,
         'qualification_id': selectedQualId,
       });
       await ApiService.setSession(res['token'] as String?, remember: rememberMe, type: 'student');
@@ -164,6 +276,8 @@ class _LoginSignupViewState extends State<LoginSignupView> {
 
   @override
   Widget build(BuildContext context) {
+    final currentDistricts = _getDistrictsList();
+
     return Scaffold(
       backgroundColor: AppConstants.scaffoldDark,
       body: SafeArea(
@@ -171,7 +285,7 @@ class _LoginSignupViewState extends State<LoginSignupView> {
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: AppConstants.space24, vertical: AppConstants.space32),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
+              constraints: const BoxConstraints(maxWidth: 480),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -211,7 +325,7 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                     'India\'s Premier AI Exam Preparation Platform',
                     style: TextStyle(color: AppConstants.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
                   ),
-                  const SizedBox(height: AppConstants.space32),
+                  const SizedBox(height: AppConstants.space24),
 
                   // LOGIN / SIGNUP CARD
                   ExamVerseCard(
@@ -225,16 +339,16 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          isSignUp ? 'Start your competitive exam journey' : 'Continue your AI performance preparation',
+                          isSignUp ? 'Select state, district & education for targeted prep' : 'Continue your AI performance preparation',
                           style: const TextStyle(color: AppConstants.textSecondary, fontSize: 12.5),
                         ),
-                        const SizedBox(height: AppConstants.space24),
+                        const SizedBox(height: AppConstants.space20),
 
                         if (isSignUp) ...[
                           CustomTextField(
                             controller: fullNameController,
                             label: 'Full Name',
-                            hint: 'e.g. Rahul Kumar',
+                            hint: 'e.g. Rahul Kumar Sharma',
                             prefixIcon: Icons.person_outline,
                           ),
                           const SizedBox(height: AppConstants.space16),
@@ -258,19 +372,27 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                         ),
                         const SizedBox(height: AppConstants.space16),
 
-                        // SIGN UP STATE & QUALIFICATION DROPDOWNS
+                        // SIGN UP: STATE & DISTRICT & EDUCATION DROPDOWNS
                         if (isSignUp) ...[
-                          // State Dropdown
+                          // 1. STATE SELECTION DROPDOWN
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Select Your Target State / Region',
-                                style: TextStyle(
-                                  color: AppConstants.textPrimary,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                              const Row(
+                                children: [
+                                  Icon(Icons.location_on, size: 16, color: AppConstants.accentBlue),
+                                  SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      'Select State (राज्य) *',
+                                      style: TextStyle(
+                                        color: AppConstants.textPrimary,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 6),
                               Container(
@@ -289,19 +411,21 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                                     items: states.map<DropdownMenuItem<int>>((s) {
                                       return DropdownMenuItem<int>(
                                         value: s['id'] as int?,
-                                        child: Row(
-                                          children: [
-                                            const Icon(Icons.location_on_outlined, size: 18, color: AppConstants.accentCyan),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              (s['name'] ?? '').toString(),
-                                              style: const TextStyle(color: AppConstants.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w500),
-                                            ),
-                                          ],
+                                        child: Text(
+                                          (s['name'] ?? '').toString(),
+                                          style: const TextStyle(color: AppConstants.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600),
                                         ),
                                       );
                                     }).toList(),
-                                    onChanged: (val) => setState(() => selectedStateId = val),
+                                    onChanged: (val) {
+                                      if (val == null) return;
+                                      final matched = states.firstWhere((st) => st['id'] == val, orElse: () => null);
+                                      setState(() {
+                                        selectedStateId = val;
+                                        selectedStateName = matched != null ? matched['name'] as String? : null;
+                                        _updateDistrictsForState(selectedStateName);
+                                      });
+                                    },
                                   ),
                                 ),
                               ),
@@ -309,18 +433,79 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                           ),
                           const SizedBox(height: AppConstants.space16),
 
-                          // Qualification Dropdown (if available)
+                          // 2. DISTRICT SELECTION DROPDOWN (Dynamic based on selected state)
+                          if (currentDistricts.isNotEmpty) ...[
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Row(
+                                  children: [
+                                    Icon(Icons.map_outlined, size: 16, color: AppConstants.accentCyan),
+                                    SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        'Select District (जिला) *',
+                                        style: TextStyle(
+                                          color: AppConstants.textPrimary,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: AppConstants.cardBorder),
+                                  ),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      isExpanded: true,
+                                      value: selectedDistrict,
+                                      icon: const Icon(Icons.keyboard_arrow_down, color: AppConstants.accentCyan),
+                                      hint: const Text('Select District', style: TextStyle(color: AppConstants.textSecondary, fontSize: 13)),
+                                      items: currentDistricts.map<DropdownMenuItem<String>>((dist) {
+                                        return DropdownMenuItem<String>(
+                                          value: dist,
+                                          child: Text(
+                                            dist,
+                                            style: const TextStyle(color: AppConstants.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w500),
+                                          ),
+                                        );
+                                      }).toList(),
+                                      onChanged: (val) => setState(() => selectedDistrict = val),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppConstants.space16),
+                          ],
+
+                          // 3. EDUCATION / QUALIFICATION DROPDOWN
                           if (qualifications.isNotEmpty) ...[
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'Highest Qualification',
-                                  style: TextStyle(
-                                    color: AppConstants.textPrimary,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                                const Row(
+                                  children: [
+                                    Icon(Icons.school_outlined, size: 16, color: AppConstants.accentIndigo),
+                                    SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        'Education / Qualification *',
+                                        style: TextStyle(
+                                          color: AppConstants.textPrimary,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 const SizedBox(height: 6),
                                 Container(
@@ -338,15 +523,9 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                                       items: qualifications.map<DropdownMenuItem<int>>((q) {
                                         return DropdownMenuItem<int>(
                                           value: q['id'] as int?,
-                                          child: Row(
-                                            children: [
-                                              const Icon(Icons.school_outlined, size: 18, color: AppConstants.accentIndigo),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                (q['name'] ?? '').toString(),
-                                                style: const TextStyle(color: AppConstants.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w500),
-                                              ),
-                                            ],
+                                          child: Text(
+                                            (q['name'] ?? '').toString(),
+                                            style: const TextStyle(color: AppConstants.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w500),
                                           ),
                                         );
                                       }).toList(),
