@@ -1,0 +1,10 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/yatharth/staging.yatharthinstitution.in/
+    - /bin/cp -R admin $DEPLOYPATH
+    - /bin/cp -R api $DEPLOYPATH
+    - /bin/cp -R database $DEPLOYPATH
+    - /bin/cp -R storage $DEPLOYPATH
+    - /bin/cp index.html $DEPLOYPATH 2>/dev/null || true
+    - /bin/cp .htaccess $DEPLOYPATH 2>/dev/null || true
