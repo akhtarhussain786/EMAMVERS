@@ -202,8 +202,15 @@ $statesList = $db->query("SELECT id, name FROM states ORDER BY name ASC")->fetch
                                 <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">📞 <?php echo htmlspecialchars($u['mobile']); ?></div>
                             </td>
                             <td>
-                                <div style="font-size: 12px; color: var(--accent-blue); font-weight: 600;"><?php echo htmlspecialchars($u['state_name'] ?: 'Not Specified'); ?></div>
-                                <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;"><?php echo htmlspecialchars($u['qualification_name'] ?: 'N/A'); ?></div>
+                                <div style="font-size: 13px; color: var(--accent-blue); font-weight: 700;">
+                                    📍 <?php echo htmlspecialchars($u['state_name'] ?: 'All India'); ?>
+                                    <?php if (!empty($u['district'])): ?>
+                                        <span style="font-size: 12px; color: #60a5fa; font-weight: 600;">(<?php echo htmlspecialchars($u['district']); ?>)</span>
+                                    <?php endif; ?>
+                                </div>
+                                <div style="font-size: 11.5px; color: #94a3b8; margin-top: 2px;">
+                                    🎓 <?php echo htmlspecialchars($u['qualification_name'] ?: 'Not Specified'); ?>
+                                </div>
                             </td>
                             <td>
                                 <span class="badge badge-info" style="font-size: 12px; padding: 4px 10px;">

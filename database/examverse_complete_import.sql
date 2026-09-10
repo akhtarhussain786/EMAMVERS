@@ -1202,16 +1202,20 @@ CREATE TABLE `qualifications` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `code` (`code`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Dumping data for `qualifications`
 INSERT INTO `qualifications` (`id`, `code`, `name`, `created_at`) VALUES
 ('1', '10TH', '10th Pass (Matriculation)', '2026-08-21 14:22:02'),
 ('2', '12TH', '12th Pass (Intermediate / Senior Secondary)', '2026-08-21 14:22:02'),
-('3', 'GRAD', 'Graduation / Bachelor Degree', '2026-08-21 14:22:02'),
-('4', 'POSTGRAD', 'Post Graduation / Master Degree', '2026-08-21 14:22:02'),
+('3', 'DIPLOMA', 'Diploma / Polytechnic', '2026-08-21 14:22:02'),
+('4', 'GRAD', 'Graduation (BA / B.Sc / B.Com / Bachelor Degree)', '2026-08-21 14:22:02'),
 ('5', 'ENGG', 'B.Tech / B.E. (Engineering)', '2026-08-21 14:22:02'),
-('6', 'MED', 'MBBS / Medical', '2026-08-21 14:22:02');
+('6', 'POSTGRAD', 'Post Graduation (MA / M.Sc / M.Com / MCA)', '2026-08-21 14:22:02'),
+('7', 'BED', 'B.Ed / D.El.Ed (Teaching Degree)', '2026-09-10 15:02:23'),
+('8', 'MED', 'MBBS / BDS / Medical', '2026-09-10 15:02:23'),
+('9', 'LAW', 'LLB / Law Graduate', '2026-09-10 15:02:23'),
+('10', 'OTHER', 'Other Qualification', '2026-09-10 15:02:23');
 
 -- --------------------------------------------------------
 -- Table structure for `question_duplicate_candidates`
@@ -1860,11 +1864,11 @@ CREATE TABLE `states` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `code` (`code`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Dumping data for `states`
 INSERT INTO `states` (`id`, `code`, `name`, `created_at`) VALUES
-('1', 'DL', 'Delhi', '2026-08-21 14:22:02'),
+('1', 'DL', 'Delhi NCR', '2026-08-21 14:22:02'),
 ('2', 'MH', 'Maharashtra', '2026-08-21 14:22:02'),
 ('3', 'UP', 'Uttar Pradesh', '2026-08-21 14:22:02'),
 ('4', 'BR', 'Bihar', '2026-08-21 14:22:02'),
@@ -1873,7 +1877,30 @@ INSERT INTO `states` (`id`, `code`, `name`, `created_at`) VALUES
 ('7', 'WB', 'West Bengal', '2026-08-21 14:22:02'),
 ('8', 'TN', 'Tamil Nadu', '2026-08-21 14:22:02'),
 ('9', 'KA', 'Karnataka', '2026-08-21 14:22:02'),
-('10', 'GJ', 'Gujarat', '2026-08-21 14:22:02');
+('10', 'GJ', 'Gujarat', '2026-08-21 14:22:02'),
+('11', 'HR', 'Haryana', '2026-09-10 15:02:23'),
+('12', 'PB', 'Punjab', '2026-09-10 15:02:23'),
+('13', 'JH', 'Jharkhand', '2026-09-10 15:02:23'),
+('14', 'CG', 'Chhattisgarh', '2026-09-10 15:02:23'),
+('15', 'OD', 'Odisha', '2026-09-10 15:02:23'),
+('16', 'AS', 'Assam', '2026-09-10 15:02:23'),
+('17', 'TG', 'Telangana', '2026-09-10 15:02:23'),
+('18', 'AP', 'Andhra Pradesh', '2026-09-10 15:02:23'),
+('19', 'KL', 'Kerala', '2026-09-10 15:02:23'),
+('20', 'UK', 'Uttarakhand', '2026-09-10 15:02:23'),
+('21', 'HP', 'Himachal Pradesh', '2026-09-10 15:02:23'),
+('22', 'JK', 'Jammu & Kashmir', '2026-09-10 15:02:23'),
+('23', 'GA', 'Goa', '2026-09-10 15:02:23'),
+('24', 'TR', 'Tripura', '2026-09-10 15:02:23'),
+('25', 'ML', 'Meghalaya', '2026-09-10 15:02:23'),
+('26', 'MN', 'Manipur', '2026-09-10 15:02:23'),
+('27', 'NL', 'Nagaland', '2026-09-10 15:02:23'),
+('28', 'MZ', 'Mizoram', '2026-09-10 15:02:23'),
+('29', 'AR', 'Arunachal Pradesh', '2026-09-10 15:02:23'),
+('30', 'SK', 'Sikkim', '2026-09-10 15:02:23'),
+('31', 'CH', 'Chandigarh', '2026-09-10 15:02:23'),
+('32', 'PY', 'Puducherry', '2026-09-10 15:02:23'),
+('33', 'ALL', 'All India / Other', '2026-09-10 15:02:23');
 
 -- --------------------------------------------------------
 -- Table structure for `strategy_simulations`
@@ -2600,6 +2627,7 @@ CREATE TABLE `users` (
   `mobile_hash` char(64) DEFAULT NULL,
   `password_hash` varchar(255) NOT NULL,
   `state_id` int(11) DEFAULT NULL,
+  `district` varchar(100) DEFAULT NULL,
   `qualification_id` int(11) DEFAULT NULL,
   `is_verified` tinyint(1) DEFAULT 0,
   `status` enum('active','suspended','pending') DEFAULT 'active',
@@ -2619,21 +2647,21 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Dumping data for `users`
-INSERT INTO `users` (`id`, `full_name`, `email`, `mobile`, `mobile_hash`, `password_hash`, `state_id`, `qualification_id`, `is_verified`, `status`, `user_type`, `avatar_url`, `bio`, `created_at`, `updated_at`) VALUES
-('1', 'Demo Student', 'demo@examverse.com', '9876543200', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-09 11:10:42', '2026-09-10 14:48:05'),
-('7', 'Neha Sharma', 'neha.sharma@example.com', '9876543210', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'teacher', NULL, NULL, '2026-09-05 11:36:52', '2026-09-10 14:48:05'),
-('8', 'Amit Verma', 'amit.verma@example.com', '9876543211', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'teacher', NULL, NULL, '2026-09-05 11:36:52', '2026-09-10 14:48:05'),
-('9', 'Priya Nair', 'priya.nair@example.com', '9876543212', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'teacher', NULL, NULL, '2026-09-05 11:36:52', '2026-09-10 14:48:05'),
-('10', 'Rahul Gupta', 'rahul.gupta@example.com', '9876543213', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'teacher', NULL, NULL, '2026-09-05 11:36:52', '2026-09-10 14:48:05'),
-('11', 'Arjun Patel', 'arjun.patel@example.com', '9876543214', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-05 11:36:52', '2026-09-10 14:48:05'),
-('12', 'Riya Sharma', 'riya.sharma@example.com', '9876543215', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-05 11:36:52', '2026-09-10 14:48:05'),
-('13', 'Karan Verma', 'karan.verma@example.com', '9876543216', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-05 11:36:52', '2026-09-10 14:48:05'),
-('35', 'Test User', 'testuser_1788855583@example.com', '9922705357', '15df223712faaa64391e2daf1d2368e52b9012f6d3097269d875415959f98b22', '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'suspended', 'student', NULL, NULL, '2026-09-08 13:49:43', '2026-09-10 14:48:05'),
-('36', 'Test User', 'testuser_1788855661@example.com', '9690386679', '14f2327d8efd1ff95d06ad663f681be1c2fd1a6e51d6137622df5717b0a3c72d', '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-08 13:51:01', '2026-09-10 14:48:05'),
-('37', 'Test User', 'testuser_1788930967@example.com', '9121745199', 'e0dad81d1731ad34861c8578cda4b664fca839a1355c5384be9db3c72c3698eb', '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-09 10:46:07', '2026-09-10 14:48:05'),
-('38', 'Referrer Test User', 'referrer_test@examverse.com', '9999000001', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-10 10:52:23', '2026-09-10 14:48:05'),
-('39', 'Referred Student', 'referred_student@examverse.com', '9999000002', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-10 10:52:23', '2026-09-10 14:48:05'),
-('40', 'Faculty Teacher', 'teacher@examverse.com', '9876543299', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'teacher', NULL, NULL, '2026-09-10 14:48:05', '2026-09-10 14:48:05');
+INSERT INTO `users` (`id`, `full_name`, `email`, `mobile`, `mobile_hash`, `password_hash`, `state_id`, `district`, `qualification_id`, `is_verified`, `status`, `user_type`, `avatar_url`, `bio`, `created_at`, `updated_at`) VALUES
+('1', 'Demo Student', 'demo@examverse.com', '9876543200', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-09 11:10:42', '2026-09-10 14:48:05'),
+('7', 'Neha Sharma', 'neha.sharma@example.com', '9876543210', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, NULL, '1', 'active', 'teacher', NULL, NULL, '2026-09-05 11:36:52', '2026-09-10 14:48:05'),
+('8', 'Amit Verma', 'amit.verma@example.com', '9876543211', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, NULL, '1', 'active', 'teacher', NULL, NULL, '2026-09-05 11:36:52', '2026-09-10 14:48:05'),
+('9', 'Priya Nair', 'priya.nair@example.com', '9876543212', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, NULL, '1', 'active', 'teacher', NULL, NULL, '2026-09-05 11:36:52', '2026-09-10 14:48:05'),
+('10', 'Rahul Gupta', 'rahul.gupta@example.com', '9876543213', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, NULL, '1', 'active', 'teacher', NULL, NULL, '2026-09-05 11:36:52', '2026-09-10 14:48:05'),
+('11', 'Arjun Patel', 'arjun.patel@example.com', '9876543214', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-05 11:36:52', '2026-09-10 14:48:05'),
+('12', 'Riya Sharma', 'riya.sharma@example.com', '9876543215', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-05 11:36:52', '2026-09-10 14:48:05'),
+('13', 'Karan Verma', 'karan.verma@example.com', '9876543216', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-05 11:36:52', '2026-09-10 14:48:05'),
+('35', 'Test User', 'testuser_1788855583@example.com', '9922705357', '15df223712faaa64391e2daf1d2368e52b9012f6d3097269d875415959f98b22', '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, NULL, '1', 'suspended', 'student', NULL, NULL, '2026-09-08 13:49:43', '2026-09-10 14:48:05'),
+('36', 'Test User', 'testuser_1788855661@example.com', '9690386679', '14f2327d8efd1ff95d06ad663f681be1c2fd1a6e51d6137622df5717b0a3c72d', '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-08 13:51:01', '2026-09-10 14:48:05'),
+('37', 'Test User', 'testuser_1788930967@example.com', '9121745199', 'e0dad81d1731ad34861c8578cda4b664fca839a1355c5384be9db3c72c3698eb', '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-09 10:46:07', '2026-09-10 14:48:05'),
+('38', 'Referrer Test User', 'referrer_test@examverse.com', '9999000001', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-10 10:52:23', '2026-09-10 14:48:05'),
+('39', 'Referred Student', 'referred_student@examverse.com', '9999000002', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-10 10:52:23', '2026-09-10 14:48:05'),
+('40', 'Faculty Teacher', 'teacher@examverse.com', '9876543299', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, NULL, '1', 'active', 'teacher', NULL, NULL, '2026-09-10 14:48:05', '2026-09-10 14:48:05');
 
 -- --------------------------------------------------------
 -- Default Super Administrator (admin / Admin@12345678)
