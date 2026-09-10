@@ -168,6 +168,7 @@ switch ($action) {
         $body           = getBody();
         $fullName       = trim($body['full_name'] ?? '');
         $email          = trim($body['email'] ?? '');
+        $mobile         = trim($body['mobile'] ?? '');
         $password       = (string)($body['password'] ?? '');
         $displayName    = trim($body['display_name'] ?? '') ?: $fullName;
         $qualification  = trim($body['qualification'] ?? '');
@@ -177,11 +178,17 @@ switch ($action) {
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) ajaxErr('A valid email is required', 422);
         if (strlen($password) < 8) ajaxErr('Password must be at least 8 characters', 422);
 
-        do {
-            $mobile = 'NA-' . bin2hex(random_bytes(8));
-            $probe = $db->prepare("SELECT id FROM users WHERE mobile=?");
-            $probe->execute([$mobile]);
-        } while ($probe->fetch());
+        if ($mobile === '') {
+            do {
+                $mobile = 'NA-' . bin2hex(random_bytes(8));
+                $probe = $db->prepare("SELECT id FROM users WHERE mobile=?");
+                $probe->execute([$mobile]);
+            } while ($probe->fetch());
+        } else {
+            $mobileProbe = $db->prepare("SELECT id FROM users WHERE mobile=?");
+            $mobileProbe->execute([$mobile]);
+            if ($mobileProbe->fetch()) ajaxErr('An account with this mobile number already exists', 409);
+        }
 
         $exists = $db->prepare("SELECT id FROM users WHERE email=?");
         $exists->execute([$email]);
@@ -192,17 +199,25 @@ switch ($action) {
             $db->prepare("INSERT INTO users (full_name, email, mobile, password_hash, user_type, is_verified, status) VALUES (?,?,?,?,'teacher',1,'active')")
                ->execute([$fullName, $email, $mobile, password_hash($password, PASSWORD_BCRYPT)]);
             $userId = $db->lastInsertId();
-            $db->prepare("INSERT INTO teacher_profiles (user_id, display_name, qualification, specialisation) VALUES (?,?,?,?)")
+            
+            $db->prepare("INSERT INTO teacher_profiles (user_id, display_name, qualification, specialisation, status) VALUES (?,?,?,?,'active')")
                ->execute([$userId, $displayName, $qualification ?: null, $specialisation ?: null]);
+
+            // Auto-create approved application record for reporting
+            try {
+                $db->prepare("INSERT INTO teacher_applications (user_id, current_organization, years_of_experience, preferred_subjects, status, reviewed_by, reviewed_at, internal_notes) VALUES (?, ?, '2+ Years', ?, 'approved', ?, NOW(), 'Directly created and verified by Administrator')")
+                   ->execute([$userId, 'ExamVerse Faculty', $specialisation ?: 'General', $adminId]);
+            } catch (Exception $eApp) {}
+
             auditLog($db, $adminId, 'CREATE_TEACHER', $userId, 'Created teacher account: ' . $email);
             $db->commit();
         } catch (Throwable $e) {
             $db->rollBack();
             error_log('EXAMVERSE create teacher failed: ' . $e->getMessage());
-            ajaxErr('Could not create the teacher account', 500);
+            ajaxErr('Could not create the teacher account: ' . $e->getMessage(), 500);
         }
 
-        ajaxOk(['user_id' => $userId], 'Teacher account created ✓', 201);
+        ajaxOk(['user_id' => $userId, 'email' => $email, 'full_name' => $fullName], 'Teacher account created successfully! ✓', 201);
         break;
 
     case 'teacher_status':
