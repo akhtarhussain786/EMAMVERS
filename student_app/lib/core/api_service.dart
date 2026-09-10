@@ -76,15 +76,18 @@ class ApiService {
 
   static Uri _buildUri(String endpoint, [Map<String, dynamic>? params]) {
     final base = Uri.parse('${AppConstants.apiBaseUrl}$endpoint');
-    if (params == null || params.isEmpty) return base;
-
     final query = <String, String>{...base.queryParameters};
-    params.forEach((key, value) {
-      if (value == null) return;
-      final text = value.toString();
-      if (text.isEmpty) return;
-      query[key] = text;
-    });
+    if (params != null && params.isNotEmpty) {
+      params.forEach((key, value) {
+        if (value == null) return;
+        final text = value.toString();
+        if (text.isEmpty) return;
+        query[key] = text;
+      });
+    }
+    if (authToken != null && authToken!.isNotEmpty) {
+      query['auth_token'] = authToken!;
+    }
     return base.replace(queryParameters: query.isEmpty ? null : query);
   }
 
@@ -128,7 +131,9 @@ class ApiService {
   static dynamic _processResponse(http.Response response) {
     if (response.statusCode == 401) {
       final message = _messageFrom(response.body) ?? 'Your session has expired. Please sign in again.';
-      onUnauthorized?.call();
+      if (authToken != null && authToken!.isNotEmpty) {
+        onUnauthorized?.call();
+      }
       throw UnauthorizedException(message);
     }
 
