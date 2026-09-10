@@ -131,9 +131,6 @@ class ApiService {
   static dynamic _processResponse(http.Response response) {
     if (response.statusCode == 401) {
       final message = _messageFrom(response.body) ?? 'Your session has expired. Please sign in again.';
-      if (authToken != null && authToken!.isNotEmpty) {
-        onUnauthorized?.call();
-      }
       throw UnauthorizedException(message);
     }
 
