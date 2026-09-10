@@ -176,20 +176,66 @@ class AuthController {
         $district = isset($input['district']) ? trim($input['district']) : null;
 
         $passwordHash = password_hash($password, PASSWORD_BCRYPT);
-        $stmt = $db->prepare("
-            INSERT INTO users (full_name, email, mobile, mobile_hash, password_hash, state_id, district, qualification_id, is_verified) 
-            VALUES (:full_name, :email, :mobile, :mobile_hash, :password_hash, :state_id, :district, :qualification_id, 1)
-        ");
-        $stmt->execute([
-            'full_name' => $fullName,
-            'email' => $email,
-            'mobile' => $mobile,
-            'mobile_hash' => self::mobileHash($mobile),
-            'password_hash' => $passwordHash,
-            'state_id' => $stateId,
-            'district' => $district,
-            'qualification_id' => $qualificationId
-        ]);
+        try {
+            $stmt = $db->prepare("
+                INSERT INTO users (full_name, email, mobile, mobile_hash, password_hash, state_id, district, qualification_id, is_verified) 
+                VALUES (:full_name, :email, :mobile, :mobile_hash, :password_hash, :state_id, :district, :qualification_id, 1)
+            ");
+            $stmt->execute([
+                'full_name' => $fullName,
+                'email' => $email,
+                'mobile' => $mobile,
+                'mobile_hash' => self::mobileHash($mobile),
+                'password_hash' => $passwordHash,
+                'state_id' => $stateId,
+                'district' => $district,
+                'qualification_id' => $qualificationId
+            ]);
+        } catch (PDOException $e) {
+            // Auto-heal missing column(s) on live database
+            if (strpos($e->getMessage(), '1054') !== false || stripos($e->getMessage(), 'Unknown column') !== false) {
+                try {
+                    $db->exec("ALTER TABLE users ADD COLUMN state_id INT NULL AFTER password_hash");
+                } catch (Exception $ex) {}
+                try {
+                    $db->exec("ALTER TABLE users ADD COLUMN district VARCHAR(100) NULL AFTER state_id");
+                } catch (Exception $ex) {}
+                try {
+                    $db->exec("ALTER TABLE users ADD COLUMN qualification_id INT NULL AFTER district");
+                } catch (Exception $ex) {}
+
+                try {
+                    $stmt = $db->prepare("
+                        INSERT INTO users (full_name, email, mobile, mobile_hash, password_hash, state_id, district, qualification_id, is_verified) 
+                        VALUES (:full_name, :email, :mobile, :mobile_hash, :password_hash, :state_id, :district, :qualification_id, 1)
+                    ");
+                    $stmt->execute([
+                        'full_name' => $fullName,
+                        'email' => $email,
+                        'mobile' => $mobile,
+                        'mobile_hash' => self::mobileHash($mobile),
+                        'password_hash' => $passwordHash,
+                        'state_id' => $stateId,
+                        'district' => $district,
+                        'qualification_id' => $qualificationId
+                    ]);
+                } catch (Exception $e2) {
+                    $stmt = $db->prepare("
+                        INSERT INTO users (full_name, email, mobile, mobile_hash, password_hash, is_verified) 
+                        VALUES (:full_name, :email, :mobile, :mobile_hash, :password_hash, 1)
+                    ");
+                    $stmt->execute([
+                        'full_name' => $fullName,
+                        'email' => $email,
+                        'mobile' => $mobile,
+                        'mobile_hash' => self::mobileHash($mobile),
+                        'password_hash' => $passwordHash
+                    ]);
+                }
+            } else {
+                throw $e;
+            }
+        }
 
         $userId = $db->lastInsertId();
         $token = AuthToken::generate($userId, 'student');
@@ -202,15 +248,22 @@ class AuthController {
         }
 
         // Fetch inserted user
-        $stmtUser = $db->prepare("
-            SELECT u.id, u.full_name, u.email, u.mobile, u.state_id, u.qualification_id, s.name as state_name, q.name as qualification_name
-            FROM users u
-            LEFT JOIN states s ON u.state_id = s.id
-            LEFT JOIN qualifications q ON u.qualification_id = q.id
-            WHERE u.id = :id
-        ");
-        $stmtUser->execute(['id' => $userId]);
-        $user = $stmtUser->fetch();
+        $user = null;
+        try {
+            $stmtUser = $db->prepare("
+                SELECT u.id, u.full_name, u.email, u.mobile, u.state_id, u.district, u.qualification_id, s.name as state_name, q.name as qualification_name
+                FROM users u
+                LEFT JOIN states s ON u.state_id = s.id
+                LEFT JOIN qualifications q ON u.qualification_id = q.id
+                WHERE u.id = :id
+            ");
+            $stmtUser->execute(['id' => $userId]);
+            $user = $stmtUser->fetch();
+        } catch (Exception $e) {
+            $stmtUser = $db->prepare("SELECT id, full_name, email, mobile FROM users WHERE id = :id");
+            $stmtUser->execute(['id' => $userId]);
+            $user = $stmtUser->fetch();
+        }
 
         Response::json([
             'token' => $token,
