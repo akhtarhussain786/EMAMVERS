@@ -50,14 +50,22 @@ try {
 ?>
 
 <div style="width: 100%; max-width: 100%; box-sizing: border-box;">
-    <!-- Page Header Title & Subtitle -->
-    <div style="margin-bottom: 24px;">
-        <h2 style="font-size: 22px; font-weight: 800; color: var(--text-primary); margin: 0 0 6px 0; display: flex; align-items: center; gap: 8px;">
-            <span>🎓</span> Teacher KYC & Credential Verification Queue
-        </h2>
-        <p style="margin: 0; font-size: 13.5px; color: var(--text-muted);">
-            Review teacher applicant credentials, verify degree & identity documents, and approve question authoring access (PRD §15).
-        </p>
+    <!-- Page Header Title & Subtitle + Add Teacher Action Button -->
+    <div style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+        <div>
+            <h2 style="font-size: 22px; font-weight: 800; color: var(--text-primary); margin: 0 0 6px 0; display: flex; align-items: center; gap: 8px;">
+                <span>🎓</span> Teacher Management & KYC Verification Queue
+            </h2>
+            <p style="margin: 0; font-size: 13.5px; color: var(--text-muted);">
+                Add new faculty teachers, review KYC credentials, and approve question authoring access.
+            </p>
+        </div>
+        <div>
+            <button onclick="openAddTeacherModal()" style="display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: 0 2px 6px rgba(37,99,235,0.25); transition: transform 0.15s ease;">
+                <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                + Add New Teacher
+            </button>
+        </div>
     </div>
 
     <!-- 1. KPI Metric Summary Cards -->
@@ -507,4 +515,174 @@ async function submitReject() {
         alert('Request error: ' + e);
     }
 }
+
+// ── ADD TEACHER MODAL LOGIC ──────────────────────────────────────────
+function openAddTeacherModal() {
+    document.getElementById('addTeacherForm').reset();
+    document.getElementById('addTeacherError').style.display = 'none';
+    document.getElementById('addTeacherSuccess').style.display = 'none';
+    document.getElementById('addTeacherFormContainer').style.display = 'block';
+    autoGeneratePassword();
+    document.getElementById('addTeacherModal').style.display = 'flex';
+}
+
+function closeAddTeacherModal() {
+    document.getElementById('addTeacherModal').style.display = 'none';
+}
+
+function autoGeneratePassword() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$';
+    let pass = 'Teach@';
+    for (let i = 0; i < 4; i++) {
+        pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    pass += Math.floor(10 + Math.random() * 90);
+    document.getElementById('t_password').value = pass;
+}
+
+async function submitCreateTeacher(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnSaveTeacher');
+    const errDiv = document.getElementById('addTeacherError');
+    errDiv.style.display = 'none';
+
+    const payload = {
+        full_name: document.getElementById('t_fullname').value.trim(),
+        email: document.getElementById('t_email').value.trim(),
+        mobile: document.getElementById('t_mobile').value.trim(),
+        password: document.getElementById('t_password').value,
+        qualification: document.getElementById('t_qualification').value.trim(),
+        specialisation: document.getElementById('t_specialisation').value.trim()
+    };
+
+    if (!payload.full_name || !payload.email || !payload.password) {
+        errDiv.innerText = 'Please fill all required fields (Name, Email, Password).';
+        errDiv.style.display = 'block';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = 'Creating Teacher...';
+
+    try {
+        const res = await fetch('ajax/question_review.php?action=create_teacher', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            document.getElementById('addTeacherFormContainer').style.display = 'none';
+            document.getElementById('credName').innerText = payload.full_name;
+            document.getElementById('credEmail').innerText = payload.email;
+            document.getElementById('credPass').innerText = payload.password;
+            document.getElementById('addTeacherSuccess').style.display = 'block';
+        } else {
+            errDiv.innerText = data.message || 'Failed to create teacher account.';
+            errDiv.style.display = 'block';
+        }
+    } catch (err) {
+        errDiv.innerText = 'Network error: ' + err.message;
+        errDiv.style.display = 'block';
+    } finally {
+        btn.disabled = false;
+        btn.innerText = 'Create & Verify Teacher';
+    }
+}
+
+function copyTeacherCredentials() {
+    const email = document.getElementById('credEmail').innerText;
+    const pass = document.getElementById('credPass').innerText;
+    const name = document.getElementById('credName').innerText;
+    const text = `🎓 Welcome to EXAMVERSE Faculty!\n\nHello ${name},\nYour Teacher account has been created.\n\n📧 Login Email: ${email}\n🔑 Password: ${pass}\n\nLogin into the EXAMVERSE Mobile App or Web Portal to start authoring tests and questions.`;
+    
+    navigator.clipboard.writeText(text).then(() => {
+        alert('Credentials copied to clipboard! You can paste and send to the teacher.');
+    });
+}
 </script>
+
+<!-- Add Teacher Modal -->
+<div id="addTeacherModal" style="display:none; position:fixed; z-index:9999; inset:0; background:rgba(15,23,42,0.65); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:16px;">
+    <div style="background:#ffffff; width:100%; max-width:540px; border-radius:16px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); border:1px solid #e2e8f0; overflow:hidden;">
+        <!-- Modal Header -->
+        <div style="padding:18px 24px; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:20px;">🎓</span>
+                <h3 style="margin:0; font-size:16px; font-weight:800; color:#0f172a;">Add & Verify New Faculty Teacher</h3>
+            </div>
+            <button onclick="closeAddTeacherModal()" style="background:transparent; border:none; color:#64748b; font-size:20px; cursor:pointer; padding:4px;">✕</button>
+        </div>
+
+        <div style="padding:24px;">
+            <!-- Form Container -->
+            <div id="addTeacherFormContainer">
+                <p style="margin:0 0 18px 0; font-size:13px; color:#64748b;">
+                    Create a faculty teacher account with immediate login credentials. The teacher will be able to log in to author questions and mock tests.
+                </p>
+
+                <div id="addTeacherError" style="display:none; background:#fef2f2; color:#dc2626; border:1px solid #fecaca; border-radius:8px; padding:10px 14px; font-size:13px; margin-bottom:16px; font-weight:600;"></div>
+
+                <form id="addTeacherForm" onsubmit="submitCreateTeacher(event)" style="display:grid; gap:14px;">
+                    <div>
+                        <label style="display:block; font-size:12.5px; font-weight:700; color:#334155; margin-bottom:5px;">Full Name *</label>
+                        <input type="text" id="t_fullname" required placeholder="e.g. Dr. Rajesh Verma" style="width:100%; box-sizing:border-box; padding:9px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:13.5px; outline:none;">
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                        <div>
+                            <label style="display:block; font-size:12.5px; font-weight:700; color:#334155; margin-bottom:5px;">Email Address (Login ID) *</label>
+                            <input type="email" id="t_email" required placeholder="teacher@examverse.com" style="width:100%; box-sizing:border-box; padding:9px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:13.5px; outline:none;">
+                        </div>
+                        <div>
+                            <label style="display:block; font-size:12.5px; font-weight:700; color:#334155; margin-bottom:5px;">Mobile Number</label>
+                            <input type="text" id="t_mobile" placeholder="9876543210" style="width:100%; box-sizing:border-box; padding:9px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:13.5px; outline:none;">
+                        </div>
+                    </div>
+
+                    <div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                            <label style="font-size:12.5px; font-weight:700; color:#334155;">Password (Min 8 chars) *</label>
+                            <button type="button" onclick="autoGeneratePassword()" style="background:none; border:none; color:#2563eb; font-size:11.5px; font-weight:700; cursor:pointer; text-decoration:underline;">Auto-generate</button>
+                        </div>
+                        <input type="text" id="t_password" required placeholder="Enter strong password" style="width:100%; box-sizing:border-box; padding:9px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:13.5px; outline:none; font-family:monospace; font-weight:600;">
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                        <div>
+                            <label style="display:block; font-size:12.5px; font-weight:700; color:#334155; margin-bottom:5px;">Qualification</label>
+                            <input type="text" id="t_qualification" placeholder="e.g. M.Sc, B.Ed, Ph.D" style="width:100%; box-sizing:border-box; padding:9px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:13.5px; outline:none;">
+                        </div>
+                        <div>
+                            <label style="display:block; font-size:12.5px; font-weight:700; color:#334155; margin-bottom:5px;">Subject / Specialization</label>
+                            <input type="text" id="t_specialisation" placeholder="e.g. Quantitative Aptitude, GS" style="width:100%; box-sizing:border-box; padding:9px 12px; border-radius:8px; border:1px solid #cbd5e1; font-size:13.5px; outline:none;">
+                        </div>
+                    </div>
+
+                    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+                        <button type="button" onclick="closeAddTeacherModal()" style="padding:9px 16px; border-radius:8px; border:1px solid #cbd5e1; background:#ffffff; color:#475569; font-weight:600; cursor:pointer; font-size:13px;">Cancel</button>
+                        <button type="submit" id="btnSaveTeacher" style="padding:9px 20px; border-radius:8px; border:none; background:linear-gradient(135deg, #2563eb, #1d4ed8); color:#ffffff; font-weight:700; cursor:pointer; font-size:13px; box-shadow:0 2px 4px rgba(37,99,235,0.2);">Create & Verify Teacher</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Success Card -->
+            <div id="addTeacherSuccess" style="display:none; text-align:center; padding:10px 0;">
+                <div style="width:56px; height:56px; border-radius:50%; background:#dcfce7; color:#16a34a; font-size:28px; display:inline-flex; align-items:center; justify-content:center; margin-bottom:12px;">✓</div>
+                <h3 style="margin:0 0 6px 0; font-size:18px; font-weight:800; color:#0f172a;">Teacher Account Created!</h3>
+                <p style="font-size:13px; color:#64748b; margin:0 0 16px 0;">Faculty account is verified and ready for login.</p>
+
+                <div style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:10px; padding:14px; text-align:left; font-size:13px; margin-bottom:18px;">
+                    <div style="margin-bottom:6px;"><strong style="color:#334155;">Name:</strong> <span id="credName" style="color:#0f172a; font-weight:600;"></span></div>
+                    <div style="margin-bottom:6px;"><strong style="color:#334155;">Login Email:</strong> <span id="credEmail" style="color:#2563eb; font-weight:700;"></span></div>
+                    <div><strong style="color:#334155;">Password:</strong> <span id="credPass" style="font-family:monospace; background:#e2e8f0; padding:2px 6px; border-radius:4px; font-weight:700;"></span></div>
+                </div>
+
+                <div style="display:flex; justify-content:center; gap:10px;">
+                    <button onclick="copyTeacherCredentials()" style="padding:9px 18px; border-radius:8px; border:1px solid #2563eb; background:#eff6ff; color:#2563eb; font-weight:700; cursor:pointer; font-size:13px; display:inline-flex; align-items:center; gap:6px;">📋 Copy Credentials</button>
+                    <button onclick="window.location.reload()" style="padding:9px 20px; border-radius:8px; border:none; background:#10b981; color:#ffffff; font-weight:700; cursor:pointer; font-size:13px;">Done & Refresh</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
