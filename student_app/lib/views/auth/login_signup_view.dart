@@ -24,6 +24,7 @@ class _LoginSignupViewState extends State<LoginSignupView> {
   final emailMobileController = TextEditingController();
   final passwordController = TextEditingController();
   final fullNameController = TextEditingController();
+  final referralCodeController = TextEditingController();
 
   List<dynamic> states = [];
   List<dynamic> qualifications = [];
@@ -267,6 +268,7 @@ class _LoginSignupViewState extends State<LoginSignupView> {
         'state_id': selectedStateId,
         'district': selectedDistrict,
         'qualification_id': selectedQualId,
+        'referral_code': referralCodeController.text.trim(),
       });
       await ApiService.setSession(res['token'] as String?, remember: rememberMe, type: 'student');
       await _savePreferences(identity);
@@ -539,6 +541,14 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                                   ),
                                 ),
                               ],
+                            ),
+                            const SizedBox(height: AppConstants.space16),
+
+                            CustomTextField(
+                              label: 'Referral Code (Optional) 🎁',
+                              hint: 'e.g. EVB0FBAB (Get 30 Days Free)',
+                              controller: referralCodeController,
+                              prefixIcon: Icons.card_giftcard_outlined,
                             ),
                             const SizedBox(height: AppConstants.space16),
                           ],
