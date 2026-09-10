@@ -79,16 +79,54 @@ class AuthToken {
         if (function_exists('getallheaders')) {
             $headers = getallheaders() ?: [];
             foreach ($headers as $name => $value) {
-                if (strcasecmp($name, 'Authorization') === 0) { $authHeader = $value; break; }
+                if (strcasecmp($name, 'Authorization') === 0 || 
+                    strcasecmp($name, 'X-Auth-Token') === 0 || 
+                    strcasecmp($name, 'X-Authorization') === 0) {
+                    $authHeader = $value;
+                    break;
+                }
             }
         }
-        if (!$authHeader && isset($_SERVER['HTTP_AUTHORIZATION'])) {
-            $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
+        if (!$authHeader && function_exists('apache_request_headers')) {
+            $headers = apache_request_headers() ?: [];
+            foreach ($headers as $name => $value) {
+                if (strcasecmp($name, 'Authorization') === 0 || 
+                    strcasecmp($name, 'X-Auth-Token') === 0 || 
+                    strcasecmp($name, 'X-Authorization') === 0) {
+                    $authHeader = $value;
+                    break;
+                }
+            }
         }
-        if (!$authHeader && isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
-            $authHeader = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+        if (!$authHeader) {
+            $keys = [
+                'HTTP_AUTHORIZATION',
+                'REDIRECT_HTTP_AUTHORIZATION',
+                'HTTP_X_AUTH_TOKEN',
+                'HTTP_X_AUTHORIZATION',
+                'REDIRECT_HTTP_X_AUTH_TOKEN',
+                'REDIRECT_HTTP_X_AUTHORIZATION'
+            ];
+            foreach ($keys as $k) {
+                if (!empty($_SERVER[$k])) {
+                    $authHeader = $_SERVER[$k];
+                    break;
+                }
+            }
         }
-        if (preg_match('/Bearer\s+(\S+)/i', $authHeader, $m)) return $m[1];
+        if (!$authHeader && isset($_SERVER['PHP_AUTH_USER'])) {
+            $authHeader = 'Bearer ' . $_SERVER['PHP_AUTH_USER'];
+        }
+
+        if ($authHeader) {
+            if (preg_match('/Bearer\s+(\S+)/i', $authHeader, $m)) return $m[1];
+            if (strpos($authHeader, '.') !== false) return trim($authHeader);
+        }
+
+        if (!empty($_GET['auth_token'])) return trim($_GET['auth_token']);
+        if (!empty($_GET['token'])) return trim($_GET['token']);
+        if (!empty($_POST['auth_token'])) return trim($_POST['auth_token']);
+
         return null;
     }
 }

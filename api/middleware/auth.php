@@ -14,33 +14,15 @@ class AuthMiddleware {
     public static function getAuthenticatedUser($requiredType = null) {
         $token = AuthToken::tokenFromRequest();
         if (!$token) {
-            if ($requiredType === 'admin' && self::hasAdminPanelSession()) {
-                $user = $_SESSION['admin_user'] ?? [];
-                return [
-                    'sub'     => $user['id'] ?? 1,
-                    'id'      => $user['id'] ?? 1,
-                    'user_id' => $user['id'] ?? 1,
-                    'type'    => $user['role'] ?? 'super_admin',
-                    'extra'   => $user,
-                    'payload' => $user,
-                ];
-            }
+            $session = self::adminSessionClaims($requiredType);
+            if ($session) return $session;
             Response::error('Unauthorized: Missing or malformed token', 401);
         }
 
         $payload = AuthToken::verify($token);
         if (!$payload) {
-            if ($requiredType === 'admin' && self::hasAdminPanelSession()) {
-                $user = $_SESSION['admin_user'] ?? [];
-                return [
-                    'sub'     => $user['id'] ?? 1,
-                    'id'      => $user['id'] ?? 1,
-                    'user_id' => $user['id'] ?? 1,
-                    'type'    => $user['role'] ?? 'super_admin',
-                    'extra'   => $user,
-                    'payload' => $user,
-                ];
-            }
+            $session = self::adminSessionClaims($requiredType);
+            if ($session) return $session;
             Response::error('Unauthorized: Invalid or expired token', 401);
         }
 
@@ -49,6 +31,35 @@ class AuthMiddleware {
         }
 
         return $payload;
+    }
+
+    /**
+     * Claims derived from a live admin-panel session, for API calls made from
+     * the panel itself (which authenticates by cookie, not bearer token).
+     *
+     * Returns null unless the session carries a real admin id and role — an
+     * incomplete session must fail closed rather than default to super_admin.
+     */
+    private static function adminSessionClaims($requiredType) {
+        if ($requiredType !== 'admin' || !self::hasAdminPanelSession()) return null;
+
+        $user = $_SESSION['admin_user'] ?? [];
+        $id   = isset($user['id']) ? (int)$user['id'] : 0;
+        $role = $user['role'] ?? null;
+
+        if ($id <= 0 || !in_array($role, self::$adminRoles, true)) {
+            error_log('EXAMVERSE: admin session present but incomplete; refusing to authenticate.');
+            return null;
+        }
+
+        return [
+            'sub'     => $id,
+            'id'      => $id,
+            'user_id' => $id,
+            'type'    => $role,
+            'extra'   => $user,
+            'payload' => $user,
+        ];
     }
 
     /**
