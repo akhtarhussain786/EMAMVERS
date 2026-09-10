@@ -47,13 +47,9 @@ class _LoginSignupViewState extends State<LoginSignupView> {
         emailMobileController.text = savedIdentity;
       } else {
         emailMobileController.text = 'demo@examverse.com';
-        passwordController.text = 'student123';
+        passwordController.text = 'password123';
       }
     });
-    // Auto-login to proceed directly to testing
-    if (emailMobileController.text.isNotEmpty && passwordController.text.isNotEmpty) {
-      _handleLogin();
-    }
   }
 
   Future<void> _savePreferences(String identity) async {
@@ -74,10 +70,38 @@ class _LoginSignupViewState extends State<LoginSignupView> {
       setState(() {
         states = res['states'] ?? [];
         qualifications = res['qualifications'] ?? [];
-        if (states.isNotEmpty) selectedStateId = states[0]['id'];
-        if (qualifications.isNotEmpty) selectedQualId = qualifications[0]['id'];
+        if (states.isNotEmpty && selectedStateId == null) selectedStateId = states[0]['id'];
+        if (qualifications.isNotEmpty && selectedQualId == null) selectedQualId = qualifications[0]['id'];
       });
-    } catch (_) {}
+    } catch (_) {
+      if (mounted && states.isEmpty) {
+        setState(() {
+          states = [
+            {'id': 1, 'name': 'All India / Central'},
+            {'id': 2, 'name': 'Uttar Pradesh'},
+            {'id': 3, 'name': 'Bihar'},
+            {'id': 4, 'name': 'Rajasthan'},
+            {'id': 5, 'name': 'Madhya Pradesh'},
+            {'id': 6, 'name': 'Delhi NCR'},
+            {'id': 7, 'name': 'Maharashtra'},
+            {'id': 8, 'name': 'Haryana'},
+          ];
+          selectedStateId = 1;
+        });
+      }
+    }
+  }
+
+  void _showSnackBar(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        backgroundColor: AppConstants.accentRose,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
   }
 
   void _handleLogin() async {
@@ -103,7 +127,7 @@ class _LoginSignupViewState extends State<LoginSignupView> {
     } catch (e) {
       _showSnackBar(e.toString().replaceAll('Exception: ', ''));
     } finally {
-      setState(() => isLoading = false);
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
@@ -134,48 +158,57 @@ class _LoginSignupViewState extends State<LoginSignupView> {
     } catch (e) {
       _showSnackBar(e.toString().replaceAll('Exception: ', ''));
     } finally {
-      setState(() => isLoading = false);
+      if (mounted) setState(() => isLoading = false);
     }
-  }
-
-  void _showSnackBar(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: AppConstants.accentRose,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppConstants.primaryDark,
+      backgroundColor: AppConstants.scaffoldDark,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: AppConstants.space24, vertical: AppConstants.space16),
+            padding: const EdgeInsets.symmetric(horizontal: AppConstants.space24, vertical: AppConstants.space32),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 440),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // FUTURISTIC BRAND LOGO
-                  RichText(
-                    text: const TextSpan(
-                      children: [
-                        TextSpan(text: 'EXAM', style: TextStyle(color: AppConstants.textPrimary, fontSize: 36, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
-                        TextSpan(text: 'VERSE', style: TextStyle(color: AppConstants.accentCyan, fontSize: 36, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+                  // BRAND HEADER
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [AppConstants.accentBlue, AppConstants.accentCyan],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppConstants.accentBlue.withValues(alpha: 0.3),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
                       ],
                     ),
+                    child: const Icon(Icons.school, color: Colors.white, size: 32),
                   ),
-
-                  const SizedBox(height: 6),
+                  const SizedBox(height: AppConstants.space16),
                   const Text(
-                    "India's AI Exam Performance & Career Platform",
-                    textAlign: TextAlign.center,
+                    'EXAMVERSE',
+                    style: TextStyle(
+                      color: AppConstants.textPrimary,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'India\'s Premier AI Exam Preparation Platform',
                     style: TextStyle(color: AppConstants.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: AppConstants.space32),
@@ -223,7 +256,109 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                           prefixIcon: Icons.lock_outline,
                           isPassword: true,
                         ),
-                        const SizedBox(height: AppConstants.space12),
+                        const SizedBox(height: AppConstants.space16),
+
+                        // SIGN UP STATE & QUALIFICATION DROPDOWNS
+                        if (isSignUp) ...[
+                          // State Dropdown
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Select Your Target State / Region',
+                                style: TextStyle(
+                                  color: AppConstants.textPrimary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: AppConstants.cardBorder),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<int>(
+                                    isExpanded: true,
+                                    value: selectedStateId,
+                                    icon: const Icon(Icons.keyboard_arrow_down, color: AppConstants.accentCyan),
+                                    hint: const Text('Select State', style: TextStyle(color: AppConstants.textSecondary, fontSize: 13)),
+                                    items: states.map<DropdownMenuItem<int>>((s) {
+                                      return DropdownMenuItem<int>(
+                                        value: s['id'] as int?,
+                                        child: Row(
+                                          children: [
+                                            const Icon(Icons.location_on_outlined, size: 18, color: AppConstants.accentCyan),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              (s['name'] ?? '').toString(),
+                                              style: const TextStyle(color: AppConstants.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w500),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
+                                    onChanged: (val) => setState(() => selectedStateId = val),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppConstants.space16),
+
+                          // Qualification Dropdown (if available)
+                          if (qualifications.isNotEmpty) ...[
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Highest Qualification',
+                                  style: TextStyle(
+                                    color: AppConstants.textPrimary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: AppConstants.cardBorder),
+                                  ),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<int>(
+                                      isExpanded: true,
+                                      value: selectedQualId,
+                                      icon: const Icon(Icons.keyboard_arrow_down, color: AppConstants.accentCyan),
+                                      items: qualifications.map<DropdownMenuItem<int>>((q) {
+                                        return DropdownMenuItem<int>(
+                                          value: q['id'] as int?,
+                                          child: Row(
+                                            children: [
+                                              const Icon(Icons.school_outlined, size: 18, color: AppConstants.accentIndigo),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                (q['name'] ?? '').toString(),
+                                                style: const TextStyle(color: AppConstants.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w500),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                                      onChanged: (val) => setState(() => selectedQualId = val),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppConstants.space16),
+                          ],
+                        ],
 
                         if (!isSignUp) ...[
                           Row(
@@ -271,8 +406,6 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                   const SizedBox(height: AppConstants.space24),
 
                   // TOGGLE LOGIN / SIGNUP
-                  // Wrap rather than Row: on narrow screens the prompt and the
-                  // action button together exceed one line and a Row overflows.
                   Wrap(
                     alignment: WrapAlignment.center,
                     crossAxisAlignment: WrapCrossAlignment.center,
@@ -306,7 +439,7 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                           side: BorderSide(color: AppConstants.accentCyan.withValues(alpha: 0.3)),
                           onPressed: () {
                             emailMobileController.text = 'demo@examverse.com';
-                            passwordController.text = 'student123';
+                            passwordController.text = 'password123';
                             _handleLogin();
                           },
                         ),
@@ -316,8 +449,8 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                           backgroundColor: AppConstants.accentGreen.withValues(alpha: 0.1),
                           side: BorderSide(color: AppConstants.accentGreen.withValues(alpha: 0.3)),
                           onPressed: () {
-                            emailMobileController.text = 'neha.sharma@example.com';
-                            passwordController.text = 'teacher123';
+                            emailMobileController.text = 'teacher@examverse.com';
+                            passwordController.text = 'password123';
                             _handleLogin();
                           },
                         ),
