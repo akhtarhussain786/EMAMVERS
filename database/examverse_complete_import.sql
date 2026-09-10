@@ -2116,14 +2116,15 @@ CREATE TABLE `teacher_profiles` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_id` (`user_id`),
   CONSTRAINT `teacher_profiles_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Dumping data for `teacher_profiles`
 INSERT INTO `teacher_profiles` (`id`, `user_id`, `display_name`, `qualification`, `specialisation`, `bio`, `questions_submitted`, `questions_approved`, `questions_rejected`, `status`, `created_at`) VALUES
 ('1', '10', 'Dr. Rahul Gupta', 'Ph.D Mathematics', 'Higher Algebra & Calculus', NULL, '0', '0', '0', 'active', '2026-09-05 11:37:41'),
 ('2', '7', 'Neha Sharma', 'M.Sc Physics, B.Ed', 'Physics & Quantitative Aptitude', 'Post Graduate in M.Sc Physics (Delhi University)', '0', '0', '0', 'active', '2026-09-09 12:11:10'),
 ('3', '8', '', NULL, NULL, 'Graduate in B.Tech Mechanical (IIT Delhi)', '0', '0', '0', 'active', '2026-09-10 11:56:59'),
-('4', '9', '', NULL, NULL, 'Post Graduate in M.A History (Jawaharlal Nehru University)', '0', '0', '0', 'active', '2026-09-10 11:58:16');
+('4', '9', '', NULL, NULL, 'Post Graduate in M.A History (Jawaharlal Nehru University)', '0', '0', '0', 'active', '2026-09-10 11:58:16'),
+('6', '40', 'Prof. Sharma', 'M.Sc Mathematics, B.Ed', 'Quantitative Aptitude', NULL, '0', '0', '0', 'active', '2026-09-10 14:48:05');
 
 -- --------------------------------------------------------
 -- Table structure for `test_attempts`
@@ -2615,23 +2616,24 @@ CREATE TABLE `users` (
   KEY `idx_users_mobile_hash` (`mobile_hash`),
   CONSTRAINT `users_ibfk_1` FOREIGN KEY (`state_id`) REFERENCES `states` (`id`) ON DELETE SET NULL,
   CONSTRAINT `users_ibfk_2` FOREIGN KEY (`qualification_id`) REFERENCES `qualifications` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=40 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Dumping data for `users`
 INSERT INTO `users` (`id`, `full_name`, `email`, `mobile`, `mobile_hash`, `password_hash`, `state_id`, `qualification_id`, `is_verified`, `status`, `user_type`, `avatar_url`, `bio`, `created_at`, `updated_at`) VALUES
-('1', 'Demo Student', 'demo@examverse.com', '9876543200', NULL, '$2y$10$sJ51RM7ZSTNY6gtleGiWm.pQFtIUSdNeMhoaeDMueCv3y4M5KkzEq', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-09 11:10:42', '2026-09-09 11:10:42'),
-('7', 'Neha Sharma', 'neha.sharma@example.com', '9876543210', NULL, '$2y$10$0A1nzrNnDJTv9WUzz2AoIOTq8GjjpymmuYIpo2464sSG4nnppMvWm', NULL, NULL, '1', 'active', 'teacher', NULL, NULL, '2026-09-05 11:36:52', '2026-09-09 11:10:42'),
-('8', 'Amit Verma', 'amit.verma@example.com', '9876543211', NULL, '$2y$10$0A1nzrNnDJTv9WUzz2AoIOTq8GjjpymmuYIpo2464sSG4nnppMvWm', NULL, NULL, '1', 'active', 'teacher', NULL, NULL, '2026-09-05 11:36:52', '2026-09-09 11:10:42'),
-('9', 'Priya Nair', 'priya.nair@example.com', '9876543212', NULL, '$2y$10$0A1nzrNnDJTv9WUzz2AoIOTq8GjjpymmuYIpo2464sSG4nnppMvWm', NULL, NULL, '1', 'active', 'teacher', NULL, NULL, '2026-09-05 11:36:52', '2026-09-09 11:10:42'),
-('10', 'Rahul Gupta', 'rahul.gupta@example.com', '9876543213', NULL, '$2y$10$0A1nzrNnDJTv9WUzz2AoIOTq8GjjpymmuYIpo2464sSG4nnppMvWm', NULL, NULL, '1', 'active', 'teacher', NULL, NULL, '2026-09-05 11:36:52', '2026-09-09 11:10:42'),
-('11', 'Arjun Patel', 'arjun.patel@example.com', '9876543214', NULL, '$2y$10$sJ51RM7ZSTNY6gtleGiWm.pQFtIUSdNeMhoaeDMueCv3y4M5KkzEq', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-05 11:36:52', '2026-09-09 11:10:42'),
-('12', 'Riya Sharma', 'riya.sharma@example.com', '9876543215', NULL, '$2y$10$sJ51RM7ZSTNY6gtleGiWm.pQFtIUSdNeMhoaeDMueCv3y4M5KkzEq', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-05 11:36:52', '2026-09-09 11:10:42'),
-('13', 'Karan Verma', 'karan.verma@example.com', '9876543216', NULL, '$2y$10$sJ51RM7ZSTNY6gtleGiWm.pQFtIUSdNeMhoaeDMueCv3y4M5KkzEq', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-05 11:36:52', '2026-09-09 11:10:42'),
-('35', 'Test User', 'testuser_1788855583@example.com', '9922705357', '15df223712faaa64391e2daf1d2368e52b9012f6d3097269d875415959f98b22', '$2y$10$sJ51RM7ZSTNY6gtleGiWm.pQFtIUSdNeMhoaeDMueCv3y4M5KkzEq', NULL, NULL, '1', 'suspended', 'student', NULL, NULL, '2026-09-08 13:49:43', '2026-09-09 11:10:42'),
-('36', 'Test User', 'testuser_1788855661@example.com', '9690386679', '14f2327d8efd1ff95d06ad663f681be1c2fd1a6e51d6137622df5717b0a3c72d', '$2y$10$sJ51RM7ZSTNY6gtleGiWm.pQFtIUSdNeMhoaeDMueCv3y4M5KkzEq', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-08 13:51:01', '2026-09-09 11:10:42'),
-('37', 'Test User', 'testuser_1788930967@example.com', '9121745199', 'e0dad81d1731ad34861c8578cda4b664fca839a1355c5384be9db3c72c3698eb', '$2y$10$sJ51RM7ZSTNY6gtleGiWm.pQFtIUSdNeMhoaeDMueCv3y4M5KkzEq', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-09 10:46:07', '2026-09-09 11:10:42'),
-('38', 'Referrer Test User', 'referrer_test@examverse.com', '9999000001', NULL, 'hash123', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-10 10:52:23', '2026-09-10 10:52:23'),
-('39', 'Referred Student', 'referred_student@examverse.com', '9999000002', NULL, 'hash123', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-10 10:52:23', '2026-09-10 10:52:23');
+('1', 'Demo Student', 'demo@examverse.com', '9876543200', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-09 11:10:42', '2026-09-10 14:48:05'),
+('7', 'Neha Sharma', 'neha.sharma@example.com', '9876543210', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'teacher', NULL, NULL, '2026-09-05 11:36:52', '2026-09-10 14:48:05'),
+('8', 'Amit Verma', 'amit.verma@example.com', '9876543211', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'teacher', NULL, NULL, '2026-09-05 11:36:52', '2026-09-10 14:48:05'),
+('9', 'Priya Nair', 'priya.nair@example.com', '9876543212', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'teacher', NULL, NULL, '2026-09-05 11:36:52', '2026-09-10 14:48:05'),
+('10', 'Rahul Gupta', 'rahul.gupta@example.com', '9876543213', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'teacher', NULL, NULL, '2026-09-05 11:36:52', '2026-09-10 14:48:05'),
+('11', 'Arjun Patel', 'arjun.patel@example.com', '9876543214', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-05 11:36:52', '2026-09-10 14:48:05'),
+('12', 'Riya Sharma', 'riya.sharma@example.com', '9876543215', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-05 11:36:52', '2026-09-10 14:48:05'),
+('13', 'Karan Verma', 'karan.verma@example.com', '9876543216', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-05 11:36:52', '2026-09-10 14:48:05'),
+('35', 'Test User', 'testuser_1788855583@example.com', '9922705357', '15df223712faaa64391e2daf1d2368e52b9012f6d3097269d875415959f98b22', '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'suspended', 'student', NULL, NULL, '2026-09-08 13:49:43', '2026-09-10 14:48:05'),
+('36', 'Test User', 'testuser_1788855661@example.com', '9690386679', '14f2327d8efd1ff95d06ad663f681be1c2fd1a6e51d6137622df5717b0a3c72d', '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-08 13:51:01', '2026-09-10 14:48:05'),
+('37', 'Test User', 'testuser_1788930967@example.com', '9121745199', 'e0dad81d1731ad34861c8578cda4b664fca839a1355c5384be9db3c72c3698eb', '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-09 10:46:07', '2026-09-10 14:48:05'),
+('38', 'Referrer Test User', 'referrer_test@examverse.com', '9999000001', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-10 10:52:23', '2026-09-10 14:48:05'),
+('39', 'Referred Student', 'referred_student@examverse.com', '9999000002', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'student', NULL, NULL, '2026-09-10 10:52:23', '2026-09-10 14:48:05'),
+('40', 'Faculty Teacher', 'teacher@examverse.com', '9876543299', NULL, '$2y$10$64OyRWj63NopuK/mgT/w0e1icrmg9vYQQoqWc1WtA.f5GKjX8I/Xa', NULL, NULL, '1', 'active', 'teacher', NULL, NULL, '2026-09-10 14:48:05', '2026-09-10 14:48:05');
 
 -- --------------------------------------------------------
 -- Default Super Administrator (admin / Admin@12345678)
