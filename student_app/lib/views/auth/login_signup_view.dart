@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/constants.dart';
 import '../../core/api_service.dart';
@@ -108,7 +109,11 @@ class _LoginSignupViewState extends State<LoginSignupView> {
       rememberMe = savedRememberMe;
       if (savedIdentity != null && savedIdentity.isNotEmpty && rememberMe) {
         emailMobileController.text = savedIdentity;
-      } else {
+      } else if (kDebugMode) {
+        // Convenience pre-fill for on-device QA only. A release build must not
+        // ship credentials in the login form, and must never auto-submit them:
+        // doing so showed "Invalid email/mobile or password" on every cold
+        // start before the user had touched anything.
         emailMobileController.text = 'demo@examverse.com';
         passwordController.text = 'password123';
       }
@@ -604,8 +609,9 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                   ),
                   const SizedBox(height: AppConstants.space12),
 
-                  // DEMO QUICK FILL HELPER
-                  if (!isSignUp)
+                  // DEMO QUICK FILL HELPER — debug builds only. These are
+                  // working credentials, so they must never reach a release.
+                  if (!isSignUp && kDebugMode)
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,

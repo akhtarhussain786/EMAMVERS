@@ -31,15 +31,15 @@ class AppConstants {
   static const Color accentBlue = Color(0xFF1D4ED8);
   static const Color accentCyan = Color(0xFF2563EB);
   static const Color accentIndigo = Color(0xFF1E40AF);
-  static const Color accentYellow = Color(0xFFD97706);
+  static const Color accentYellow = Color(0xFFB45309);
   static const Color accentYellowDeep = Color(0xFFB45309);
   static const Color accentYellowSoft = Color(0xFFF59E0B);
   static const Color accentPurple = Color(0xFF7C3AED);
   static const Color accentViolet = Color(0xFF7C3AED);
-  static const Color accentEmerald = Color(0xFF10B981);
-  static const Color accentGreen = Color(0xFF10B981);
-  static const Color accentAmber = Color(0xFFF59E0B);
-  static const Color accentRose = Color(0xFFEF4444);
+  static const Color accentEmerald = Color(0xFF047857);
+  static const Color accentGreen = Color(0xFF047857);
+  static const Color accentAmber = Color(0xFFB45309);
+  static const Color accentRose = Color(0xFFB91C1C);
 
   // Typography — high-contrast modern dark ink
   static const Color textPrimary = Color(0xFF0F172A);

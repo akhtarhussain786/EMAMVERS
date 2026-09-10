@@ -65,9 +65,19 @@ void main() {
       'textSecondary on page':    [AppConstants.textSecondary, AppConstants.primaryDark],
       'textPrimary on card':      [AppConstants.textPrimary, AppConstants.cardDark],
       'textSecondary on card':    [AppConstants.textSecondary, AppConstants.cardDark],
+      'textMuted on page':        [AppConstants.textMuted, AppConstants.primaryDark],
+      'textMuted on card':        [AppConstants.textMuted, AppConstants.cardDark],
       'onAccent on primaryBlue':  [AppConstants.onAccent, AppConstants.accentBlue],
       'onAccent on primaryIndigo':[AppConstants.onAccent, AppConstants.accentIndigo],
       'onAccent on accentCyan':   [AppConstants.onAccent, AppConstants.accentCyan],
+      // Status colours are drawn as ink on a light card, so they need AA too.
+      // These assertions were removed once; without them the palette can drift
+      // back to 500-weight hues that sit around 2:1 on white.
+      'accentYellow on page':     [AppConstants.accentYellow, AppConstants.primaryDark],
+      'onAccent on accentYellow': [AppConstants.onAccent, AppConstants.accentYellow],
+      'success on card':          [AppConstants.accentEmerald, AppConstants.cardDark],
+      'danger on card':           [AppConstants.accentRose, AppConstants.cardDark],
+      'warning on card':          [AppConstants.accentAmber, AppConstants.cardDark],
     };
     final bad = <String>[];
     checks.forEach((label, pair) {
