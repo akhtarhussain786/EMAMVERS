@@ -406,3 +406,9 @@ CREATE TABLE IF NOT EXISTS `admin_audit_logs` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (`admin_id`) REFERENCES `admins`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Default Super Administrator (Username: admin / admin@examverse.com, Password: Admin@12345678)
+INSERT INTO `admins` (`id`, `username`, `email`, `password_hash`, `full_name`, `role`, `status`) 
+VALUES (1, 'admin', 'admin@examverse.com', '$2y$10$ycQ0KGf55zsuo0AuYw/ZVOHUUxM3Ka9ZT.rAfcWM0vTtHRMsX6K4W', 'Super Administrator', 'super_admin', 'active')
+ON DUPLICATE KEY UPDATE `password_hash` = VALUES(`password_hash`), `status` = 'active';
+
