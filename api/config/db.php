@@ -9,9 +9,9 @@ class Database {
         if (self::$pdo === null) {
             $host    = Config::get('DB_HOST', '127.0.0.1');
             $port    = Config::get('DB_PORT', '3306');
-            $name    = Config::get('DB_NAME', 'examverse_db');
-            $user    = Config::get('DB_USER', 'root');
-            $pass    = Config::get('DB_PASS', '');
+            $name    = Config::get('DB_NAME', 'yatharth_staging');
+            $user    = Config::get('DB_USER', 'yatharth_staging');
+            $pass    = Config::get('DB_PASS', 'staging@1122');
             $charset = Config::get('DB_CHARSET', 'utf8mb4');
 
             $dsn = "mysql:host={$host};port={$port};dbname={$name};charset={$charset}";

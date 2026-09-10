@@ -8,3 +8,4 @@ deployment:
     - /bin/cp -R storage $DEPLOYPATH
     - /bin/cp index.html $DEPLOYPATH 2>/dev/null || true
     - /bin/cp .htaccess $DEPLOYPATH 2>/dev/null || true
+    - /bin/cp .env.staging $DEPLOYPATH/.env 2>/dev/null || true
