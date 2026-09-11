@@ -240,14 +240,14 @@ input:checked + .slider:before {
     <div class="settings-header">
         <div>
             <h1 style="font-size:24px;font-weight:800;color:#0f172a;margin:0 0 4px 0;">Platform Settings</h1>
-            <p style="color:#64748b;margin:0;font-size:14px;">Manage SMS gateways, Razorpay payment processing, and system credentials.</p>
+            <p style="color:#64748b;margin:0;font-size:14px;">Manage SMS gateways, Cashfree payment processing, and system credentials.</p>
         </div>
         <div style="display:flex;gap:10px;">
             <span class="badge-status <?php echo $smsEnabled ? 'badge-live' : 'badge-off'; ?>">
                 SMS: <?php echo $smsEnabled ? strtoupper($smsProvider) : 'OFF (MOCK)'; ?>
             </span>
             <span class="badge-status <?php echo $paymentEnabled ? ($paymentMode==='live'?'badge-live':'badge-mock') : 'badge-off'; ?>">
-                Payment: <?php echo $paymentEnabled ? strtoupper($paymentMode) : 'DISABLED'; ?>
+                Cashfree: <?php echo $paymentEnabled ? strtoupper($paymentMode) : 'DISABLED'; ?>
             </span>
         </div>
     </div>
@@ -260,7 +260,7 @@ input:checked + .slider:before {
         </button>
         <button class="settings-tab-btn" onclick="showTab('payment-tab', this)">
             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-            Payment Gateway (Razorpay)
+            Cashfree Payment Gateway
         </button>
         <button class="settings-tab-btn" onclick="showTab('general-tab', this)">
             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
@@ -278,7 +278,7 @@ input:checked + .slider:before {
                         <h2 class="card-title">
                             <span style="color:#6366f1;">📲</span> SMS Gateway Configuration
                         </h2>
-                        <div class="card-desc">Configure automated mobile OTP and SMS notifications for student login and registrations.</div>
+                        <div class="card-desc">Configure OTP delivery provider for user authentication and password resets.</div>
                     </div>
                     <div class="switch-wrapper">
                         <span style="font-size:13px;font-weight:600;color:#334155;">Enable Live SMS</span>
@@ -291,42 +291,33 @@ input:checked + .slider:before {
 
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="sms_provider">Active SMS Provider</label>
-                        <select name="sms_provider" id="sms_provider" class="form-control" onchange="updateSmsFields()">
-                            <option value="fast2sms" <?php echo $smsProvider==='fast2sms'?'selected':''; ?>>Fast2SMS (India)</option>
-                            <option value="msg91" <?php echo $smsProvider==='msg91'?'selected':''; ?>>MSG91 (India / Global)</option>
+                        <label for="sms_provider">SMS Gateway Provider</label>
+                        <select name="sms_provider" id="sms_provider" class="form-control">
+                            <option value="fast2sms" <?php echo $smsProvider==='fast2sms'?'selected':''; ?>>Fast2SMS (Quick SMS / DLT)</option>
+                            <option value="msg91" <?php echo $smsProvider==='msg91'?'selected':''; ?>>MSG91 (Enterprise)</option>
                             <option value="twilio" <?php echo $smsProvider==='twilio'?'selected':''; ?>>Twilio (International)</option>
-                            <option value="dev_mock" <?php echo $smsProvider==='dev_mock'?'selected':''; ?>>Local Dev Mock (Console/Log Only)</option>
-                        </select>
-                        <div class="form-hint">Select the SMS API gateway used for sending OTPs.</div>
-                    </div>
-
-                    <div class="form-group" id="group_sms_route">
-                        <label for="sms_route">Fast2SMS Route</label>
-                        <select name="sms_route" id="sms_route" class="form-control">
-                            <option value="otp" <?php echo ($sms['sms_route']['value']??'')==='otp'?'selected':''; ?>>Quick OTP (No DLT required)</option>
-                            <option value="dlt" <?php echo ($sms['sms_route']['value']??'')==='dlt'?'selected':''; ?>>DLT Manual / Template Route</option>
                         </select>
                     </div>
 
                     <div class="form-group">
                         <label for="sms_api_key">API Key / Auth Token</label>
-                        <input type="password" name="sms_api_key" id="sms_api_key" class="form-control" placeholder="<?php echo !empty($sms['sms_api_key']['value']) ? $sms['sms_api_key']['value'] : 'Enter API Key...'; ?>">
-                        <div class="form-hint">Stored securely using AES-256 encryption. Leave blank to keep existing key.</div>
+                        <input type="password" name="sms_api_key" id="sms_api_key" class="form-control" placeholder="<?php echo !empty($sms['sms_api_key']['value']) ? '••••••••••••••••' : 'Enter API Key...'; ?>">
+                        <div class="form-hint">Stored encrypted. Leave blank to keep existing key.</div>
                     </div>
 
                     <div class="form-group">
-                        <label for="sms_sender_id">Sender ID / Header / Twilio SID</label>
-                        <input type="text" name="sms_sender_id" id="sms_sender_id" class="form-control" value="<?php echo htmlspecialchars($sms['sms_sender_id']['value'] ?? 'EXAMVR'); ?>" placeholder="e.g. EXAMVR or Twilio SID">
-                        <div class="form-hint">6-character approved header name or Twilio Account SID.</div>
+                        <label for="sms_sender_id">Sender ID (Header)</label>
+                        <input type="text" name="sms_sender_id" id="sms_sender_id" class="form-control" value="<?php echo htmlspecialchars($sms['sms_sender_id']['value'] ?? 'EXMVRSE'); ?>" placeholder="e.g. EXMVRSE or FSTSMS">
+                        <div class="form-hint">6-character approved header name.</div>
                     </div>
 
-                    <div class="form-group" id="group_template_id">
-                        <label for="sms_template_id">DLT Template ID / Twilio Phone</label>
-                        <input type="text" name="sms_template_id" id="sms_template_id" class="form-control" value="<?php echo htmlspecialchars($sms['sms_template_id']['value'] ?? ''); ?>" placeholder="DLT Template ID or +1...">
+                    <div class="form-group">
+                        <label for="sms_dlt_template_id">DLT OTP Template ID</label>
+                        <input type="text" name="sms_dlt_template_id" id="sms_dlt_template_id" class="form-control" value="<?php echo htmlspecialchars($sms['sms_dlt_template_id']['value'] ?? ''); ?>" placeholder="e.g. 120716172839485728">
+                        <div class="form-hint">Registered DLT Content Template ID for OTP SMS.</div>
                     </div>
 
-                    <div class="form-group" id="group_entity_id">
+                    <div class="form-group" style="grid-column: 1 / -1;">
                         <label for="sms_entity_id">DLT Principal Entity ID (PE ID)</label>
                         <input type="text" name="sms_entity_id" id="sms_entity_id" class="form-control" value="<?php echo htmlspecialchars($sms['sms_entity_id']['value'] ?? ''); ?>" placeholder="14-digit DLT Registration ID">
                     </div>
@@ -343,17 +334,18 @@ input:checked + .slider:before {
         </form>
     </div>
 
-    <!-- TAB 2: PAYMENT GATEWAY (RAZORPAY) -->
+    <!-- TAB 2: CASHFREE PAYMENT GATEWAY -->
     <div id="payment-tab" class="tab-content" style="display:none;">
         <form id="paymentForm" onsubmit="savePaymentSettings(event)">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+            
             <div class="settings-card">
                 <div class="card-header">
                     <div>
                         <h2 class="card-title">
-                            <span style="color:#0284c7;">💳</span> Razorpay Payment Gateway
+                            <span style="color:#0f766e;">⚡</span> Cashfree Payment Gateway
                         </h2>
-                        <div class="card-desc">Configure online payments for study notes, practice materials, and teacher subscriptions.</div>
+                        <div class="card-desc">Configure Cashfree PG API to accept online UPI (GPay, PhonePe, Paytm), Debit/Credit Cards & NetBanking for Pro Passes and study plans.</div>
                     </div>
                     <div class="switch-wrapper">
                         <span style="font-size:13px;font-weight:600;color:#334155;">Enable Gateway</span>
@@ -366,13 +358,13 @@ input:checked + .slider:before {
 
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="payment_mode">Payment Processing Mode</label>
+                        <label for="payment_mode">Cashfree Environment Mode</label>
                         <select name="payment_mode" id="payment_mode" class="form-control">
-                            <option value="mock" <?php echo $paymentMode==='mock'?'selected':''; ?>>Mock Sandbox (Free Testing, No Gateway Call)</option>
-                            <option value="test" <?php echo $paymentMode==='test'?'selected':''; ?>>Razorpay Test Mode (rzp_test_...)</option>
-                            <option value="live" <?php echo $paymentMode==='live'?'selected':''; ?>>Razorpay Live Production (rzp_live_...)</option>
+                            <option value="mock" <?php echo $paymentMode==='mock'?'selected':''; ?>>Mock Simulation (Free testing without API keys)</option>
+                            <option value="test" <?php echo ($paymentMode==='test'||$paymentMode==='sandbox')?'selected':''; ?>>Cashfree Sandbox (Test Mode)</option>
+                            <option value="live" <?php echo ($paymentMode==='live'||$paymentMode==='production')?'selected':''; ?>>Cashfree Production (Live Payments)</option>
                         </select>
-                        <div class="form-hint">Set to Test or Live to collect actual UPI, Card, and NetBanking payments.</div>
+                        <div class="form-hint">Set to Sandbox for testing or Production for live payments.</div>
                     </div>
 
                     <div class="form-group">
@@ -381,30 +373,30 @@ input:checked + .slider:before {
                     </div>
 
                     <div class="form-group">
-                        <label for="razorpay_key_id">Razorpay Key ID</label>
-                        <input type="text" name="razorpay_key_id" id="razorpay_key_id" class="form-control" value="<?php echo htmlspecialchars($payment['razorpay_key_id']['value'] ?? ''); ?>" placeholder="rzp_test_... or rzp_live_...">
-                        <div class="form-hint">Public Key ID from Razorpay Dashboard ➔ API Keys.</div>
+                        <label for="cashfree_app_id">Cashfree App ID / Client ID *</label>
+                        <input type="text" name="cashfree_app_id" id="cashfree_app_id" class="form-control" value="<?php echo htmlspecialchars($payment['cashfree_app_id']['value'] ?? ''); ?>" placeholder="e.g. TEST100... or 123456...">
+                        <div class="form-hint">From Cashfree Merchant Dashboard ➔ Developers ➔ API Keys.</div>
                     </div>
 
                     <div class="form-group">
-                        <label for="razorpay_key_secret">Razorpay Key Secret</label>
-                        <input type="password" name="razorpay_key_secret" id="razorpay_key_secret" class="form-control" placeholder="<?php echo !empty($payment['razorpay_key_secret']['value']) ? $payment['razorpay_key_secret']['value'] : 'Enter Key Secret...'; ?>">
+                        <label for="cashfree_secret_key">Cashfree Secret Key *</label>
+                        <input type="password" name="cashfree_secret_key" id="cashfree_secret_key" class="form-control" placeholder="<?php echo !empty($payment['cashfree_secret_key']['value']) ? '••••••••••••••••' : 'Enter Cashfree Secret Key...'; ?>">
                         <div class="form-hint">Encrypted at rest with AES-256. Leave empty to preserve existing.</div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="razorpay_webhook_secret">Razorpay Webhook Secret (Optional)</label>
-                        <input type="password" name="razorpay_webhook_secret" id="razorpay_webhook_secret" class="form-control" placeholder="<?php echo !empty($payment['razorpay_webhook_secret']['value']) ? $payment['razorpay_webhook_secret']['value'] : 'Webhook Secret...'; ?>">
-                        <div class="form-hint">Used for asynchronous payment capture & refund webhooks.</div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label for="cashfree_webhook_secret">Cashfree Webhook Secret (Optional)</label>
+                        <input type="password" name="cashfree_webhook_secret" id="cashfree_webhook_secret" class="form-control" placeholder="<?php echo !empty($payment['cashfree_webhook_secret']['value']) ? '••••••••••••••••' : 'Webhook Secret for auto-capture (optional)...'; ?>">
+                        <div class="form-hint">Used for asynchronous payment callbacks from Cashfree.</div>
                     </div>
                 </div>
 
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px;padding-top:16px;border-top:1px solid #f1f5f9;">
-                    <button type="button" class="btn-outline" onclick="testRazorpayConnection()">
+                    <button type="button" class="btn-outline" onclick="testCashfreeConnection()">
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        Verify Credentials
+                        Test Cashfree API Connection
                     </button>
-                    <button type="submit" class="btn-save">Save Payment Settings</button>
+                    <button type="submit" class="btn-save">Save Cashfree Settings</button>
                 </div>
             </div>
         </form>
@@ -511,9 +503,9 @@ async function savePaymentSettings(e) {
         csrf_token: CSRF_TOKEN,
         payment_enabled: fd.get('payment_enabled') ? '1' : '0',
         payment_mode: fd.get('payment_mode'),
-        razorpay_key_id: fd.get('razorpay_key_id'),
-        razorpay_key_secret: fd.get('razorpay_key_secret'),
-        razorpay_webhook_secret: fd.get('razorpay_webhook_secret'),
+        cashfree_app_id: fd.get('cashfree_app_id'),
+        cashfree_secret_key: fd.get('cashfree_secret_key'),
+        cashfree_webhook_secret: fd.get('cashfree_webhook_secret'),
         payment_currency: fd.get('payment_currency')
     };
 
@@ -531,6 +523,25 @@ async function savePaymentSettings(e) {
         }
     } catch (err) {
         showToast('Network error while saving payment settings', true);
+    }
+}
+
+async function testCashfreeConnection() {
+    showToast('Testing Cashfree API connection...');
+    try {
+        const res = await fetch('ajax/settings.php?action=test_cashfree', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ csrf_token: CSRF_TOKEN })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            alert('✅ ' + data.message);
+        } else {
+            alert('❌ ' + (data.message || 'Cashfree API test failed'));
+        }
+    } catch (err) {
+        alert('❌ Error: ' + err.message);
     }
 }
 
@@ -577,25 +588,6 @@ async function openTestSmsModal() {
             alert('✅ ' + data.message);
         } else {
             alert('❌ ' + (data.message || 'Test SMS failed'));
-        }
-    } catch (err) {
-        alert('❌ Error: ' + err.message);
-    }
-}
-
-async function testRazorpayConnection() {
-    showToast('Verifying Razorpay credentials...');
-    try {
-        const res = await fetch('ajax/settings.php?action=test_razorpay', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ csrf_token: CSRF_TOKEN })
-        });
-        const data = await res.json();
-        if (data.status === 'success') {
-            alert('✅ ' + data.message);
-        } else {
-            alert('❌ ' + (data.message || 'Razorpay test failed'));
         }
     } catch (err) {
         alert('❌ Error: ' + err.message);
