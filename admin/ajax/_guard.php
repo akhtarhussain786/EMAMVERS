@@ -70,7 +70,7 @@ function notifyTeacher($db, $userId, string $title, string $message): void {
  * or delete keys on behalf of a logged-in admin.
  */
 $adminAjaxAction = $_GET['action'] ?? '';
-$readOnlyActions = ['list', 'batches', 'batch_questions', 'marketplace_stats', 'stats', 'teachers', 'levels', 'meta', 'run_status'];
+$readOnlyActions = ['list', 'batches', 'batch_questions', 'marketplace_stats', 'stats', 'teachers', 'levels', 'meta', 'run_status', 'get_user_360', 'user_details'];
 
 if (!in_array($adminAjaxAction, $readOnlyActions, true)) {
     if (!adminCsrfValid(adminCsrfFromRequest(getBody()))) {
