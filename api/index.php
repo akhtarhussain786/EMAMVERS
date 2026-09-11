@@ -362,6 +362,10 @@ if (($path === '/v1/health' || $path === '/health') && $method === 'GET') {
     SubscriptionController::getPlans();
 } elseif ($path === '/v1/subscriptions/my-subscription' && $method === 'GET') {
     SubscriptionController::getMySubscription();
+} elseif ($path === '/v1/subscriptions/create-order' && $method === 'POST') {
+    SubscriptionController::createOrder();
+} elseif ($path === '/v1/subscriptions/verify-payment' && $method === 'POST') {
+    SubscriptionController::verifyPayment();
 } elseif ($path === '/v1/subscriptions/subscribe' && $method === 'POST') {
     SubscriptionController::subscribe();
 } else {

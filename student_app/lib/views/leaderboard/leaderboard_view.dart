@@ -170,48 +170,163 @@ class _LeaderboardViewState extends State<LeaderboardView> {
                         itemBuilder: (context, i) {
                           final item = leaderboard[i];
                           final rank = item['rank'] ?? (i + 1);
+                          final fullName = (item['full_name'] ?? 'Candidate').toString();
+                          final rawAvatar = item['avatar_url'] as String?;
+                          final avatarUrl = AppConstants.formatImageUrl(rawAvatar);
 
                           Widget rankBadge;
                           if (rank == 1) {
-                            rankBadge = const Text('🥇', style: TextStyle(fontSize: 20));
+                            rankBadge = Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF3C7),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFFF59E0B)),
+                              ),
+                              child: const Text('🥇 #1', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Color(0xFFB45309))),
+                            );
                           } else if (rank == 2) {
-                            rankBadge = const Text('🥈', style: TextStyle(fontSize: 20));
+                            rankBadge = Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFF94A3B8)),
+                              ),
+                              child: const Text('🥈 #2', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Color(0xFF475569))),
+                            );
                           } else if (rank == 3) {
-                            rankBadge = const Text('🥉', style: TextStyle(fontSize: 20));
+                            rankBadge = Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFEDD5),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFFF97316)),
+                              ),
+                              child: const Text('🥉 #3', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Color(0xFFC2410C))),
+                            );
                           } else {
-                            rankBadge = Text('#$rank', style: const TextStyle(color: AppConstants.textSecondary, fontWeight: FontWeight.bold, fontSize: 13));
+                            rankBadge = Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: AppConstants.surfaceElevated,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text('#$rank', style: const TextStyle(color: AppConstants.textSecondary, fontWeight: FontWeight.w800, fontSize: 12)),
+                            );
                           }
 
-                          final isUser = (item['full_name'] as String).contains('(You)') || rank == userRanking.currentRank;
+                          final isUser = fullName.contains('(You)') || rank == userRanking.currentRank;
+
+                          String initial = 'C';
+                          if (fullName.trim().isNotEmpty) {
+                            initial = fullName.trim()[0].toUpperCase();
+                          }
 
                           return Container(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             decoration: BoxDecoration(
                               color: isUser ? AppConstants.surfaceElevated : AppConstants.cardDark,
                               borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-                              border: Border.all(color: isUser ? AppConstants.accentCyan : AppConstants.cardBorder),
+                              border: Border.all(color: isUser ? AppConstants.accentCyan : AppConstants.cardBorder, width: isUser ? 1.5 : 1),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.02),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                             child: Row(
                               children: [
-                                SizedBox(width: 32, child: Center(child: rankBadge)),
-                                const SizedBox(width: 10),
-                                CircleAvatar(
-                                  radius: 16,
-                                  backgroundColor: AppConstants.primaryDark,
-                                  child: Text((item['full_name'] ?? 'C')[0].toUpperCase(), style: const TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 12)),
+                                // Rank Badge
+                                rankBadge,
+                                const SizedBox(width: 12),
+
+                                // Profile Image with Network & Fallback
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      gradient: isUser ? AppConstants.primaryGradient : null,
+                                      color: isUser ? null : AppConstants.surfaceElevated,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(color: AppConstants.cardBorder),
+                                    ),
+                                    child: (avatarUrl != null && avatarUrl.isNotEmpty)
+                                        ? Image.network(
+                                            avatarUrl,
+                                            width: 40,
+                                            height: 40,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) => Center(
+                                              child: Text(
+                                                initial,
+                                                style: TextStyle(
+                                                  color: isUser ? Colors.white : AppConstants.accentCyan,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 15,
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                        : Center(
+                                            child: Text(
+                                              initial,
+                                              style: TextStyle(
+                                                color: isUser ? Colors.white : AppConstants.accentCyan,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 15,
+                                              ),
+                                            ),
+                                          ),
+                                  ),
                                 ),
                                 const SizedBox(width: 12),
+
+                                // Name & State
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(item['full_name'] ?? 'Candidate', style: TextStyle(color: isUser ? AppConstants.accentCyan : AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 13.5)),
+                                      Text(
+                                        fullName,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: isUser ? AppConstants.accentCyan : AppConstants.textPrimary,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13.5,
+                                        ),
+                                      ),
                                       const SizedBox(height: 2),
-                                      Text('${item['state_name'] ?? 'India'} • ${item['accuracy']}% Acc', style: const TextStyle(color: AppConstants.textMuted, fontSize: 11)),
+                                      Text(
+                                        item['state_name'] != null ? '${item['state_name']}' : 'All-India Ranker',
+                                        style: const TextStyle(color: AppConstants.textMuted, fontSize: 11.5),
+                                      ),
                                     ],
                                   ),
                                 ),
-                                Text('${item['score']} Mks', style: const TextStyle(color: AppConstants.accentCyan, fontWeight: FontWeight.w800, fontSize: 13.5)),
+
+                                // Accuracy Badge (No marks displayed)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppConstants.accentEmerald.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: AppConstants.accentEmerald.withValues(alpha: 0.3)),
+                                  ),
+                                  child: Text(
+                                    '${item['accuracy']}% Acc',
+                                    style: const TextStyle(
+                                      color: AppConstants.accentEmerald,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 11.5,
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           );

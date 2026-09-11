@@ -8,7 +8,6 @@ import 'wrong_questions_view.dart';
 import 'edit_profile_view.dart';
 import 'test_history_view.dart';
 import 'referrals_view.dart';
-import '../teacher/become_teacher_view.dart';
 import '../subscription/subscriptions_view.dart';
 
 class PassportView extends StatefulWidget {
@@ -343,15 +342,6 @@ class _PassportViewState extends State<PassportView> {
                 subtitle: 'Invite aspirants and earn premium membership rewards',
                 color: AppConstants.accentEmerald,
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReferralsView())),
-              ),
-              const SizedBox(height: 10),
-
-              _buildOptionTile(
-                icon: Icons.verified_user_outlined,
-                title: 'Become a Verified Teacher',
-                subtitle: 'Submit KYC and publish verified tests to students',
-                color: AppConstants.accentYellow,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BecomeTeacherView())),
               ),
               const SizedBox(height: 10),
 

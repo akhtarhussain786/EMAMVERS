@@ -45,11 +45,14 @@ switch ($action) {
         $keyId = trim($body['razorpay_key_id'] ?? '');
         $keySecret = trim($body['razorpay_key_secret'] ?? '');
         $webhookSecret = trim($body['razorpay_webhook_secret'] ?? '');
+        $cashfreeAppId = trim($body['cashfree_app_id'] ?? '');
+        $cashfreeSecretKey = trim($body['cashfree_secret_key'] ?? '');
         $currency = trim($body['payment_currency'] ?? 'INR');
 
         SystemSettings::set('payment_enabled', $enabled, false, 'payment', 'Enable live payments');
         SystemSettings::set('payment_mode', $mode, false, 'payment', 'Payment Mode (mock/test/live)');
         SystemSettings::set('razorpay_key_id', $keyId, false, 'payment', 'Razorpay Key ID');
+        SystemSettings::set('cashfree_app_id', $cashfreeAppId, false, 'payment', 'Cashfree App ID');
         SystemSettings::set('payment_currency', $currency, false, 'payment', 'Payment Currency');
 
         if (!empty($keySecret) && strpos($keySecret, '****') === false) {
@@ -57,6 +60,9 @@ switch ($action) {
         }
         if (!empty($webhookSecret) && strpos($webhookSecret, '****') === false) {
             SystemSettings::set('razorpay_webhook_secret', $webhookSecret, true, 'payment', 'Razorpay Webhook Secret');
+        }
+        if (!empty($cashfreeSecretKey) && strpos($cashfreeSecretKey, '****') === false) {
+            SystemSettings::set('cashfree_secret_key', $cashfreeSecretKey, true, 'payment', 'Cashfree Secret Key');
         }
 
         auditLog(Database::getConnection(), $adminId, 'UPDATE_SETTINGS', 'PAYMENT', "Updated Payment settings (Mode: $mode, Enabled: $enabled)");
