@@ -122,6 +122,10 @@ class _ResultViewState extends State<ResultView> {
     final percentile = asDouble(summary?['percentile']);
     final testTitle = summary?['test_title'] ?? 'Test Result';
 
+    final maxScore = asDouble(summary?['max_score']);
+    final maxScoreDisplay = maxScore > 0 ? maxScore.toStringAsFixed(0) : '200';
+    final stateRankDisplay = stateRank == null || stateRank == '—' || stateRank == '' ? '—' : '#$stateRank';
+
     return Scaffold(
       backgroundColor: AppConstants.primaryDark,
       appBar: AppBar(
@@ -152,12 +156,12 @@ class _ResultViewState extends State<ResultView> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(color: AppConstants.onAccent.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
-                        child: Text('Percentile ${summary?['percentile'] ?? '—'}', style: const TextStyle(color: AppConstants.onAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                        child: Text('Percentile ${percentile.toStringAsFixed(1)}%', style: const TextStyle(color: AppConstants.onAccent, fontSize: 11, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
                   const SizedBox(height: AppConstants.space16),
-                  Text('${score.toStringAsFixed(1)} / 200', style: const TextStyle(color: AppConstants.onAccent, fontSize: 36, fontWeight: FontWeight.w800)),
+                  Text('${score.toStringAsFixed(1)} / $maxScoreDisplay', style: const TextStyle(color: AppConstants.onAccent, fontSize: 36, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 4),
                   const Text('Total Score Achieved', style: TextStyle(color: AppConstants.onAccent, fontSize: 12.5)),
                   const SizedBox(height: AppConstants.space20),
@@ -166,7 +170,7 @@ class _ResultViewState extends State<ResultView> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _heroBadge('AIR Rank', '#$centralRank'),
-                      _heroBadge('State Rank', '#$stateRank'),
+                      _heroBadge('State Rank', stateRankDisplay),
                       _heroBadge('Percentile', '${percentile.toStringAsFixed(1)}%'),
                       _heroBadge('Accuracy', '${accuracy.toStringAsFixed(1)}%'),
                     ],

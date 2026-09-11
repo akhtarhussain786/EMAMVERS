@@ -391,13 +391,18 @@ class TestEngineController {
         $attempt = self::requireOwnedAttempt($db, $attemptId, $userId, false);
 
         if ($attempt['status'] === 'submitted' || $attempt['status'] === 'evaluated') {
+            self::recomputeRanksForTest($db, $attempt['test_id']);
+            $stmtFresh = $db->prepare("SELECT score, accuracy_percentage, central_rank, state_rank, percentile FROM test_attempts WHERE id = ?");
+            $stmtFresh->execute([$attemptId]);
+            $fresh = $stmtFresh->fetch(PDO::FETCH_ASSOC) ?: $attempt;
+
             Response::json([
                 'attempt_id'   => intval($attemptId),
-                'score'        => floatval($attempt['score']),
-                'accuracy'     => floatval($attempt['accuracy_percentage']),
-                'central_rank' => intval($attempt['central_rank']),
-                'state_rank'   => intval($attempt['state_rank']),
-                'percentile'   => floatval($attempt['percentile']),
+                'score'        => floatval($fresh['score']),
+                'accuracy'     => floatval($fresh['accuracy_percentage']),
+                'central_rank' => intval($fresh['central_rank']),
+                'state_rank'   => $fresh['state_rank'] !== null ? intval($fresh['state_rank']) : null,
+                'percentile'   => floatval($fresh['percentile']),
             ], 'Attempt already finalized');
         }
 
@@ -508,8 +513,7 @@ class TestEngineController {
         $attemptedTotal = $correctCount + $wrongCount;
         $accuracy = $attemptedTotal > 0 ? round(($correctCount / $attemptedTotal) * 100, 2) : 0.00;
 
-        // 5. Finalise the attempt first, then derive ranks so this attempt is
-        //    counted in its own cohort.
+        // 5. Finalise the attempt first, then derive ranks dynamically across the cohort.
         $stmtFinal = $db->prepare("
             UPDATE test_attempts
             SET status = 'evaluated',
@@ -532,10 +536,16 @@ class TestEngineController {
             'id' => $attemptId,
         ]);
 
-        list($centralRank, $stateRank, $percentile) = self::computeRanks($db, $attempt['test_id'], $attemptId, $userId);
+        // Recompute dynamic ranks for ALL candidates who took this test
+        self::recomputeRanksForTest($db, $attempt['test_id']);
 
-        $db->prepare("UPDATE test_attempts SET central_rank = :c, state_rank = :s, percentile = :p WHERE id = :id")
-           ->execute(['c' => $centralRank, 's' => $stateRank, 'p' => $percentile, 'id' => $attemptId]);
+        // Fetch freshly calculated ranks for this attempt
+        $stmtFresh = $db->prepare("SELECT central_rank, state_rank, percentile FROM test_attempts WHERE id = ?");
+        $stmtFresh->execute([$attemptId]);
+        $freshRanks = $stmtFresh->fetch(PDO::FETCH_ASSOC) ?: [];
+        $centralRank = isset($freshRanks['central_rank']) ? intval($freshRanks['central_rank']) : 1;
+        $stateRank   = isset($freshRanks['state_rank']) ? intval($freshRanks['state_rank']) : null;
+        $percentile  = isset($freshRanks['percentile']) ? floatval($freshRanks['percentile']) : 100.00;
 
         // 6. Feed the wrong-answer notebook so the revision screens have data.
         self::recordWrongQuestions($db, $userId, $attemptId, $wrongQuestionIds, $userAnswers, $answerKey);
@@ -607,57 +617,75 @@ class TestEngineController {
         return in_array(strtoupper(trim($selected)), $correctKeys, true);
     }
 
-    /** Central rank, state rank and percentile for a freshly evaluated attempt. */
-    private static function computeRanks($db, $testId, $attemptId, $userId) {
-        // Rank by score, breaking ties on accuracy then elapsed time, matching
-        // the tie-break rule advertised by the leaderboard endpoint.
-        $stmtSelf = $db->prepare("SELECT score, accuracy_percentage, total_time_spent_seconds FROM test_attempts WHERE id = ?");
-        $stmtSelf->execute([$attemptId]);
-        $self = $stmtSelf->fetch();
+    /**
+     * Recomputes Central Rank, State Rank and Percentile across ALL candidates
+     * who have evaluated attempts for a given test.
+     * Tie-breaking standard:
+     * 1. Higher Score DESC
+     * 2. Higher Accuracy DESC
+     * 3. Lower Total Time Spent ASC
+     * 4. Earlier Submission Time ASC
+     * 5. Attempt ID ASC
+     */
+    public static function recomputeRanksForTest($db, $testId) {
+        if (!$testId) return;
 
-        $betterSql = "
-            att.status = 'evaluated' AND att.test_id = :test_id AND att.id <> :attempt_id AND (
-                att.score > :score
-                OR (att.score = :score2 AND att.accuracy_percentage > :acc)
-                OR (att.score = :score3 AND att.accuracy_percentage = :acc2 AND att.total_time_spent_seconds < :time)
-            )";
-        $rankParams = [
-            'test_id' => $testId,
-            'attempt_id' => $attemptId,
-            'score' => $self['score'], 'score2' => $self['score'], 'score3' => $self['score'],
-            'acc' => $self['accuracy_percentage'], 'acc2' => $self['accuracy_percentage'],
-            'time' => $self['total_time_spent_seconds'],
-        ];
+        $stmt = $db->prepare("
+            SELECT att.id, att.user_id, att.score, att.accuracy_percentage, att.total_time_spent_seconds, u.state_id
+            FROM test_attempts att
+            JOIN users u ON att.user_id = u.id
+            WHERE att.test_id = :test_id AND att.status = 'evaluated'
+            ORDER BY att.score DESC, att.accuracy_percentage DESC, att.total_time_spent_seconds ASC, att.submitted_at ASC, att.id ASC
+        ");
+        $stmt->execute(['test_id' => $testId]);
+        $attempts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $stmtRank = $db->prepare("SELECT COUNT(*) + 1 FROM test_attempts att WHERE $betterSql");
-        $stmtRank->execute($rankParams);
-        $centralRank = intval($stmtRank->fetchColumn());
+        $totalCount = count($attempts);
+        if ($totalCount === 0) return;
 
-        $stmtUser = $db->prepare("SELECT state_id FROM users WHERE id = ?");
-        $stmtUser->execute([$userId]);
-        $userStateId = $stmtUser->fetchColumn();
+        $stateCounters = [];
+        $updateStmt = $db->prepare("
+            UPDATE test_attempts
+            SET central_rank = :c, state_rank = :s, percentile = :p
+            WHERE id = :id
+        ");
 
-        $stateRank = null;
-        if ($userStateId) {
-            $stmtStateRank = $db->prepare("
-                SELECT COUNT(*) + 1 FROM test_attempts att
-                JOIN users u ON att.user_id = u.id
-                WHERE $betterSql AND u.state_id = :sid
-            ");
-            $stmtStateRank->execute($rankParams + ['sid' => $userStateId]);
-            $stateRank = intval($stmtStateRank->fetchColumn());
+        foreach ($attempts as $idx => $att) {
+            $centralRank = $idx + 1;
+            $sid = $att['state_id'];
+            $stateRank = null;
+            if ($sid) {
+                if (!isset($stateCounters[$sid])) {
+                    $stateCounters[$sid] = 0;
+                }
+                $stateCounters[$sid]++;
+                $stateRank = $stateCounters[$sid];
+            }
+
+            // Percentile: Share of the cohort this candidate outperformed or equaled
+            $percentile = $totalCount > 1
+                ? round((($totalCount - $centralRank) / ($totalCount - 1)) * 100, 2)
+                : 100.00;
+
+            $updateStmt->execute([
+                'c' => $centralRank,
+                's' => $stateRank,
+                'p' => $percentile,
+                'id' => $att['id']
+            ]);
         }
+    }
 
-        $stmtTotal = $db->prepare("SELECT COUNT(*) FROM test_attempts WHERE test_id = ? AND status = 'evaluated'");
-        $stmtTotal->execute([$testId]);
-        $totalEvaluated = intval($stmtTotal->fetchColumn());
-
-        // Percentile = share of the cohort this attempt beat.
-        $percentile = $totalEvaluated > 1
-            ? round((($totalEvaluated - $centralRank) / ($totalEvaluated - 1)) * 100, 2)
-            : 100.00;
-
-        return [$centralRank, $stateRank, $percentile];
+    /** Central rank, state rank and percentile for a freshly evaluated attempt (backwards compatibility). */
+    public static function computeRanks($db, $testId, $attemptId, $userId) {
+        self::recomputeRanksForTest($db, $testId);
+        $stmt = $db->prepare("SELECT central_rank, state_rank, percentile FROM test_attempts WHERE id = ?");
+        $stmt->execute([$attemptId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row) {
+            return [intval($row['central_rank']), $row['state_rank'] !== null ? intval($row['state_rank']) : null, floatval($row['percentile'])];
+        }
+        return [1, null, 100.00];
     }
 
     /** Mirrors wrong answers into the revision tables the profile screens read. */
