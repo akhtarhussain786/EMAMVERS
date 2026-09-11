@@ -9,6 +9,7 @@ import 'edit_profile_view.dart';
 import 'test_history_view.dart';
 import 'referrals_view.dart';
 import '../teacher/become_teacher_view.dart';
+import '../subscription/subscriptions_view.dart';
 
 class PassportView extends StatefulWidget {
   final VoidCallback? onLogout;
@@ -163,11 +164,20 @@ class _PassportViewState extends State<PassportView> {
               const SizedBox(height: AppConstants.space12),
 
               _buildOptionTile(
-                icon: Icons.history_outlined,
-                title: 'Test History & Analytics',
-                subtitle: 'Review scorecards of previous mock tests',
+                icon: Icons.history,
+                title: 'Full Test History & Analytics',
+                subtitle: 'Past scores, solutions & AIR rankings',
                 color: AppConstants.accentCyan,
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TestHistoryView())),
+              ),
+              const SizedBox(height: 10),
+
+              _buildOptionTile(
+                icon: Icons.workspace_premium_outlined,
+                title: 'ExamVerse Pro Passes',
+                subtitle: 'Unlimited mock tests, AI Exam-Twin & verified solutions',
+                color: AppConstants.accentAmber,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionsView())),
               ),
               const SizedBox(height: 10),
 

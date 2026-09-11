@@ -36,6 +36,7 @@ require_once __DIR__ . '/controllers/TeacherVerificationAdminController.php';
 require_once __DIR__ . '/controllers/QuestionGovernanceController.php';
 require_once __DIR__ . '/controllers/TestManagementController.php';
 require_once __DIR__ . '/controllers/ReferralController.php';
+require_once __DIR__ . '/controllers/SubscriptionController.php';
 
 // Extract URI path
 $requestUri = $_SERVER['REQUEST_URI'];
@@ -354,6 +355,13 @@ if (($path === '/v1/health' || $path === '/health') && $method === 'GET') {
     ReferralController::getMyReferrals();
 } elseif ($path === '/v1/referrals/validate' && $method === 'POST') {
     ReferralController::validateCode();
+// ─── SUBSCRIPTIONS & PRO MEMBERSHIP ───────────────────────────────────────
+} elseif ($path === '/v1/subscriptions/plans' && $method === 'GET') {
+    SubscriptionController::getPlans();
+} elseif ($path === '/v1/subscriptions/my-subscription' && $method === 'GET') {
+    SubscriptionController::getMySubscription();
+} elseif ($path === '/v1/subscriptions/subscribe' && $method === 'POST') {
+    SubscriptionController::subscribe();
 } else {
     Response::error("Endpoint '$path' not found or unsupported method '$method'", 404);
 }
