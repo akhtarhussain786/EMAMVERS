@@ -42,21 +42,21 @@ switch ($action) {
     case 'save_payment_settings':
         $enabled = !empty($body['payment_enabled']) ? '1' : '0';
         $mode = trim($body['payment_mode'] ?? 'mock');
-        $keyId = trim($body['razorpay_key_id'] ?? '');
-        $keySecret = trim($body['razorpay_key_secret'] ?? '');
-        $webhookSecret = trim($body['razorpay_webhook_secret'] ?? '');
+        $cashfreeAppId = trim($body['cashfree_app_id'] ?? '');
+        $cashfreeSecretKey = trim($body['cashfree_secret_key'] ?? '');
+        $cashfreeWebhookSecret = trim($body['cashfree_webhook_secret'] ?? '');
         $currency = trim($body['payment_currency'] ?? 'INR');
 
         SystemSettings::set('payment_enabled', $enabled, false, 'payment', 'Enable live payments');
         SystemSettings::set('payment_mode', $mode, false, 'payment', 'Payment Mode (mock/test/live)');
-        SystemSettings::set('razorpay_key_id', $keyId, false, 'payment', 'Razorpay Key ID');
+        SystemSettings::set('cashfree_app_id', $cashfreeAppId, false, 'payment', 'Cashfree App ID');
         SystemSettings::set('payment_currency', $currency, false, 'payment', 'Payment Currency');
 
-        if (!empty($keySecret) && strpos($keySecret, '****') === false) {
-            SystemSettings::set('razorpay_key_secret', $keySecret, true, 'payment', 'Razorpay Key Secret');
+        if (!empty($cashfreeSecretKey) && strpos($cashfreeSecretKey, '••••') === false) {
+            SystemSettings::set('cashfree_secret_key', $cashfreeSecretKey, true, 'payment', 'Cashfree Secret Key');
         }
-        if (!empty($webhookSecret) && strpos($webhookSecret, '****') === false) {
-            SystemSettings::set('razorpay_webhook_secret', $webhookSecret, true, 'payment', 'Razorpay Webhook Secret');
+        if (!empty($cashfreeWebhookSecret) && strpos($cashfreeWebhookSecret, '••••') === false) {
+            SystemSettings::set('cashfree_webhook_secret', $cashfreeWebhookSecret, true, 'payment', 'Cashfree Webhook Secret');
         }
 
         auditLog(Database::getConnection(), $adminId, 'UPDATE_SETTINGS', 'PAYMENT', "Updated Payment settings (Mode: $mode, Enabled: $enabled)");
@@ -90,17 +90,23 @@ switch ($action) {
         }
         break;
 
-    case 'test_razorpay':
+    case 'test_cashfree':
         $mode = PaymentService::getMode();
         if ($mode === 'mock') {
-            ajaxOk(['mode' => 'mock'], 'Payment Gateway is in MOCK mode. Razorpay API connection is bypassed.');
+            ajaxOk(['mode' => 'mock'], 'Cashfree is in MOCK mode. Test order simulation succeeded.');
         }
 
-        $res = PaymentService::createOrder(1.00, 'test_' . time(), ['purpose' => 'Admin test order']);
+        $res = PaymentService::createCashfreeOrder(1.00, 'test_cf_' . time(), [
+            'customer_id'    => 'admin_test',
+            'customer_phone' => '9876543210',
+            'customer_email' => 'admin@examverse.com',
+            'customer_name'  => 'Admin Test'
+        ], 'Admin gateway test');
+
         if ($res['success']) {
-            ajaxOk($res, "Razorpay connection successful! Order created ID: {$res['order_id']}");
+            ajaxOk($res, "Cashfree API connection verified! Order ID: {$res['order_id']} (Environment: {$res['environment']})");
         } else {
-            ajaxErr("Razorpay connection failed: " . ($res['message'] ?? 'Invalid Key ID or Secret'));
+            ajaxErr("Cashfree connection failed: " . ($res['message'] ?? 'Invalid App ID or Secret Key'));
         }
         break;
 

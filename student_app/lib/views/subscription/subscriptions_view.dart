@@ -19,7 +19,7 @@ class _SubscriptionsViewState extends State<SubscriptionsView> {
   Map<String, dynamic>? _mySubscription;
 
   int? _selectedPlanId;
-  String _selectedPaymentMethod = 'upi';
+  String _selectedPaymentMethod = 'cashfree_upi';
   bool _isProcessingPayment = false;
 
   @override
@@ -97,32 +97,51 @@ class _SubscriptionsViewState extends State<SubscriptionsView> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Checkout & Activation',
-                              style: const TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.w800)),
+                          Row(
+                            children: [
+                              Text('Checkout & Activation',
+                                  style: const TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.w800)),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF0F766E).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xFF0F766E).withValues(alpha: 0.3)),
+                                ),
+                                child: const Text(
+                                  'Cashfree PG',
+                                  style: TextStyle(color: Color(0xFF0F766E), fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 2),
-                          Text('$planName ($duration Days)',
+                          Text('$planName ($duration Days Validity)',
                               style: const TextStyle(color: AppConstants.textSecondary, fontSize: 12.5)),
                         ],
                       ),
                       Text('₹${price.toStringAsFixed(0)}',
-                          style: const TextStyle(color: AppConstants.accentCyan, fontSize: 22, fontWeight: FontWeight.w900)),
+                          style: const TextStyle(color: AppConstants.accentCyan, fontSize: 24, fontWeight: FontWeight.w900)),
                     ],
                   ),
-                  const SizedBox(height: AppConstants.space20),
+                  const SizedBox(height: AppConstants.space16),
                   const Divider(color: AppConstants.cardBorder),
                   const SizedBox(height: AppConstants.space12),
 
-                  const Text('SELECT PAYMENT METHOD',
+                  const Text('SELECT CASHFREE PAYMENT METHOD',
                       style: TextStyle(color: AppConstants.textMuted, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
                   const SizedBox(height: AppConstants.space12),
 
-                  _buildPaymentOption('upi', 'UPI / GPay / PhonePe / Paytm', Icons.qr_code_2_outlined, setSheetState),
+                  _buildPaymentOption('cashfree_upi', 'Instant UPI (GPay, PhonePe, Paytm, BHIM)', Icons.qr_code_2_outlined, setSheetState),
                   const SizedBox(height: 8),
-                  _buildPaymentOption('card', 'Credit / Debit Card (Visa, RuPay, MC)', Icons.credit_card_outlined, setSheetState),
+                  _buildPaymentOption('cashfree_card', 'Credit / Debit Card (Visa, RuPay, MasterCard)', Icons.credit_card_outlined, setSheetState),
                   const SizedBox(height: 8),
-                  _buildPaymentOption('netbanking', 'NetBanking (All Major Banks)', Icons.account_balance_outlined, setSheetState),
+                  _buildPaymentOption('cashfree_netbanking', 'NetBanking (SBI, HDFC, ICICI, Axis & 50+ Banks)', Icons.account_balance_outlined, setSheetState),
+                  const SizedBox(height: 8),
+                  _buildPaymentOption('cashfree_wallet', 'Wallets & PayLater (Paytm, Mobikwik, Amazon Pay)', Icons.account_balance_wallet_outlined, setSheetState),
 
-                  const SizedBox(height: AppConstants.space24),
+                  const SizedBox(height: AppConstants.space20),
 
                   SizedBox(
                     width: double.infinity,
@@ -135,10 +154,10 @@ class _SubscriptionsViewState extends State<SubscriptionsView> {
                             },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppConstants.accentBlue,
-                        foregroundColor: AppConstants.textPrimary,
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusMedium)),
-                        elevation: 4,
+                        elevation: 3,
                       ),
                       child: _isProcessingPayment
                           ? const SizedBox(
@@ -147,15 +166,20 @@ class _SubscriptionsViewState extends State<SubscriptionsView> {
                               child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                             )
                           : Text(
-                              price == 0 ? 'Activate Free Pass →' : 'Pay ₹${price.toStringAsFixed(0)} & Activate Pro →',
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                              price == 0 ? 'Activate Free Pass →' : 'Pay ₹${price.toStringAsFixed(0)} via Cashfree & Activate Pro →',
+                              style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800),
                             ),
                     ),
                   ),
                   const SizedBox(height: 10),
-                  const Center(
-                    child: Text('🔒 256-Bit SSL Encrypted • Instant Plan Activation',
-                        style: TextStyle(color: AppConstants.textMuted, fontSize: 11)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.lock_outline, size: 13, color: AppConstants.textMuted),
+                      SizedBox(width: 4),
+                      Text('Cashfree Payments 256-Bit SSL Encrypted • Instant Activation',
+                          style: TextStyle(color: AppConstants.textMuted, fontSize: 11)),
+                    ],
                   ),
                 ],
               ),
@@ -207,92 +231,250 @@ class _SubscriptionsViewState extends State<SubscriptionsView> {
     setState(() => _isProcessingPayment = true);
     final planId = plan['id'];
     final planName = plan['name'] ?? 'Pro Pass';
+    final price = double.tryParse('${plan['price']}') ?? 0.0;
 
     try {
-      final res = await ApiService.post('/v1/subscriptions/subscribe', {
+      if (price <= 0) {
+        // Free plan direct activation
+        final res = await ApiService.post('/v1/subscriptions/subscribe', {
+          'plan_id': planId,
+          'payment_method': 'free_activation',
+        });
+        setState(() => _isProcessingPayment = false);
+        if (!mounted) return;
+        _showSuccessDialog(planName, res?['expiry_date'], res?['receipt_no'], 'Free Activation');
+        return;
+      }
+
+      // 1. Create Cashfree Order
+      final orderRes = await ApiService.post('/v1/subscriptions/create-order', {
         'plan_id': planId,
         'payment_method': _selectedPaymentMethod,
       });
 
+      final orderId = orderRes['order_id'] ?? 'EV_ORDER_${DateTime.now().millisecondsSinceEpoch}';
+
+      // 2. Open Cashfree Checkout Modal
+      if (!mounted) return;
       setState(() => _isProcessingPayment = false);
 
-      if (!mounted) return;
+      final paymentCompleted = await _openCashfreePaymentSheet(orderRes, plan);
 
-      final expiry = res is Map ? res['expiry_date'] : null;
-      final receipt = res is Map ? res['receipt_no'] : null;
+      if (paymentCompleted == true) {
+        // 3. Verify Payment
+        setState(() => _isProcessingPayment = true);
+        final verifyRes = await ApiService.post('/v1/subscriptions/verify-payment', {
+          'order_id': orderId,
+          'plan_id': planId,
+          'payment_method': _selectedPaymentMethod,
+        });
 
-      // Show Congratulations Dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: AppConstants.cardDark,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: AppConstants.accentEmerald.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.verified, color: AppConstants.accentEmerald, size: 36),
-              ),
-              const SizedBox(height: 16),
-              Text('🌟 $planName Activated!',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 8),
-              Text(
-                'Your Pro Membership is now active until ${expiry != null ? expiry.toString().split(' ')[0] : 'the end of term'}. Enjoy unlimited tests, AI Exam-Twin and verified solutions!',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppConstants.textSecondary, fontSize: 13, height: 1.4),
-              ),
-              if (receipt != null) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppConstants.surfaceElevated,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text('Receipt: $receipt',
-                      style: const TextStyle(color: AppConstants.textMuted, fontSize: 11, fontFamily: 'monospace')),
-                ),
-              ],
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    _loadPlans();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConstants.accentBlue,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: const Text('Start Practicing Now ➔',
-                      style: TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+        setState(() => _isProcessingPayment = false);
+        if (!mounted) return;
+        _showSuccessDialog(planName, verifyRes?['expiry_date'], verifyRes?['receipt_no'], orderId);
+      }
     } catch (e) {
       setState(() => _isProcessingPayment = false);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Subscription failed: ${e.toString().replaceAll('Exception: ', '')}'),
+          content: Text('Payment failed: ${e.toString().replaceAll('Exception: ', '')}'),
           backgroundColor: AppConstants.accentRose,
         ),
       );
     }
+  }
+
+  Future<bool?> _openCashfreePaymentSheet(Map<String, dynamic> orderRes, Map<String, dynamic> plan) {
+    final amount = double.tryParse('${orderRes['order_amount']}') ?? 0.0;
+    final orderId = orderRes['order_id'] ?? '';
+    final planName = plan['name'] ?? 'Pro Pass';
+
+    return showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppConstants.cardDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: AppConstants.space20,
+            right: AppConstants.space20,
+            top: AppConstants.space24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + AppConstants.space24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Cashfree Top Banner
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0F766E).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.payment, color: Color(0xFF0F766E), size: 22),
+                      ),
+                      const SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text('Cashfree Gateway', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                          Text('Secured Payment Gateway', style: TextStyle(color: AppConstants.textMuted, fontSize: 11)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Text('₹${amount.toStringAsFixed(0)}',
+                      style: const TextStyle(color: AppConstants.accentCyan, fontWeight: FontWeight.w900, fontSize: 22)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Divider(color: AppConstants.cardBorder),
+              const SizedBox(height: 12),
+
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppConstants.surfaceElevated,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppConstants.cardBorder),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Plan:', style: TextStyle(color: AppConstants.textSecondary, fontSize: 12.5)),
+                        Text(planName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Order ID:', style: TextStyle(color: AppConstants.textSecondary, fontSize: 12.5)),
+                        Text(orderId, style: const TextStyle(fontFamily: 'monospace', fontSize: 11, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Mode:', style: TextStyle(color: AppConstants.textSecondary, fontSize: 12.5)),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppConstants.accentEmerald.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text('Cashfree Live & Instant', style: TextStyle(color: AppConstants.accentEmerald, fontSize: 10.5, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Confirm Payment Action Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                  label: Text('Authorize & Pay ₹${amount.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0F766E),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => Navigator.pop(ctx, true),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel Payment', style: TextStyle(color: AppConstants.textMuted, fontSize: 12.5)),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showSuccessDialog(String planName, dynamic expiry, dynamic receipt, String reference) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppConstants.cardDark,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: AppConstants.accentEmerald.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.verified, color: AppConstants.accentEmerald, size: 38),
+            ),
+            const SizedBox(height: 16),
+            Text('🌟 $planName Activated!',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppConstants.textPrimary, fontSize: 19, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            Text(
+              'Your Pro Membership is now active until ${expiry != null ? expiry.toString().split(' ')[0] : 'the end of term'}. Enjoy unlimited mock tests, AI Exam-Twin and full verified solutions!',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppConstants.textSecondary, fontSize: 13, height: 1.4),
+            ),
+            if (receipt != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppConstants.surfaceElevated,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text('Receipt: $receipt',
+                    style: const TextStyle(color: AppConstants.textMuted, fontSize: 11, fontFamily: 'monospace')),
+              ),
+            ],
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _loadPlans();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppConstants.accentBlue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text('Start Practicing Now ➔',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -530,7 +712,7 @@ class _SubscriptionsViewState extends State<SubscriptionsView> {
                     style: const TextStyle(color: AppConstants.textMuted, fontSize: 11.5, fontWeight: FontWeight.w600),
                   ),
                   Text(
-                    price == 0 ? 'Activate Free ➔' : 'Choose Plan ➔',
+                    price == 0 ? 'Activate Free ➔' : 'Pay via Cashfree ➔',
                     style: TextStyle(
                       color: isSelected ? AppConstants.accentCyan : AppConstants.accentBlue,
                       fontSize: 12.5,

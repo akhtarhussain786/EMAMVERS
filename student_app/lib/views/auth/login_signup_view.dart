@@ -10,14 +10,25 @@ class LoginSignupView extends StatefulWidget {
   /// Receives the account type returned by the API ('student' or 'teacher'),
   /// so the shell can open the right home screen.
   final void Function(String accountType) onAuthenticated;
-  const LoginSignupView({super.key, required this.onAuthenticated});
+  final VoidCallback? onShowOnboarding;
+  final bool initialIsSignUp;
+  final String initialRole;
+
+  const LoginSignupView({
+    super.key,
+    required this.onAuthenticated,
+    this.onShowOnboarding,
+    this.initialIsSignUp = false,
+    this.initialRole = 'student',
+  });
 
   @override
   State<LoginSignupView> createState() => _LoginSignupViewState();
 }
 
 class _LoginSignupViewState extends State<LoginSignupView> {
-  bool isSignUp = false;
+  late bool isSignUp = widget.initialIsSignUp;
+  late String selectedRole = widget.initialRole; // 'student' or 'teacher'
   bool rememberMe = true;
   bool isLoading = false;
 
@@ -25,6 +36,11 @@ class _LoginSignupViewState extends State<LoginSignupView> {
   final passwordController = TextEditingController();
   final fullNameController = TextEditingController();
   final referralCodeController = TextEditingController();
+
+  // Teacher specific controllers
+  final teacherSubjectController = TextEditingController();
+  final teacherQualController = TextEditingController();
+  final teacherOrgController = TextEditingController();
 
   List<dynamic> states = [];
   List<dynamic> qualifications = [];
@@ -111,10 +127,6 @@ class _LoginSignupViewState extends State<LoginSignupView> {
       if (savedIdentity != null && savedIdentity.isNotEmpty && rememberMe) {
         emailMobileController.text = savedIdentity;
       } else if (kDebugMode) {
-        // Convenience pre-fill for on-device QA only. A release build must not
-        // ship credentials in the login form, and must never auto-submit them:
-        // doing so showed "Invalid email/mobile or password" on every cold
-        // start before the user had touched anything.
         emailMobileController.text = 'demo@examverse.com';
         passwordController.text = 'password123';
       }
@@ -147,7 +159,6 @@ class _LoginSignupViewState extends State<LoginSignupView> {
         }
 
         if (states.isNotEmpty && selectedStateId == null) {
-          // Default to Bihar or first state
           final biharState = states.firstWhere((s) => (s['name'] ?? '').toString().contains('Bihar'), orElse: () => states[0]);
           selectedStateId = biharState['id'] as int?;
           selectedStateName = biharState['name'] as String?;
@@ -236,7 +247,7 @@ class _LoginSignupViewState extends State<LoginSignupView> {
         'identity': identity,
         'password': password,
       });
-      final accountType = (res['account_type'] as String?) ?? 'student';
+      final accountType = (res['account_type'] as String?) ?? (res['user_type'] as String?) ?? 'student';
       await ApiService.setSession(res['token'] as String?, remember: rememberMe, type: accountType);
       await _savePreferences(identity);
       if (!mounted) return;
@@ -254,26 +265,47 @@ class _LoginSignupViewState extends State<LoginSignupView> {
     final password = passwordController.text.trim();
 
     if (fullName.isEmpty || identity.isEmpty || password.isEmpty) {
-      _showSnackBar('Please fill in all required fields');
+      _showSnackBar('Please fill in Full Name, Mobile/Email, and Password');
+      return;
+    }
+
+    if (password.length < 8) {
+      _showSnackBar('Password must be at least 8 characters long');
       return;
     }
 
     setState(() => isLoading = true);
     try {
-      final res = await ApiService.post('/v1/auth/signup', {
+      final isTeacher = selectedRole == 'teacher';
+      final Map<String, dynamic> body = {
         'full_name': fullName,
         'email': identity.contains('@') ? identity : '',
         'mobile': identity.contains('@') ? '' : identity,
         'password': password,
-        'state_id': selectedStateId,
-        'district': selectedDistrict,
-        'qualification_id': selectedQualId,
-        'referral_code': referralCodeController.text.trim(),
-      });
-      await ApiService.setSession(res['token'] as String?, remember: rememberMe, type: 'student');
+        'user_type': selectedRole,
+      };
+
+      if (isTeacher) {
+        body['specialisation'] = teacherSubjectController.text.trim().isNotEmpty
+            ? teacherSubjectController.text.trim()
+            : 'Faculty Educator';
+        body['teacher_qualification'] = teacherQualController.text.trim().isNotEmpty
+            ? teacherQualController.text.trim()
+            : 'Teaching Degree';
+        body['organization'] = teacherOrgController.text.trim();
+      } else {
+        body['state_id'] = selectedStateId;
+        body['district'] = selectedDistrict;
+        body['qualification_id'] = selectedQualId;
+        body['referral_code'] = referralCodeController.text.trim();
+      }
+
+      final res = await ApiService.post('/v1/auth/signup', body);
+      final accountType = (res['account_type'] as String?) ?? selectedRole;
+      await ApiService.setSession(res['token'] as String?, remember: rememberMe, type: accountType);
       await _savePreferences(identity);
       if (!mounted) return;
-      widget.onAuthenticated('student');
+      widget.onAuthenticated(accountType);
     } catch (e) {
       _showSnackBar(e.toString().replaceAll('Exception: ', ''));
     } finally {
@@ -282,57 +314,79 @@ class _LoginSignupViewState extends State<LoginSignupView> {
   }
 
   @override
+  void dispose() {
+    emailMobileController.dispose();
+    passwordController.dispose();
+    fullNameController.dispose();
+    referralCodeController.dispose();
+    teacherSubjectController.dispose();
+    teacherQualController.dispose();
+    teacherOrgController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final currentDistricts = _getDistrictsList();
+    final isTeacher = selectedRole == 'teacher';
 
     return Scaffold(
       backgroundColor: AppConstants.scaffoldDark,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: AppConstants.space24, vertical: AppConstants.space32),
+            padding: const EdgeInsets.symmetric(horizontal: AppConstants.space24, vertical: AppConstants.space24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 480),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // BRAND HEADER
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppConstants.accentBlue, AppConstants.accentCyan],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppConstants.accentBlue.withValues(alpha: 0.3),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 54,
+                        height: 54,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [AppConstants.accentBlue, AppConstants.accentCyan],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppConstants.accentBlue.withValues(alpha: 0.3),
+                              blurRadius: 14,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: const Icon(Icons.school, color: Colors.white, size: 32),
+                        child: const Icon(Icons.school, color: Colors.white, size: 28),
+                      ),
+                      const SizedBox(width: 14),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            'EXAMVERSE',
+                            style: TextStyle(
+                              color: AppConstants.textPrimary,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.1,
+                            ),
+                          ),
+                          Text(
+                            'AI Exam Preparation & Teaching Hub',
+                            style: TextStyle(color: AppConstants.textSecondary, fontSize: 11.5, fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: AppConstants.space16),
-                  const Text(
-                    'EXAMVERSE',
-                    style: TextStyle(
-                      color: AppConstants.textPrimary,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'India\'s Premier AI Exam Preparation Platform',
-                    style: TextStyle(color: AppConstants.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: AppConstants.space24),
+                  const SizedBox(height: AppConstants.space20),
 
                   // LOGIN / SIGNUP CARD
                   ExamVerseCard(
@@ -341,21 +395,61 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isSignUp ? 'Create Candidate Account' : 'Welcome Back',
-                          style: const TextStyle(color: AppConstants.textPrimary, fontSize: 20, fontWeight: FontWeight.w800),
+                          isSignUp
+                              ? (isTeacher ? 'Register as Teacher / Faculty' : 'Create Student Account')
+                              : 'Welcome Back',
+                          style: const TextStyle(color: AppConstants.textPrimary, fontSize: 19, fontWeight: FontWeight.w800),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          isSignUp ? 'Select state, district & education for targeted prep' : 'Continue your AI performance preparation',
+                          isSignUp
+                              ? (isTeacher
+                                  ? 'Author questions, review tests & mentor aspirants'
+                                  : 'Select state & qualification for personalized AI prep')
+                              : 'Continue your AI performance preparation',
                           style: const TextStyle(color: AppConstants.textSecondary, fontSize: 12.5),
                         ),
-                        const SizedBox(height: AppConstants.space20),
+                        const SizedBox(height: AppConstants.space16),
 
+                        // ROLE SELECTOR WHEN SIGNING UP
                         if (isSignUp) ...[
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: AppConstants.surfaceElevated,
+                              borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+                              border: Border.all(color: AppConstants.cardBorder),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: _buildRoleTab(
+                                    roleKey: 'student',
+                                    icon: Icons.school_rounded,
+                                    title: 'Student (छात्र)',
+                                    subtitle: 'Take Tests & Prep',
+                                    isSelected: selectedRole == 'student',
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: _buildRoleTab(
+                                    roleKey: 'teacher',
+                                    icon: Icons.psychology_rounded,
+                                    title: 'Teacher (शिक्षक)',
+                                    subtitle: 'Author & Review',
+                                    isSelected: selectedRole == 'teacher',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: AppConstants.space20),
+
                           CustomTextField(
                             controller: fullNameController,
-                            label: 'Full Name',
-                            hint: 'e.g. Rahul Kumar Sharma',
+                            label: isTeacher ? 'Teacher / Faculty Full Name *' : 'Full Name *',
+                            hint: isTeacher ? 'e.g. Prof. Rajesh Sharma' : 'e.g. Rahul Kumar Sharma',
                             prefixIcon: Icons.person_outline,
                           ),
                           const SizedBox(height: AppConstants.space16),
@@ -363,8 +457,8 @@ class _LoginSignupViewState extends State<LoginSignupView> {
 
                         CustomTextField(
                           controller: emailMobileController,
-                          label: 'Mobile Number / Email',
-                          hint: 'e.g. 9876543210 or candidate@examverse.com',
+                          label: 'Mobile Number / Email *',
+                          hint: 'e.g. 9876543210 or user@examverse.com',
                           prefixIcon: Icons.contact_mail_outlined,
                           keyboardType: TextInputType.emailAddress,
                         ),
@@ -372,15 +466,42 @@ class _LoginSignupViewState extends State<LoginSignupView> {
 
                         CustomTextField(
                           controller: passwordController,
-                          label: 'Password',
-                          hint: '••••••••',
+                          label: 'Password *',
+                          hint: '•••••••• (Minimum 8 chars)',
                           prefixIcon: Icons.lock_outline,
                           isPassword: true,
                         ),
                         const SizedBox(height: AppConstants.space16),
 
-                        // SIGN UP: STATE & DISTRICT & EDUCATION DROPDOWNS
-                        if (isSignUp) ...[
+                        // TEACHER SPECIFIC SIGNUP FIELDS
+                        if (isSignUp && isTeacher) ...[
+                          CustomTextField(
+                            controller: teacherSubjectController,
+                            label: 'Subject Specialisation (विषय विशेषज्ञता) *',
+                            hint: 'e.g. Quantitative Aptitude, GS/GK, Reasoning, English',
+                            prefixIcon: Icons.menu_book_rounded,
+                          ),
+                          const SizedBox(height: AppConstants.space16),
+
+                          CustomTextField(
+                            controller: teacherQualController,
+                            label: 'Highest Qualification (उच्चतम योग्यता) *',
+                            hint: 'e.g. M.Sc Mathematics, B.Ed, M.A History, Ph.D',
+                            prefixIcon: Icons.workspace_premium_outlined,
+                          ),
+                          const SizedBox(height: AppConstants.space16),
+
+                          CustomTextField(
+                            controller: teacherOrgController,
+                            label: 'Current Institute / Coaching Name (Optional)',
+                            hint: 'e.g. Career Academy, Self-Employed Educator',
+                            prefixIcon: Icons.business_outlined,
+                          ),
+                          const SizedBox(height: AppConstants.space16),
+                        ],
+
+                        // STUDENT SPECIFIC SIGNUP FIELDS: STATE & DISTRICT & EDUCATION
+                        if (isSignUp && !isTeacher) ...[
                           // 1. STATE SELECTION DROPDOWN
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -440,7 +561,7 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                           ),
                           const SizedBox(height: AppConstants.space16),
 
-                          // 2. DISTRICT SELECTION DROPDOWN (Dynamic based on selected state)
+                          // 2. DISTRICT SELECTION DROPDOWN
                           if (currentDistricts.isNotEmpty) ...[
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -590,14 +711,23 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                         ],
 
                         PrimaryButton(
-                          label: isSignUp ? 'Create ExamVerse Account' : 'Log In to ExamVerse',
+                          label: isSignUp
+                              ? (isTeacher ? 'Join as Teacher • शिक्षक खाता बनाएं' : 'Join as Student • छात्र खाता बनाएं')
+                              : 'Log In to EXAMVERSE',
+                          gradient: isTeacher && isSignUp
+                              ? const LinearGradient(
+                                  colors: [Color(0xFFD97706), Color(0xFFEA580C)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                )
+                              : null,
                           onPressed: isSignUp ? _handleSignup : _handleLogin,
                           isLoading: isLoading,
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: AppConstants.space24),
+                  const SizedBox(height: AppConstants.space20),
 
                   // TOGGLE LOGIN / SIGNUP
                   Wrap(
@@ -605,22 +735,35 @@ class _LoginSignupViewState extends State<LoginSignupView> {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
-                        isSignUp ? 'Already have an account?' : 'New candidate on ExamVerse?',
+                        isSignUp ? 'Already have an account?' : 'New to ExamVerse?',
                         style: const TextStyle(color: AppConstants.textSecondary, fontSize: 13.5),
                       ),
                       TextButton(
                         onPressed: () => setState(() => isSignUp = !isSignUp),
                         child: Text(
-                          isSignUp ? 'Sign In' : 'Sign Up',
+                          isSignUp ? 'Sign In' : 'Create Account / Sign Up',
                           style: const TextStyle(color: AppConstants.accentCyan, fontSize: 13.5, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppConstants.space12),
 
-                  // DEMO QUICK FILL HELPER — debug builds only. These are
-                  // working credentials, so they must never reach a release.
+                  // ONBOARDING TOUR LINK
+                  if (widget.onShowOnboarding != null) ...[
+                    const SizedBox(height: 4),
+                    TextButton.icon(
+                      icon: const Icon(Icons.explore_outlined, size: 16, color: AppConstants.textMuted),
+                      label: const Text(
+                        'View App Feature Tour',
+                        style: TextStyle(color: AppConstants.textMuted, fontSize: 12.5, fontWeight: FontWeight.w500),
+                      ),
+                      onPressed: widget.onShowOnboarding,
+                    ),
+                  ],
+
+                  const SizedBox(height: AppConstants.space8),
+
+                  // DEMO QUICK FILL HELPER — debug builds only
                   if (!isSignUp && kDebugMode)
                     Wrap(
                       spacing: 8,
@@ -655,6 +798,64 @@ class _LoginSignupViewState extends State<LoginSignupView> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoleTab({
+    required String roleKey,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool isSelected,
+  }) {
+    final activeColor = roleKey == 'teacher' ? const Color(0xFFD97706) : AppConstants.accentCyan;
+
+    return GestureDetector(
+      onTap: () => setState(() => selectedRole = roleKey),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: isSelected
+              ? Border.all(color: activeColor.withValues(alpha: 0.5), width: 1.5)
+              : Border.all(color: Colors.transparent),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: activeColor.withValues(alpha: 0.12),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  )
+                ]
+              : [],
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 20, color: isSelected ? activeColor : AppConstants.textMuted),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isSelected ? AppConstants.textPrimary : AppConstants.textSecondary,
+                fontSize: 12.5,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              ),
+            ),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isSelected ? activeColor : AppConstants.textMuted,
+                fontSize: 10.5,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
+              ),
+            ),
+          ],
         ),
       ),
     );

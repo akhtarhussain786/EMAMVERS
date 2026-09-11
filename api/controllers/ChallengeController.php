@@ -75,7 +75,7 @@ class ChallengeController {
         $stmt = $db->prepare("
             SELECT att.id as attempt_id, att.user_id, att.score, att.accuracy_percentage,
                    att.total_time_spent_seconds, att.submitted_at,
-                   u.full_name, s.name as state_name, q.name as qualification_name
+                   u.full_name, u.avatar_url, s.name as state_name, q.name as qualification_name
             FROM test_attempts att
             JOIN users u ON att.user_id = u.id
             LEFT JOIN states s ON u.state_id = s.id
@@ -98,7 +98,7 @@ class ChallengeController {
             $stmtFallback = $db->prepare("
                 SELECT att.id as attempt_id, att.user_id, att.score, att.accuracy_percentage,
                        att.total_time_spent_seconds, att.submitted_at,
-                       u.full_name, s.name as state_name, q.name as qualification_name
+                       u.full_name, u.avatar_url, s.name as state_name, q.name as qualification_name
                 FROM test_attempts att
                 JOIN users u ON att.user_id = u.id
                 LEFT JOIN states s ON u.state_id = s.id
@@ -128,6 +128,7 @@ class ChallengeController {
                 'user_id'                  => intval($row['user_id']),
                 'attempt_id'               => intval($row['attempt_id']),
                 'full_name'                => $row['full_name'] . ($isMe ? ' (You)' : ''),
+                'avatar_url'               => $row['avatar_url'] ?? null,
                 'is_me'                    => $isMe,
                 'state_name'               => $row['state_name'] ?: 'National',
                 'qualification_name'       => $row['qualification_name'] ?: '',
