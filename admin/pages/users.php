@@ -641,7 +641,14 @@ function openCandidate360(userId) {
     switchModalTab('tab-analytics');
 
     fetch('ajax/user_detail.php?action=get_user_360&user_id=' + userId)
-        .then(res => res.json())
+        .then(async res => {
+            const rawText = await res.text();
+            try {
+                return JSON.parse(rawText);
+            } catch (e) {
+                throw new Error('Server returned: ' + rawText.substring(0, 200));
+            }
+        })
         .then(json => {
             document.getElementById('modalLoadingSpinner').style.display = 'none';
             if (json.status !== 'success' || !json.data) {
@@ -656,7 +663,7 @@ function openCandidate360(userId) {
         })
         .catch(err => {
             document.getElementById('modalLoadingSpinner').style.display = 'none';
-            alert('Network error loading candidate: ' + err);
+            alert('Error loading candidate: ' + err.message);
             closeCandidate360();
         });
 }

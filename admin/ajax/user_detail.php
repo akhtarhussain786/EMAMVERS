@@ -97,18 +97,41 @@ if ($action === 'get_user_360') {
     $history = $stmtHist->fetchAll(PDO::FETCH_ASSOC);
 
     // 5. Learning & Mistake Insights
-    $wrongCount = (int)$db->prepare("SELECT COUNT(*) FROM user_wrong_questions WHERE user_id = ?")->execute([$userId]) ? $db->prepare("SELECT COUNT(*) FROM user_wrong_questions WHERE user_id = ?")->fetchColumn() : 0;
-    $notebookCount = (int)$db->prepare("SELECT COUNT(*) FROM mistake_notebook WHERE user_id = ?")->execute([$userId]) ? $db->prepare("SELECT COUNT(*) FROM mistake_notebook WHERE user_id = ?")->fetchColumn() : 0;
-    $bookmarksCount = (int)$db->prepare("SELECT COUNT(*) FROM user_bookmarks WHERE user_id = ?")->execute([$userId]) ? $db->prepare("SELECT COUNT(*) FROM user_bookmarks WHERE user_id = ?")->fetchColumn() : 0;
+    $wrongCount = 0;
+    try {
+        $stW = $db->prepare("SELECT COUNT(*) FROM user_wrong_questions WHERE user_id = ?");
+        $stW->execute([$userId]);
+        $wrongCount = (int)$stW->fetchColumn();
+    } catch (Exception $e) {}
+
+    $notebookCount = 0;
+    try {
+        $stN = $db->prepare("SELECT COUNT(*) FROM mistake_notebook WHERE user_id = ?");
+        $stN->execute([$userId]);
+        $notebookCount = (int)$stN->fetchColumn();
+    } catch (Exception $e) {}
+
+    $bookmarksCount = 0;
+    try {
+        $stB = $db->prepare("SELECT COUNT(*) FROM user_bookmarks WHERE user_id = ?");
+        $stB->execute([$userId]);
+        $bookmarksCount = (int)$stB->fetchColumn();
+    } catch (Exception $e) {}
 
     // 6. Referral Data
-    $stmtRefCode = $db->prepare("SELECT code FROM referral_codes WHERE user_id = ? LIMIT 1");
-    $stmtRefCode->execute([$userId]);
-    $refCode = $stmtRefCode->fetchColumn() ?: 'EXAM' . str_pad($userId, 4, '0', STR_PAD_LEFT);
+    $refCode = 'EXAM' . str_pad($userId, 4, '0', STR_PAD_LEFT);
+    $invitedCount = 0;
+    try {
+        $stmtRefCode = $db->prepare("SELECT code FROM referral_codes WHERE user_id = ? LIMIT 1");
+        $stmtRefCode->execute([$userId]);
+        $fetchedCode = $stmtRefCode->fetchColumn();
+        if ($fetchedCode) $refCode = $fetchedCode;
 
-    $stmtRefs = $db->prepare("SELECT COUNT(*) as invited_count FROM referrals WHERE referrer_user_id = ?");
-    $stmtRefs->execute([$userId]);
-    $refStats = $stmtRefs->fetch(PDO::FETCH_ASSOC);
+        $stmtRefs = $db->prepare("SELECT COUNT(*) as invited_count FROM referrals WHERE referrer_user_id = ?");
+        $stmtRefs->execute([$userId]);
+        $refStats = $stmtRefs->fetch(PDO::FETCH_ASSOC);
+        $invitedCount = intval($refStats['invited_count'] ?? 0);
+    } catch (Exception $e) {}
 
     ajaxOk([
         'user' => $user,
@@ -129,7 +152,7 @@ if ($action === 'get_user_360') {
             'wrong_notebook_items'=> $wrongCount + $notebookCount,
             'bookmarks_count'     => $bookmarksCount,
             'referral_code'       => $refCode,
-            'invited_friends'     => intval($refStats['invited_count'] ?? 0),
+            'invited_friends'     => $invitedCount,
         ],
         'attempts' => $history
     ], 'Candidate 360 profile loaded');
