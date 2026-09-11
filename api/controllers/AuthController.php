@@ -174,12 +174,13 @@ class AuthController {
         }
 
         $district = isset($input['district']) ? trim($input['district']) : null;
+        $userType = isset($input['user_type']) && in_array(strtolower(trim($input['user_type'])), ['student', 'teacher']) ? strtolower(trim($input['user_type'])) : 'student';
 
         $passwordHash = password_hash($password, PASSWORD_BCRYPT);
         try {
             $stmt = $db->prepare("
-                INSERT INTO users (full_name, email, mobile, mobile_hash, password_hash, state_id, district, qualification_id, is_verified) 
-                VALUES (:full_name, :email, :mobile, :mobile_hash, :password_hash, :state_id, :district, :qualification_id, 1)
+                INSERT INTO users (full_name, email, mobile, mobile_hash, password_hash, state_id, district, qualification_id, user_type, is_verified) 
+                VALUES (:full_name, :email, :mobile, :mobile_hash, :password_hash, :state_id, :district, :qualification_id, :user_type, 1)
             ");
             $stmt->execute([
                 'full_name' => $fullName,
@@ -189,7 +190,8 @@ class AuthController {
                 'password_hash' => $passwordHash,
                 'state_id' => $stateId,
                 'district' => $district,
-                'qualification_id' => $qualificationId
+                'qualification_id' => $qualificationId,
+                'user_type' => $userType
             ]);
         } catch (PDOException $e) {
             // Auto-heal missing column(s) on live database
@@ -203,11 +205,14 @@ class AuthController {
                 try {
                     $db->exec("ALTER TABLE users ADD COLUMN qualification_id INT NULL AFTER district");
                 } catch (Exception $ex) {}
+                try {
+                    $db->exec("ALTER TABLE users ADD COLUMN user_type ENUM('student','creator','teacher') NOT NULL DEFAULT 'student' AFTER status");
+                } catch (Exception $ex) {}
 
                 try {
                     $stmt = $db->prepare("
-                        INSERT INTO users (full_name, email, mobile, mobile_hash, password_hash, state_id, district, qualification_id, is_verified) 
-                        VALUES (:full_name, :email, :mobile, :mobile_hash, :password_hash, :state_id, :district, :qualification_id, 1)
+                        INSERT INTO users (full_name, email, mobile, mobile_hash, password_hash, state_id, district, qualification_id, user_type, is_verified) 
+                        VALUES (:full_name, :email, :mobile, :mobile_hash, :password_hash, :state_id, :district, :qualification_id, :user_type, 1)
                     ");
                     $stmt->execute([
                         'full_name' => $fullName,
@@ -217,19 +222,21 @@ class AuthController {
                         'password_hash' => $passwordHash,
                         'state_id' => $stateId,
                         'district' => $district,
-                        'qualification_id' => $qualificationId
+                        'qualification_id' => $qualificationId,
+                        'user_type' => $userType
                     ]);
                 } catch (Exception $e2) {
                     $stmt = $db->prepare("
-                        INSERT INTO users (full_name, email, mobile, mobile_hash, password_hash, is_verified) 
-                        VALUES (:full_name, :email, :mobile, :mobile_hash, :password_hash, 1)
+                        INSERT INTO users (full_name, email, mobile, mobile_hash, password_hash, user_type, is_verified) 
+                        VALUES (:full_name, :email, :mobile, :mobile_hash, :password_hash, :user_type, 1)
                     ");
                     $stmt->execute([
                         'full_name' => $fullName,
                         'email' => $email,
                         'mobile' => $mobile,
                         'mobile_hash' => self::mobileHash($mobile),
-                        'password_hash' => $passwordHash
+                        'password_hash' => $passwordHash,
+                        'user_type' => $userType
                     ]);
                 }
             } else {
@@ -238,7 +245,23 @@ class AuthController {
         }
 
         $userId = $db->lastInsertId();
-        $token = AuthToken::generate($userId, 'student');
+
+        // If teacher, initialize teacher profile
+        if ($userType === 'teacher') {
+            try {
+                $specialisation = isset($input['specialisation']) && trim($input['specialisation']) !== '' ? trim($input['specialisation']) : 'Faculty Educator';
+                $teacherQual = isset($input['teacher_qualification']) && trim($input['teacher_qualification']) !== '' ? trim($input['teacher_qualification']) : 'Teaching Degree / Post Graduate';
+                $db->prepare("
+                    INSERT INTO teacher_profiles (user_id, display_name, qualification, specialisation, status) 
+                    VALUES (?, ?, ?, ?, 'active')
+                    ON DUPLICATE KEY UPDATE display_name = VALUES(display_name), status = 'active'
+                ")->execute([$userId, $fullName, $teacherQual, $specialisation]);
+            } catch (Exception $eT) {
+                // Non-fatal if table not migrated yet
+            }
+        }
+
+        $token = AuthToken::generate($userId, $userType, ['name' => $fullName]);
 
         // Check and attribute referral if provided
         $referralCode = trim($input['referral_code'] ?? '');
@@ -251,7 +274,7 @@ class AuthController {
         $user = null;
         try {
             $stmtUser = $db->prepare("
-                SELECT u.id, u.full_name, u.email, u.mobile, u.state_id, u.district, u.qualification_id, s.name as state_name, q.name as qualification_name
+                SELECT u.id, u.full_name, u.email, u.mobile, u.state_id, u.district, u.qualification_id, u.user_type, s.name as state_name, q.name as qualification_name
                 FROM users u
                 LEFT JOIN states s ON u.state_id = s.id
                 LEFT JOIN qualifications q ON u.qualification_id = q.id
@@ -260,13 +283,15 @@ class AuthController {
             $stmtUser->execute(['id' => $userId]);
             $user = $stmtUser->fetch();
         } catch (Exception $e) {
-            $stmtUser = $db->prepare("SELECT id, full_name, email, mobile FROM users WHERE id = :id");
+            $stmtUser = $db->prepare("SELECT id, full_name, email, mobile, user_type FROM users WHERE id = :id");
             $stmtUser->execute(['id' => $userId]);
             $user = $stmtUser->fetch();
         }
 
         Response::json([
             'token' => $token,
+            'account_type' => $userType,
+            'user_type' => $userType,
             'user' => $user
         ], 'Account created successfully', 'success', 201);
     }

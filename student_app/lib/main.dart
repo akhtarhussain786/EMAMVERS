@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'core/api_service.dart';
 import 'core/constants.dart';
 import 'widgets/premium_nav_bar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'views/onboarding/onboarding_view.dart';
 import 'views/auth/login_signup_view.dart';
 import 'views/home/home_view.dart';
 import 'views/discovery/exam_detail_view.dart';
@@ -27,12 +29,24 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Resume a stored session so "Remember me" survives an app restart.
   final hasSession = await ApiService.restoreSession();
-  runApp(ExamVerseApp(initiallyAuthenticated: hasSession));
+  final prefs = await SharedPreferences.getInstance();
+  final hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
+
+  runApp(ExamVerseApp(
+    initiallyAuthenticated: hasSession,
+    initialHasSeenOnboarding: hasSeenOnboarding,
+  ));
 }
 
 class ExamVerseApp extends StatefulWidget {
   final bool initiallyAuthenticated;
-  const ExamVerseApp({super.key, this.initiallyAuthenticated = false});
+  final bool initialHasSeenOnboarding;
+
+  const ExamVerseApp({
+    super.key,
+    this.initiallyAuthenticated = false,
+    this.initialHasSeenOnboarding = false,
+  });
 
   @override
   State<ExamVerseApp> createState() => _ExamVerseAppState();
@@ -40,6 +54,7 @@ class ExamVerseApp extends StatefulWidget {
 
 class _ExamVerseAppState extends State<ExamVerseApp> {
   late bool isAuthenticated = widget.initiallyAuthenticated;
+  late bool hasSeenOnboarding = widget.initialHasSeenOnboarding;
   late String accountType = ApiService.accountType;
   int currentTabIndex = 0;
 
@@ -124,12 +139,17 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
         '/mistake-notebook': (_) => const MistakeNotebookView(),
       },
       home: !isAuthenticated
-          ? LoginSignupView(
-              onAuthenticated: (type) => setState(() {
-                isAuthenticated = true;
-                accountType = type;
-              }),
-            )
+          ? (!hasSeenOnboarding
+              ? OnboardingView(
+                  onComplete: () => setState(() => hasSeenOnboarding = true),
+                )
+              : LoginSignupView(
+                  onShowOnboarding: () => setState(() => hasSeenOnboarding = false),
+                  onAuthenticated: (type) => setState(() {
+                    isAuthenticated = true;
+                    accountType = type;
+                  }),
+                ))
           : accountType == 'teacher'
               ? TeacherDashboardView(onLogout: _handleSessionExpired)
               : _buildAuthenticatedShell(),
