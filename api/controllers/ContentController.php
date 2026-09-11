@@ -368,12 +368,49 @@ Generate 4 questions now:";
         $accuracy = $totalSolved > 0 ? round(($totalCorrect / $totalSolved) * 100, 2) : 0.0;
         $xpPoints = intval(round(floatval($totals['total_score']) * 10));
 
-        $nameStmt = $db->prepare("SELECT full_name FROM users WHERE id = ?");
-        $nameStmt->execute([$userId]);
-        $holderName = $nameStmt->fetchColumn();
+        $userStmt = $db->prepare("
+            SELECT u.id, u.full_name, u.email, u.mobile, u.avatar_url, u.district, u.state_id, u.qualification_id,
+                   u.target_exam, s.name as state_name, q.name as qualification_name
+            FROM users u
+            LEFT JOIN states s ON u.state_id = s.id
+            LEFT JOIN qualifications q ON u.qualification_id = q.id
+            WHERE u.id = ?
+        ");
+        $userStmt->execute([$userId]);
+        $userRow = $userStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        $cleanMobile = $userRow['mobile'] ?? '';
+        if (str_starts_with($cleanMobile, 'NA-')) {
+            $cleanMobile = '';
+        }
+
+        // Determine target exam title
+        $primaryTargetExam = $userRow['target_exam'] ?? '';
+        if (empty($primaryTargetExam)) {
+            $tExStmt = $db->prepare("
+                SELECT e.title FROM user_target_exams ute 
+                JOIN exams e ON ute.exam_id = e.id 
+                WHERE ute.user_id = ? 
+                ORDER BY ute.is_primary DESC, ute.id DESC LIMIT 1
+            ");
+            $tExStmt->execute([$userId]);
+            $primaryTargetExam = $tExStmt->fetchColumn() ?: ($passportEntries[0]['exam_title'] ?? 'General Competitive Exams');
+        }
+
+        $holderName = $userRow['full_name'] ?? ($authUser['extra']['name'] ?? 'Candidate');
 
         Response::json([
-            'passport_holder'        => $holderName ?: ($authUser['extra']['name'] ?? 'Candidate'),
+            'passport_holder'        => $holderName,
+            'full_name'              => $holderName,
+            'email'                  => $userRow['email'] ?? '',
+            'mobile'                 => $cleanMobile,
+            'avatar_url'             => $userRow['avatar_url'] ?? '',
+            'target_exam'            => $primaryTargetExam,
+            'state_id'               => $userRow['state_id'] ?? null,
+            'state_name'             => $userRow['state_name'] ?? '',
+            'district'               => $userRow['district'] ?? '',
+            'qualification_id'       => $userRow['qualification_id'] ?? null,
+            'qualification_name'     => $userRow['qualification_name'] ?? '',
             'passport_id'            => 'EXAMVERSE-PASS-' . str_pad($userId, 6, '0', STR_PAD_LEFT),
             'current_rank'           => $currentRank,
             'rank'                   => $currentRank,

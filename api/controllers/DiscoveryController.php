@@ -73,7 +73,15 @@ class DiscoveryController {
             }
         }
 
+        $userProfile = null;
+        if ($viewer) {
+            $uStmt = $db->prepare("SELECT id, full_name, email, mobile, avatar_url, target_exam FROM users WHERE id = ?");
+            $uStmt->execute([$viewer['sub']]);
+            $userProfile = $uStmt->fetch(PDO::FETCH_ASSOC);
+        }
+
         Response::json([
+            'user_profile' => $userProfile,
             'resume_attempt' => $resume,
             'categories' => $categories,
             'featured_exams' => $exams,

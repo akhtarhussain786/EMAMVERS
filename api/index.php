@@ -337,6 +337,8 @@ if (($path === '/v1/health' || $path === '/health') && $method === 'GET') {
     UserController::getProfile();
 } elseif ($path === '/v1/user/profile' && ($method === 'PUT' || $method === 'POST')) {
     UserController::updateProfile();
+} elseif ($path === '/v1/user/avatar' && ($method === 'POST' || $method === 'PUT')) {
+    UserController::uploadAvatar();
 } elseif ($path === '/v1/bookmarks' && $method === 'GET') {
     UserController::getBookmarks();
 } elseif ($path === '/v1/bookmarks' && $method === 'POST') {
