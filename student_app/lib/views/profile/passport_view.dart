@@ -54,8 +54,24 @@ class _PassportViewState extends State<PassportView> {
       );
     }
 
-    final studentName = userData?['passport_holder'] ?? 'Candidate';
+    final studentName = userData?['full_name'] ?? userData?['passport_holder'] ?? 'Candidate';
     final targetExam = userData?['target_exam'] ?? 'No target exam set yet';
+    final rawAvatarUrl = userData?['avatar_url'] as String?;
+    final avatarUrl = AppConstants.formatImageUrl(rawAvatarUrl);
+    final email = userData?['email'] as String? ?? '';
+    final mobile = userData?['mobile'] as String? ?? '';
+    final stateName = userData?['state_name'] as String? ?? '';
+    final district = userData?['district'] as String? ?? '';
+
+    String initials = 'ST';
+    if (studentName.isNotEmpty) {
+      final parts = studentName.trim().split(RegExp(r'\s+'));
+      if (parts.length >= 2) {
+        initials = '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+      } else if (parts.isNotEmpty && parts[0].isNotEmpty) {
+        initials = parts[0].substring(0, parts[0].length >= 2 ? 2 : 1).toUpperCase();
+      }
+    }
 
     return Scaffold(
       backgroundColor: AppConstants.primaryDark,
@@ -66,32 +82,154 @@ class _PassportViewState extends State<PassportView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 1. STUDENT IDENTITY HEADER
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 32,
-                    backgroundColor: AppConstants.accentCyan.withValues(alpha: 0.2),
-                    child: const Icon(Icons.person, size: 36, color: AppConstants.accentCyan),
-                  ),
-                  const SizedBox(width: AppConstants.space16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              Container(
+                padding: const EdgeInsets.all(AppConstants.space16),
+                decoration: BoxDecoration(
+                  color: AppConstants.cardDark,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppConstants.cardBorder),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        Text(studentName, style: const TextStyle(color: AppConstants.onAccent, fontSize: 20, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 2),
-                        Text(targetExam, style: const TextStyle(color: AppConstants.textSecondary, fontSize: 13)),
+                        // AVATAR WITH SERVER-IMAGE SUPPORT
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(36),
+                          child: Container(
+                            width: 68,
+                            height: 68,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [AppConstants.accentBlue, AppConstants.accentCyan],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(36),
+                            ),
+                            child: (avatarUrl != null && avatarUrl.isNotEmpty)
+                                ? Image.network(
+                                    avatarUrl,
+                                    width: 68,
+                                    height: 68,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => Center(
+                                      child: Text(
+                                        initials,
+                                        style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  )
+                                : Center(
+                                    child: Text(
+                                      initials,
+                                      style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(width: AppConstants.space16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                studentName,
+                                style: const TextStyle(color: AppConstants.textPrimary, fontSize: 19, fontWeight: FontWeight.bold),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 3),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                                decoration: BoxDecoration(
+                                  color: AppConstants.accentCyan.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  targetExam,
+                                  style: const TextStyle(color: AppConstants.accentCyan, fontSize: 12, fontWeight: FontWeight.w600),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (district.isNotEmpty || stateName.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.location_on_outlined, size: 13, color: AppConstants.textMuted),
+                                    const SizedBox(width: 3),
+                                    Flexible(
+                                      child: Text(
+                                        [district, stateName].where((s) => s.isNotEmpty).join(', '),
+                                        style: const TextStyle(color: AppConstants.textMuted, fontSize: 11.5),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: AppConstants.surfaceElevated,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.edit_outlined, color: AppConstants.accentCyan, size: 20),
+                            tooltip: 'Edit Profile',
+                            onPressed: () async {
+                              final updated = await Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => EditProfileView(userData: userData)),
+                              );
+                              if (updated == true) _loadPassport();
+                            },
+                          ),
+                        ),
                       ],
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, color: AppConstants.accentCyan),
-                    onPressed: () async {
-                      final updated = await Navigator.push(context, MaterialPageRoute(builder: (_) => EditProfileView(userData: userData)));
-                      if (updated == true) _loadPassport();
-                    },
-                  ),
-                ],
+                    if (email.isNotEmpty || mobile.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      const Divider(height: 1, color: AppConstants.cardBorder),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 6,
+                        children: [
+                          if (email.isNotEmpty)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.email_outlined, size: 14, color: AppConstants.textMuted),
+                                const SizedBox(width: 4),
+                                Text(email, style: const TextStyle(color: AppConstants.textSecondary, fontSize: 12)),
+                              ],
+                            ),
+                          if (mobile.isNotEmpty)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.phone_outlined, size: 14, color: AppConstants.textMuted),
+                                const SizedBox(width: 4),
+                                Text(mobile, style: const TextStyle(color: AppConstants.textSecondary, fontSize: 12)),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
               ),
               const SizedBox(height: AppConstants.space24),
 

@@ -18,6 +18,20 @@ class AppConstants {
     return stagingBaseUrl;
   }
 
+  /// Formats server-relative URLs (/uploads/...) into complete HTTP URLs.
+  static String? formatImageUrl(String? url) {
+    if (url == null || url.trim().isEmpty) return null;
+    final clean = url.trim();
+    if (clean.startsWith('http://') || clean.startsWith('https://')) {
+      return clean;
+    }
+    final base = apiBaseUrl.replaceAll(RegExp(r'/api/?$'), '');
+    if (clean.startsWith('/')) {
+      return '$base$clean';
+    }
+    return '$base/$clean';
+  }
+
 
 
   // ── EXAMVERSE Modern UI Colour System — Royal Blue & Clean Surfaces ─────

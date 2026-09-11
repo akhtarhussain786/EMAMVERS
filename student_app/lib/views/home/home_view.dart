@@ -43,6 +43,8 @@ class _HomeViewState extends State<HomeView> {
   Map<String, dynamic>? resumeAttempt;
   List<dynamic> currentAffairs = [];
 
+  Map<String, dynamic>? userProfile;
+
   @override
   void initState() {
     super.initState();
@@ -54,6 +56,7 @@ class _HomeViewState extends State<HomeView> {
       final res = await ApiService.get('/v1/home');
       if (!mounted) return;
       setState(() {
+        userProfile = res['user_profile'] as Map<String, dynamic>?;
         userRanking = UserRanking.fromJson(res['user_ranking'] ?? res['ranking'] ?? {});
         categories = (res['categories'] as List? ?? []).map((c) => ExamCategory.fromJson(c)).toList();
         featuredExams = (res['featured_exams'] as List? ?? []).map((e) => ExamItem.fromJson(e)).toList();
@@ -90,6 +93,21 @@ class _HomeViewState extends State<HomeView> {
       );
     }
 
+    final rawName = userProfile?['full_name'] as String? ?? '';
+    final firstName = rawName.isNotEmpty ? rawName.trim().split(RegExp(r'\s+')).first : 'Candidate';
+    final rawAvatarUrl = userProfile?['avatar_url'] as String?;
+    final avatarUrl = AppConstants.formatImageUrl(rawAvatarUrl);
+
+    String initials = 'ST';
+    if (rawName.isNotEmpty) {
+      final parts = rawName.trim().split(RegExp(r'\s+'));
+      if (parts.length >= 2) {
+        initials = '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+      } else if (parts.isNotEmpty && parts[0].isNotEmpty) {
+        initials = parts[0].substring(0, parts[0].length >= 2 ? 2 : 1).toUpperCase();
+      }
+    }
+
     return Scaffold(
       backgroundColor: AppConstants.primaryDark,
       body: SafeArea(
@@ -105,13 +123,15 @@ class _HomeViewState extends State<HomeView> {
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         Text(
-                          'Good Morning, Candidate 👋',
-                          style: TextStyle(color: AppConstants.textPrimary, fontSize: 19, fontWeight: FontWeight.w800),
+                          'Good Morning, $firstName 👋',
+                          style: const TextStyle(color: AppConstants.textPrimary, fontSize: 19, fontWeight: FontWeight.w800),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        SizedBox(height: 2),
-                        Text(
+                        const SizedBox(height: 2),
+                        const Text(
                           'Ready to improve your rank today?',
                           style: TextStyle(color: AppConstants.textSecondary, fontSize: 12.5),
                         ),
@@ -134,10 +154,36 @@ class _HomeViewState extends State<HomeView> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundColor: AppConstants.accentCyan.withValues(alpha: 0.2),
-                        child: const Icon(Icons.person, color: AppConstants.accentCyan, size: 22),
+                      ClipOval(
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const LinearGradient(
+                              colors: [AppConstants.accentBlue, AppConstants.accentCyan],
+                            ),
+                          ),
+                          child: (avatarUrl != null && avatarUrl.isNotEmpty)
+                              ? Image.network(
+                                  avatarUrl,
+                                  width: 40,
+                                  height: 40,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => Center(
+                                    child: Text(
+                                      initials,
+                                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                )
+                              : Center(
+                                  child: Text(
+                                    initials,
+                                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                        ),
                       ),
                     ],
                   ),
