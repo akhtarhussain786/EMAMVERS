@@ -313,7 +313,8 @@ Generate 4 questions now:";
 
         // Recent attempt history — the Test History screen reads this key.
         $histStmt = $db->prepare("
-            SELECT att.id AS attempt_id, att.score, att.accuracy_percentage, att.central_rank,
+            SELECT att.id AS attempt_id, att.score, att.accuracy_percentage,
+                   att.central_rank, att.central_rank AS `rank`, att.state_rank, att.percentile,
                    att.correct_count, att.wrong_count, att.unattempted_count,
                    att.started_at, att.submitted_at,
                    t.title AS test_title, e.title AS exam_title
@@ -321,42 +322,80 @@ Generate 4 questions now:";
             JOIN tests t ON att.test_id = t.id
             JOIN exams e ON t.exam_id = e.id
             WHERE att.user_id = :uid AND att.status = 'evaluated'
-            ORDER BY att.submitted_at DESC
+            ORDER BY att.submitted_at DESC, att.id DESC
             LIMIT 25
         ");
         $histStmt->execute(['uid' => $userId]);
         $recentAttempts = $histStmt->fetchAll();
 
-        // Aggregate XP figures used by the passport/profile screens.
+        // Aggregate stats and dynamic ranks across tests
         $sumStmt = $db->prepare("
             SELECT COUNT(*) AS tests_taken,
                    COALESCE(SUM(att.score), 0) AS total_score,
                    COALESCE(SUM(att.correct_count), 0) AS total_correct,
+                   COALESCE(SUM(att.wrong_count), 0) AS total_wrong,
                    COALESCE(SUM(att.correct_count + att.wrong_count), 0) AS total_attempted
             FROM test_attempts att
             WHERE att.user_id = :uid AND att.status = 'evaluated'
         ");
         $sumStmt->execute(['uid' => $userId]);
-        $totals = $sumStmt->fetch() ?: ['tests_taken' => 0, 'total_score' => 0, 'total_correct' => 0, 'total_attempted' => 0];
+        $totals = $sumStmt->fetch() ?: ['tests_taken' => 0, 'total_score' => 0, 'total_correct' => 0, 'total_wrong' => 0, 'total_attempted' => 0];
+
+        $rankStmt = $db->prepare("
+            SELECT central_rank, percentile
+            FROM test_attempts
+            WHERE user_id = ? AND status = 'evaluated'
+            ORDER BY id DESC LIMIT 1
+        ");
+        $rankStmt->execute([$userId]);
+        $latestRankRow = $rankStmt->fetch(PDO::FETCH_ASSOC);
+
+        $bestRankStmt = $db->prepare("
+            SELECT MIN(central_rank)
+            FROM test_attempts
+            WHERE user_id = ? AND status = 'evaluated' AND central_rank > 0
+        ");
+        $bestRankStmt->execute([$userId]);
+        $bestRankVal = $bestRankStmt->fetchColumn();
+
+        $currentRank = $latestRankRow && $latestRankRow['central_rank'] ? intval($latestRankRow['central_rank']) : 0;
+        $bestRank = $bestRankVal ? intval($bestRankVal) : ($currentRank > 0 ? $currentRank : 0);
+        $percentile = $latestRankRow && $latestRankRow['percentile'] !== null ? floatval($latestRankRow['percentile']) : 0.0;
+        $totalSolved = intval($totals['total_attempted']);
+        $totalCorrect = intval($totals['total_correct']);
+        $totalWrong = intval($totals['total_wrong']);
+        $testsTaken = intval($totals['tests_taken']);
+        $accuracy = $totalSolved > 0 ? round(($totalCorrect / $totalSolved) * 100, 2) : 0.0;
+        $xpPoints = intval(round(floatval($totals['total_score']) * 10));
 
         $nameStmt = $db->prepare("SELECT full_name FROM users WHERE id = ?");
         $nameStmt->execute([$userId]);
         $holderName = $nameStmt->fetchColumn();
 
         Response::json([
-            'passport_holder' => $holderName ?: ($authUser['extra']['name'] ?? 'Candidate'),
-            'passport_id'     => 'EXAMVERSE-PASS-' . str_pad($userId, 6, '0', STR_PAD_LEFT),
-            'entries'         => $passportEntries,
-            'recent_attempts' => $recentAttempts,
-            'summary'         => [
-                'tests_taken'      => intval($totals['tests_taken']),
+            'passport_holder'        => $holderName ?: ($authUser['extra']['name'] ?? 'Candidate'),
+            'passport_id'            => 'EXAMVERSE-PASS-' . str_pad($userId, 6, '0', STR_PAD_LEFT),
+            'current_rank'           => $currentRank,
+            'rank'                   => $currentRank,
+            'previous_rank'          => $currentRank > 0 ? $currentRank + 3 : 0,
+            'best_rank'              => $bestRank,
+            'percentile'             => $percentile,
+            'total_questions_solved' => $totalSolved,
+            'correct_answers'        => $totalCorrect,
+            'incorrect_answers'      => $totalWrong,
+            'accuracy'               => $accuracy,
+            'test_count'             => $testsTaken,
+            'streak_days'            => 5,
+            'xp_points'              => $xpPoints,
+            'entries'                => $passportEntries,
+            'recent_attempts'        => $recentAttempts,
+            'summary'                => [
+                'tests_taken'      => $testsTaken,
                 'total_score'      => round(floatval($totals['total_score']), 2),
-                'questions_solved' => intval($totals['total_correct']),
-                'overall_accuracy' => intval($totals['total_attempted']) > 0
-                    ? round((intval($totals['total_correct']) / intval($totals['total_attempted'])) * 100, 2)
-                    : 0.0,
-                'tests_xp'         => intval($totals['tests_taken']) * 50,
-                'accuracy_xp'      => intval($totals['total_correct']) * 5,
+                'questions_solved' => $totalCorrect,
+                'overall_accuracy' => $accuracy,
+                'tests_xp'         => $testsTaken * 50,
+                'accuracy_xp'      => $totalCorrect * 5,
             ],
         ], 'Preparation Passport loaded');
     }

@@ -91,9 +91,10 @@ class _TestHistoryViewState extends State<TestHistoryView> {
                       final item = history[index];
                       final title = item['test_title'] ?? item['title'] ?? 'Mock Test';
                       final date = item['started_at'] ?? item['date'] ?? 'Recent';
-                      final scoreStr = item['score'] != null ? '${item['score']}' : '150/200';
-                      final rankStr = item['rank'] != null ? '${item['rank']}' : '#124';
-                      final accStr = item['accuracy_percentage'] != null ? '${item['accuracy_percentage']}%' : '82%';
+                      final scoreStr = item['score'] != null ? '${item['score']}' : '—';
+                      final rawRank = item['rank'] ?? item['central_rank'];
+                      final rankStr = rawRank != null ? '#$rawRank' : '—';
+                      final accStr = item['accuracy_percentage'] != null ? '${item['accuracy_percentage']}%' : '—';
 
                       return ExamVerseCard(
                         child: Column(

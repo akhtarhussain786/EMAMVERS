@@ -13,8 +13,8 @@ class FriendsLeaderboardView extends StatefulWidget {
 class _FriendsLeaderboardViewState extends State<FriendsLeaderboardView> {
   bool isLoading = true;
   String? loadError;
-  int myFriendsRank = 2;
-  int totalFriends = 18;
+  int myFriendsRank = 0;
+  int totalFriends = 0;
   List<dynamic> friendsLeaderboard = [];
 
   @override

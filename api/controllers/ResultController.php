@@ -43,6 +43,39 @@ class ResultController {
 
         if (!$result) Response::error('Result record not found', 404);
 
+        // Always recompute dynamic cohort ranks so when any candidate looks at their
+        // scorecard, ranks reflect all attempts completed to date.
+        require_once __DIR__ . '/TestEngineController.php';
+        TestEngineController::recomputeRanksForTest($db, $result['test_id']);
+
+        // Refresh attempt row with dynamic ranks
+        $stmtRefresh = $db->prepare("
+            SELECT att.*, t.title as test_title, t.test_type, e.title as exam_title,
+                   u.full_name, s.name as state_name
+            FROM test_attempts att
+            JOIN tests t ON att.test_id = t.id
+            JOIN exams e ON t.exam_id = e.id
+            JOIN users u ON att.user_id = u.id
+            LEFT JOIN states s ON u.state_id = s.id
+            WHERE att.id = :id
+        ");
+        $stmtRefresh->execute(['id' => $attemptId]);
+        $result = $stmtRefresh->fetch() ?: $result;
+
+        // Calculate maximum obtainable marks for this test
+        $stmtMax = $db->prepare("SELECT COALESCE(SUM(positive_marks), 0) FROM test_questions WHERE test_id = ?");
+        $stmtMax->execute([$result['test_id']]);
+        $maxScore = floatval($stmtMax->fetchColumn());
+        if ($maxScore <= 0) $maxScore = 200.00;
+
+        // Count total evaluated candidates for this test
+        $stmtCohort = $db->prepare("SELECT COUNT(*) FROM test_attempts WHERE test_id = ? AND status = 'evaluated'");
+        $stmtCohort->execute([$result['test_id']]);
+        $cohortSize = intval($stmtCohort->fetchColumn());
+
+        $result['max_score'] = $maxScore;
+        $result['cohort_size'] = $cohortSize;
+
         // Fetch Sectional breakdown
         $stmtSec = $db->prepare("
             SELECT s.name as section_name, 
