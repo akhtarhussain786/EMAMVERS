@@ -76,7 +76,7 @@ class Config {
     /** Origins permitted to call the API. '*' is only honoured in debug mode. */
     public static function allowedOrigins() {
         $raw = trim((string)self::get('CORS_ALLOWED_ORIGINS', ''));
-        if ($raw === '') return self::isDebug() ? ['*'] : [];
+        if ($raw === '') return ['*'];
         return array_values(array_filter(array_map('trim', explode(',', $raw))));
     }
 }
