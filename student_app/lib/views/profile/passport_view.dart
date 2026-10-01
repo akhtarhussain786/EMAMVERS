@@ -346,6 +346,15 @@ class _PassportViewState extends State<PassportView> {
               const SizedBox(height: 10),
 
               _buildOptionTile(
+                icon: Icons.school_outlined,
+                title: 'Teacher KYC & Faculty Portal',
+                subtitle: 'Apply as verified educator to author tests & questions',
+                color: AppConstants.accentYellow,
+                onTap: () => Navigator.pushNamed(context, '/become-teacher'),
+              ),
+              const SizedBox(height: 10),
+
+              _buildOptionTile(
                 icon: Icons.logout,
                 title: 'Log Out',
                 subtitle: 'Safely log out of your ExamVerse account',

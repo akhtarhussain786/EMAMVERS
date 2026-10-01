@@ -109,6 +109,44 @@ class ApiService {
   static Future<dynamic> delete(String endpoint) =>
       _send(() => http.delete(_buildUri(endpoint), headers: _headers));
 
+  static Future<dynamic> uploadMultipart(
+    String endpoint, {
+    required Map<String, String> fields,
+    required String fileField,
+    required String filePath,
+    List<int>? fileBytes,
+    String? filename,
+  }) async {
+    final uri = Uri.parse('${AppConstants.apiBaseUrl}$endpoint');
+    final request = http.MultipartRequest('POST', uri);
+
+    if (authToken != null && authToken!.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $authToken';
+      request.headers['X-Auth-Token'] = authToken!;
+      request.headers['X-Authorization'] = 'Bearer $authToken';
+    }
+
+    fields.forEach((k, v) => request.fields[k] = v);
+
+    if (fileBytes != null && filename != null) {
+      request.files.add(http.MultipartFile.fromBytes(
+        fileField,
+        fileBytes,
+        filename: filename,
+      ));
+    } else if (filePath.isNotEmpty) {
+      request.files.add(await http.MultipartFile.fromPath(
+        fileField,
+        filePath,
+        filename: filename,
+      ));
+    }
+
+    final streamedResponse = await request.send().timeout(timeoutDuration);
+    final response = await http.Response.fromStream(streamedResponse);
+    return _processResponse(response);
+  }
+
   static Future<dynamic> _send(Future<http.Response> Function() request) async {
     final http.Response response;
     try {

@@ -169,8 +169,9 @@ class TeacherVerificationAdminController {
         $db = Database::getConnection();
 
         $input = json_decode(file_get_contents('php://input'), true) ?: [];
-        $status = in_array($input['status'] ?? '', ['verified', 'invalid', 'unclear', 'reupload_required'], true)
-            ? $input['status']
+        $rawStatus = $input['status'] ?? $input['verification_status'] ?? '';
+        $status = in_array($rawStatus, ['verified', 'invalid', 'unclear', 'reupload_required'], true)
+            ? $rawStatus
             : 'verified';
         $note = trim($input['reviewer_note'] ?? '');
 
@@ -387,13 +388,26 @@ class TeacherVerificationAdminController {
             $upUser->execute([$userId]);
 
             // 3. Upsert teacher profile
+            $userStmt = $db->prepare("SELECT full_name FROM users WHERE id = ?");
+            $userStmt->execute([$userId]);
+            $userName = $userStmt->fetchColumn() ?: 'Faculty Teacher';
+
+            $qualification = trim(($app['highest_qualification'] ?? '') . ' ' . ($app['degree_name'] ?? ''));
+            $specialisation = $app['specialization'] ?? '';
+            $institution = $app['institution_name'] ?? '';
+            $bio = $qualification . ($institution ? " ($institution)" : '');
+
             $upProf = $db->prepare("
-                INSERT INTO teacher_profiles (user_id, status, bio)
-                VALUES (?, 'active', ?)
-                ON DUPLICATE KEY UPDATE status = 'active', bio = VALUES(bio)
+                INSERT INTO teacher_profiles (user_id, display_name, qualification, specialisation, bio, status)
+                VALUES (?, ?, ?, ?, ?, 'active')
+                ON DUPLICATE KEY UPDATE
+                    display_name = VALUES(display_name),
+                    qualification = VALUES(qualification),
+                    specialisation = VALUES(specialisation),
+                    bio = VALUES(bio),
+                    status = 'active'
             ");
-            $bio = $app['highest_qualification'] . ' in ' . $app['degree_name'] . ' (' . $app['institution_name'] . ')';
-            $upProf->execute([$userId, $bio]);
+            $upProf->execute([$userId, $userName, $qualification, $specialisation, $bio]);
 
             // 4. Send notification
             $notif = $db->prepare("
