@@ -62,11 +62,21 @@ class _TeacherDashboardViewState extends State<TeacherDashboardView> {
       appBar: AppBar(
         backgroundColor: AppConstants.scaffoldDark,
         elevation: 0,
-        title: const Text('Teacher Panel',
+        title: const Text('Faculty Studio',
             style: TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
         actions: [
+          TextButton.icon(
+            icon: const Icon(Icons.swap_horiz, color: AppConstants.accentCyan, size: 18),
+            label: const Text('Student App', style: TextStyle(color: AppConstants.accentCyan, fontSize: 12, fontWeight: FontWeight.bold)),
+            onPressed: () async {
+              await ApiService.setSession(ApiService.authToken, type: 'student');
+              if (context.mounted) {
+                Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+              }
+            },
+          ),
           IconButton(
-            icon: const Icon(Icons.logout, color: AppConstants.accentRose),
+            icon: const Icon(Icons.logout, color: AppConstants.accentRose, size: 20),
             tooltip: 'Sign out',
             onPressed: widget.onLogout,
           ),

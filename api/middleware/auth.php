@@ -27,7 +27,16 @@ class AuthMiddleware {
         }
 
         if ($requiredType !== null && !self::satisfies($payload['type'], $requiredType)) {
-            Response::error('Forbidden: Insufficient privileges', 403);
+            // Auto-heal: Check live database role in case privileges were upgraded (e.g. KYC approved)
+            $db = Database::getConnection();
+            $stmt = $db->prepare("SELECT user_type FROM users WHERE id = ?");
+            $stmt->execute([$payload['sub'] ?? 0]);
+            $dbType = $stmt->fetchColumn();
+            if ($dbType && self::satisfies($dbType, $requiredType)) {
+                $payload['type'] = $dbType;
+            } else {
+                Response::error('Forbidden: Insufficient privileges', 403);
+            }
         }
 
         return $payload;

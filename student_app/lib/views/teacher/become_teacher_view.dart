@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants.dart';
 import '../../core/api_service.dart';
+import 'teacher_dashboard_view.dart';
 
 class BecomeTeacherView extends StatefulWidget {
   const BecomeTeacherView({super.key});
@@ -939,12 +940,24 @@ class _BecomeTeacherViewState extends State<BecomeTeacherView> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () {
-                // Return with signal or close
-                Navigator.pop(context, true);
+              onPressed: () async {
+                await ApiService.setSession(ApiService.authToken, type: 'teacher');
+                if (!mounted) return;
+                final nav = Navigator.of(context);
+                nav.pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (ctx) => TeacherDashboardView(
+                      onLogout: () async {
+                        await ApiService.setSession(ApiService.authToken, type: 'student');
+                        Navigator.of(ctx).pushNamedAndRemoveUntil('/', (route) => false);
+                      },
+                    ),
+                  ),
+                  (route) => false,
+                );
               },
               icon: const Icon(Icons.dashboard_customize_rounded, size: 18),
-              label: Text('Back to Profile / Studio', style: GoogleFonts.inter(fontWeight: FontWeight.w800)),
+              label: Text('Open Teacher Panel & Studio', style: GoogleFonts.inter(fontWeight: FontWeight.w800)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppConstants.accentYellow,
                 foregroundColor: AppConstants.primaryDark,
