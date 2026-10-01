@@ -178,11 +178,32 @@ class TeacherApplicationController {
             Response::error('File size exceeds 5MB limit', 400);
         }
 
-        // Validate real MIME type using finfo
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-        $mime = $finfo->file($file['tmp_name']);
-        if (!in_array($mime, self::$allowedMimes, true)) {
-            Response::error('Invalid file type. Only PDF, JPG, PNG, and WEBP files are allowed.', 400);
+        // Validate MIME type with fallback
+        $mime = '';
+        if (class_exists('finfo')) {
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->file($file['tmp_name']);
+        }
+        if (!$mime && function_exists('mime_content_type')) {
+            $mime = mime_content_type($file['tmp_name']);
+        }
+        if (!$mime && !empty($file['type'])) {
+            $mime = $file['type'];
+        }
+        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $extMimes = [
+            'pdf'  => 'application/pdf',
+            'jpg'  => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png'  => 'image/png',
+            'webp' => 'image/webp'
+        ];
+        if (empty($mime) || !in_array($mime, self::$allowedMimes, true)) {
+            if (isset($extMimes[$extension])) {
+                $mime = $extMimes[$extension];
+            } else {
+                Response::error('Invalid file type. Only PDF, JPG, PNG, and WEBP files are allowed.', 400);
+            }
         }
 
         // Fetch or create draft application
@@ -212,8 +233,7 @@ class TeacherApplicationController {
             mkdir($storageDir, 0755, true);
         }
 
-        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-        $randomKey = bin2hex(random_bytes(24)) . ($extension ? '.' . strtolower($extension) : '');
+        $randomKey = bin2hex(random_bytes(24)) . ($extension ? '.' . $extension : '');
         $destination = $storageDir . '/' . $randomKey;
 
         if (!move_uploaded_file($file['tmp_name'], $destination)) {
@@ -221,6 +241,19 @@ class TeacherApplicationController {
         }
 
         $checksum = hash_file('sha256', $destination);
+
+        // Remove older document of the same type for this application
+        $oldDocStmt = $db->prepare("SELECT id, storage_key FROM teacher_documents WHERE application_id = ? AND document_type = ?");
+        $oldDocStmt->execute([$appId, $docType]);
+        $oldDocs = $oldDocStmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($oldDocs as $od) {
+            $oldFilePath = $storageDir . '/' . $od['storage_key'];
+            if (file_exists($oldFilePath)) {
+                @unlink($oldFilePath);
+            }
+            $delStmt = $db->prepare("DELETE FROM teacher_documents WHERE id = ?");
+            $delStmt->execute([$od['id']]);
+        }
 
         $insDoc = $db->prepare("
             INSERT INTO teacher_documents (

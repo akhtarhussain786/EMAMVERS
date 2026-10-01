@@ -205,8 +205,23 @@ switch ($action) {
 
             // Auto-create approved application record for reporting
             try {
-                $db->prepare("INSERT INTO teacher_applications (user_id, current_organization, years_of_experience, preferred_subjects, status, reviewed_by, reviewed_at, internal_notes) VALUES (?, ?, '2+ Years', ?, 'approved', ?, NOW(), 'Directly created and verified by Administrator')")
-                   ->execute([$userId, 'ExamVerse Faculty', $specialisation ?: 'General', $adminId]);
+                $appNo = 'TCH-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(3)));
+                $db->prepare("
+                    INSERT INTO teacher_applications (
+                        application_no, user_id, highest_qualification, degree_name,
+                        specialization, institution_name, passing_year, experience_years,
+                        current_organization, status, assigned_reviewer_id, reviewer_message,
+                        approved_at, reviewed_at
+                    ) VALUES (?, ?, ?, ?, ?, 'ExamVerse Faculty', ?, 2.0, 'ExamVerse Faculty', 'approved', ?, 'Directly created and verified by Administrator', NOW(), NOW())
+                ")->execute([
+                    $appNo,
+                    $userId,
+                    $qualification ?: 'Faculty Degree',
+                    $qualification ?: 'General',
+                    $specialisation ?: 'General',
+                    date('Y'),
+                    $adminId
+                ]);
             } catch (Exception $eApp) {}
 
             auditLog($db, $adminId, 'CREATE_TEACHER', $userId, 'Created teacher account: ' . $email);
