@@ -48,20 +48,24 @@ class TeacherVerificationAdminController {
 
         $countStmt = $db->prepare("
             SELECT COUNT(*) FROM teacher_applications ta
-            JOIN users u ON ta.user_id = u.id
+            LEFT JOIN users u ON ta.user_id = u.id
             WHERE $whereSql
         ");
         $countStmt->execute($params);
         $total = (int)$countStmt->fetchColumn();
 
         $stmt = $db->prepare("
-            SELECT ta.*, u.full_name, u.email, u.mobile, COALESCE(s.name, 'All India') AS state,
+            SELECT ta.*, 
+                   COALESCE(u.full_name, 'Teacher Applicant') AS full_name, 
+                   COALESCE(u.email, 'N/A') AS email, 
+                   COALESCE(u.mobile, 'N/A') AS mobile, 
+                   COALESCE(s.name, 'All India') AS state,
                    (SELECT COUNT(*) FROM teacher_documents td WHERE td.application_id = ta.id) AS document_count
             FROM teacher_applications ta
-            JOIN users u ON ta.user_id = u.id
+            LEFT JOIN users u ON ta.user_id = u.id
             LEFT JOIN states s ON u.state_id = s.id
             WHERE $whereSql
-            ORDER BY ta.submitted_at DESC, ta.id DESC
+            ORDER BY COALESCE(ta.submitted_at, ta.created_at) DESC, ta.id DESC
             LIMIT $limit OFFSET $offset
         ");
         $stmt->execute($params);
