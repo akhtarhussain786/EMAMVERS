@@ -13,19 +13,10 @@ class Response {
         if (self::$corsSent) return;
         self::$corsSent = true;
 
-        $allowed = Config::allowedOrigins();
-        $origin  = $_SERVER['HTTP_ORIGIN'] ?? '';
-
-        if (in_array('*', $allowed, true)) {
-            header('Access-Control-Allow-Origin: *');
-        } elseif ($origin !== '' && in_array($origin, $allowed, true)) {
-            header('Access-Control-Allow-Origin: ' . $origin);
-            header('Access-Control-Allow-Credentials: true');
-            header('Vary: Origin');
-        }
-
-        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS');
+        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Auth-Token, X-Authorization, Accept, Origin, Cache-Control, X-App-Version');
+        header('Access-Control-Max-Age: 86400');
         header('X-Content-Type-Options: nosniff');
     }
 
