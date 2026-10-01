@@ -984,18 +984,164 @@ class _BecomeTeacherViewState extends State<BecomeTeacherView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Application Summary',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14, color: AppConstants.accentYellow),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Application Summary',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14, color: AppConstants.accentYellow),
+              ),
+              if (_application?['status'] != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: _application!['status'] == 'approved'
+                        ? AppConstants.accentEmerald.withValues(alpha: 0.15)
+                        : AppConstants.accentAmber.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: _application!['status'] == 'approved'
+                          ? AppConstants.accentEmerald.withValues(alpha: 0.4)
+                          : AppConstants.accentAmber.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Text(
+                    _application!['status'].toString().toUpperCase(),
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: _application!['status'] == 'approved' ? AppConstants.accentEmerald : AppConstants.accentAmber,
+                    ),
+                  ),
+                ),
+            ],
           ),
           const Divider(height: 18, color: AppConstants.cardBorder),
           _infoRow('Degree / Major', '${_application?['highest_qualification']} • ${_application?['degree_name']}'),
           _infoRow('Specialization', _application?['specialization'] ?? 'General'),
           _infoRow('Institution', '${_application?['institution_name']} (${_application?['passing_year']})'),
           _infoRow('Experience', '${_application?['experience_years']} Years'),
-          _infoRow('Documents', '${docs.length} files attached'),
+          if (_application?['current_organization'] != null && _application!['current_organization'].toString().isNotEmpty)
+            _infoRow('Organization', _application!['current_organization'].toString()),
           if (_application?['submitted_at'] != null)
             _infoRow('Submitted On', _application!['submitted_at'].toString().split('T').first),
+          
+          const SizedBox(height: 14),
+          Text(
+            'Uploaded KYC Documents (${docs.length})',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13, color: AppConstants.textPrimary),
+          ),
+          const SizedBox(height: 8),
+          if (docs.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'No documents attached yet.',
+                style: GoogleFonts.inter(fontSize: 12, color: AppConstants.textMuted, fontStyle: FontStyle.italic),
+              ),
+            )
+          else
+            ...docs.map((doc) => _buildUploadedDocItem(doc)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUploadedDocItem(Map<String, dynamic> doc) {
+    final status = (doc['verification_status'] ?? 'pending').toString();
+    Color statusColor;
+    String statusLabel;
+
+    switch (status) {
+      case 'verified':
+        statusColor = AppConstants.accentEmerald;
+        statusLabel = 'VERIFIED ✓';
+        break;
+      case 'reupload_required':
+      case 'invalid':
+        statusColor = AppConstants.accentRose;
+        statusLabel = 'RE-UPLOAD NEEDED ⚠️';
+        break;
+      case 'unclear':
+        statusColor = AppConstants.accentPurple;
+        statusLabel = 'UNCLEAR';
+        break;
+      default:
+        statusColor = AppConstants.accentAmber;
+        statusLabel = 'PENDING REVIEW ⏳';
+    }
+
+    final docType = (doc['document_type'] ?? 'document').toString();
+    final docTitle = docType == 'identity'
+        ? 'Identity Proof (Aadhaar / PAN)'
+        : (docType == 'qualification' ? 'Degree Certificate / Marksheet' : docType.toUpperCase());
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppConstants.cardDark,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppConstants.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                status == 'verified' ? Icons.verified : Icons.description_outlined,
+                color: statusColor,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  docTitle,
+                  style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppConstants.textPrimary),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: statusColor.withValues(alpha: 0.4)),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, color: statusColor),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const SizedBox(width: 26),
+              Expanded(
+                child: Text(
+                  '${doc['original_name'] ?? 'file'} • ${((doc['file_size'] ?? 0) / 1024).round()} KB',
+                  style: GoogleFonts.inter(fontSize: 11, color: AppConstants.textMuted),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          if (doc['reviewer_note'] != null && doc['reviewer_note'].toString().isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const SizedBox(width: 26),
+                Expanded(
+                  child: Text(
+                    'Note: ${doc['reviewer_note']}',
+                    style: GoogleFonts.inter(fontSize: 11, color: AppConstants.accentRose, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

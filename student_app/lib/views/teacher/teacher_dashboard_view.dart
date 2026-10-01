@@ -4,6 +4,7 @@ import '../../core/constants.dart';
 import '../../widgets/design_system_widgets.dart';
 import 'submit_question_view.dart';
 import 'my_questions_view.dart';
+import 'become_teacher_view.dart';
 
 /// Home screen for a teacher account. Teachers author questions; they do not
 /// take tests, so this is a separate shell from the student experience.
@@ -145,6 +146,43 @@ class _TeacherDashboardViewState extends State<TeacherDashboardView> {
                                 style: TextStyle(color: AppConstants.textSecondary, fontSize: 12.5)),
                             trailing: const Icon(Icons.chevron_right, color: AppConstants.textMuted),
                             onTap: () => _open(const MyQuestionsView()),
+                          ),
+                        ),
+                        const SizedBox(height: AppConstants.space12),
+
+                        ExamVerseCard(
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: AppConstants.accentEmerald.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.verified_user_rounded, color: AppConstants.accentEmerald, size: 20),
+                            ),
+                            title: const Text('KYC & Verification Credentials',
+                                style: TextStyle(
+                                    color: AppConstants.textPrimary, fontSize: 14.5, fontWeight: FontWeight.w600)),
+                            subtitle: const Text('View uploaded government IDs, degrees & status',
+                                style: TextStyle(color: AppConstants.textSecondary, fontSize: 12)),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: AppConstants.accentEmerald.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: AppConstants.accentEmerald.withValues(alpha: 0.4)),
+                                  ),
+                                  child: const Text('KYC ACTIVE', style: TextStyle(color: AppConstants.accentEmerald, fontSize: 10, fontWeight: FontWeight.w800)),
+                                ),
+                                const SizedBox(width: 6),
+                                const Icon(Icons.chevron_right, color: AppConstants.textMuted),
+                              ],
+                            ),
+                            onTap: () => _open(const BecomeTeacherView()),
                           ),
                         ),
                         const SizedBox(height: AppConstants.space20),
