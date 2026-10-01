@@ -164,6 +164,8 @@ if (($path === '/v1/health' || $path === '/health') && $method === 'GET') {
     TeacherApplicationController::saveDraft();
 } elseif ($path === '/v1/teacher/application/documents' && $method === 'POST') {
     TeacherApplicationController::uploadDocument();
+} elseif (matchRoute('/v1/teacher/application/documents/{id}', $path, $params) && $method === 'DELETE') {
+    TeacherApplicationController::deleteDocument($params['id']);
 } elseif ($path === '/v1/teacher/application/submit' && $method === 'POST') {
     TeacherApplicationController::submitApplication();
 } elseif ($path === '/v1/teacher/dashboard' && $method === 'GET') {

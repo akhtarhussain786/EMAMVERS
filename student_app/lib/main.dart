@@ -21,6 +21,7 @@ import 'views/creator/creator_dashboard_view.dart';
 import 'views/current_affairs/current_affairs_view.dart';
 import 'views/teacher/teacher_dashboard_view.dart';
 import 'views/teacher/become_teacher_view.dart';
+import 'views/teacher/teacher_documents_view.dart';
 import 'views/map_learning/map_learning_home_view.dart';
 import 'views/notebook/mistake_notebook_view.dart';
 import 'views/practice/build_practice_view.dart';
@@ -135,6 +136,7 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
         '/marketplace': (_) => const MarketplaceScreen(),
         '/current-affairs': (_) => const CurrentAffairsView(),
         '/become-teacher': (_) => const BecomeTeacherView(),
+        '/teacher-documents': (_) => const TeacherDocumentsView(),
         '/map-learning': (_) => const MapLearningHomeView(),
         '/mistake-notebook': (_) => const MistakeNotebookView(),
       },

@@ -5,6 +5,7 @@ import '../../widgets/design_system_widgets.dart';
 import 'submit_question_view.dart';
 import 'my_questions_view.dart';
 import 'become_teacher_view.dart';
+import 'teacher_documents_view.dart';
 
 /// Home screen for a teacher account. Teachers author questions; they do not
 /// take tests, so this is a separate shell from the student experience.
@@ -182,7 +183,7 @@ class _TeacherDashboardViewState extends State<TeacherDashboardView> {
                                 const Icon(Icons.chevron_right, color: AppConstants.textMuted),
                               ],
                             ),
-                            onTap: () => _open(const BecomeTeacherView()),
+                            onTap: () => _open(const TeacherDocumentsView()),
                           ),
                         ),
                         const SizedBox(height: AppConstants.space20),
