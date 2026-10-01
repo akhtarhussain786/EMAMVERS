@@ -246,16 +246,36 @@ class AuthController {
 
         $userId = $db->lastInsertId();
 
-        // If teacher, initialize teacher profile
+        // If teacher, initialize teacher profile & application queue
         if ($userType === 'teacher') {
             try {
                 $specialisation = isset($input['specialisation']) && trim($input['specialisation']) !== '' ? trim($input['specialisation']) : 'Faculty Educator';
                 $teacherQual = isset($input['teacher_qualification']) && trim($input['teacher_qualification']) !== '' ? trim($input['teacher_qualification']) : 'Teaching Degree / Post Graduate';
+                $org = isset($input['organization']) && trim($input['organization']) !== '' ? trim($input['organization']) : 'ExamVerse Faculty';
+
                 $db->prepare("
                     INSERT INTO teacher_profiles (user_id, display_name, qualification, specialisation, status) 
                     VALUES (?, ?, ?, ?, 'active')
                     ON DUPLICATE KEY UPDATE display_name = VALUES(display_name), status = 'active'
                 ")->execute([$userId, $fullName, $teacherQual, $specialisation]);
+
+                $appNo = 'TCH-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(3)));
+                $db->prepare("
+                    INSERT INTO teacher_applications (
+                        application_no, user_id, highest_qualification, degree_name,
+                        specialization, institution_name, passing_year, experience_years,
+                        current_organization, status, declaration_accepted, declaration_timestamp,
+                        submitted_at
+                    ) VALUES (?, ?, ?, ?, ?, 'Registered Faculty', ?, 2.0, ?, 'submitted', 1, NOW(), NOW())
+                ")->execute([
+                    $appNo,
+                    $userId,
+                    $teacherQual,
+                    $teacherQual,
+                    $specialisation,
+                    date('Y'),
+                    $org
+                ]);
             } catch (Exception $eT) {
                 // Non-fatal if table not migrated yet
             }

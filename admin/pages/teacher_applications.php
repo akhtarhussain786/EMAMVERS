@@ -3,11 +3,12 @@ require_once __DIR__ . '/../../api/config/db.php';
 $db = Database::getConnection();
 
 $filter = $_GET['filter'] ?? 'submitted';
-$validFilters = ['submitted', 'changes_required', 'approved', 'rejected', 'all'];
+$validFilters = ['submitted', 'draft', 'changes_required', 'approved', 'rejected', 'all'];
 if (!in_array($filter, $validFilters)) $filter = 'submitted';
 
 $whereMap = [
     'submitted'        => "ta.status IN ('submitted', 'under_review')",
+    'draft'            => "ta.status = 'draft'",
     'changes_required' => "ta.status = 'changes_required'",
     'approved'         => "ta.status = 'approved'",
     'rejected'         => "ta.status = 'rejected'",
@@ -21,13 +22,14 @@ $stmt = $db->query("
     JOIN users u ON ta.user_id = u.id
     LEFT JOIN states s ON u.state_id = s.id
     WHERE {$whereMap[$filter]}
-    ORDER BY ta.submitted_at DESC, ta.id DESC
+    ORDER BY COALESCE(ta.submitted_at, ta.created_at) DESC, ta.id DESC
 ");
 $applications = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $counts = $db->query("
     SELECT
         COALESCE(SUM(status IN ('submitted', 'under_review')), 0) as pending,
+        COALESCE(SUM(status = 'draft'), 0) as draft,
         COALESCE(SUM(status = 'changes_required'), 0) as changes_required,
         COALESCE(SUM(status = 'approved'), 0) as approved,
         COALESCE(SUM(status = 'rejected'), 0) as rejected,
@@ -120,6 +122,7 @@ try {
         <?php 
         $tabs = [
             'submitted'        => ['label' => 'Pending Review', 'count' => (int)$counts['pending'], 'icon' => '⏳'],
+            'draft'            => ['label' => 'In Draft', 'count' => (int)($counts['draft'] ?? 0), 'icon' => '📝'],
             'changes_required' => ['label' => 'Action Required', 'count' => (int)$counts['changes_required'], 'icon' => '✏️'],
             'approved'         => ['label' => 'Approved', 'count' => (int)$counts['approved'], 'icon' => '✓'],
             'rejected'         => ['label' => 'Rejected', 'count' => (int)$counts['rejected'], 'icon' => '✕'],
