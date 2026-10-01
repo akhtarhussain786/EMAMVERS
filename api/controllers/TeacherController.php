@@ -34,6 +34,18 @@ class TeacherController {
         $profile = $stmt->fetch();
 
         if (!$profile) {
+            $uStmt = $db->prepare("SELECT id, full_name, user_type FROM users WHERE id = ?");
+            $uStmt->execute([$userId]);
+            $u = $uStmt->fetch();
+            if ($u && ($u['user_type'] === 'teacher' || $auth['type'] === 'teacher')) {
+                $db->prepare("INSERT INTO teacher_profiles (user_id, display_name, status) VALUES (?, ?, 'active') ON DUPLICATE KEY UPDATE status = 'active'")
+                   ->execute([$userId, $u['full_name'] ?: 'Teacher']);
+                $stmt->execute([$userId]);
+                $profile = $stmt->fetch();
+            }
+        }
+
+        if (!$profile) {
             Response::error('No teacher profile found for this account', 403);
         }
         if ($profile['status'] !== 'active') {
