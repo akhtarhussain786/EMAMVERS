@@ -216,14 +216,14 @@ class TeacherApplicationController {
             $appNo = 'TCH-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(3)));
             $insApp = $db->prepare("
                 INSERT INTO teacher_applications (application_no, user_id, highest_qualification, degree_name, institution_name, passing_year, status)
-                VALUES (?, ?, 'Pending', 'Pending', 'Pending', ?, 'draft')
+                VALUES (?, ?, 'Faculty Degree', 'Teaching Discipline', 'Registered Faculty', ?, 'submitted')
             ");
             $insApp->execute([$appNo, $userId, date('Y')]);
             $appId = (int)$db->lastInsertId();
         } else {
             $appId = (int)$app['id'];
-            if (!in_array($app['status'], ['draft', 'changes_required'], true)) {
-                Response::error('Cannot upload documents for application in status ' . $app['status'], 400);
+            if (in_array($app['status'], ['withdrawn', 'suspended'], true)) {
+                Response::error('Cannot upload documents for ' . $app['status'] . ' application', 400);
             }
         }
 
@@ -349,5 +349,33 @@ class TeacherApplicationController {
             'status'         => 'submitted',
             'submitted_at'   => date('c')
         ], 'Teacher application submitted for verification');
+    }
+
+    /**
+     * Delete an uploaded KYC document.
+     */
+    public static function deleteDocument($docId) {
+        $auth = AuthMiddleware::getAuthenticatedUser();
+        $userId = $auth['sub'];
+        $db = Database::getConnection();
+
+        $stmt = $db->prepare("SELECT * FROM teacher_documents WHERE id = ? AND user_id = ?");
+        $stmt->execute([$docId, $userId]);
+        $doc = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$doc) {
+            Response::error('Document not found or permission denied', 404);
+        }
+
+        $storageDir = __DIR__ . '/../../storage/teacher_docs';
+        $filePath = $storageDir . '/' . $doc['storage_key'];
+        if (file_exists($filePath)) {
+            @unlink($filePath);
+        }
+
+        $delStmt = $db->prepare("DELETE FROM teacher_documents WHERE id = ?");
+        $delStmt->execute([$docId]);
+
+        Response::json(['document_id' => $docId], 'Document deleted successfully');
     }
 }
