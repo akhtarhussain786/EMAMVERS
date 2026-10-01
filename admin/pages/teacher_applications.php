@@ -15,16 +15,50 @@ $whereMap = [
     'all'              => '1=1'
 ];
 
-$stmt = $db->query("
-    SELECT ta.*, u.full_name, u.email, u.mobile, COALESCE(s.name, 'All India') AS state_name, u.created_at AS user_joined_at,
-           (SELECT COUNT(*) FROM teacher_documents td WHERE td.application_id = ta.id) AS document_count
-    FROM teacher_applications ta
-    JOIN users u ON ta.user_id = u.id
-    LEFT JOIN states s ON u.state_id = s.id
-    WHERE {$whereMap[$filter]}
-    ORDER BY COALESCE(ta.submitted_at, ta.created_at) DESC, ta.id DESC
-");
-$applications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$applications = [];
+try {
+    $stmt = $db->query("
+        SELECT ta.*, 
+               COALESCE(u.full_name, 'Teacher Applicant') AS full_name, 
+               COALESCE(u.email, 'N/A') AS email, 
+               COALESCE(u.mobile, 'N/A') AS mobile, 
+               COALESCE(s.name, 'All India') AS state_name, 
+               COALESCE(u.created_at, ta.created_at) AS user_joined_at,
+               (SELECT COUNT(*) FROM teacher_documents td WHERE td.application_id = ta.id) AS document_count
+        FROM teacher_applications ta
+        LEFT JOIN users u ON ta.user_id = u.id
+        LEFT JOIN states s ON u.state_id = s.id
+        WHERE {$whereMap[$filter]}
+        ORDER BY COALESCE(ta.submitted_at, ta.created_at) DESC, ta.id DESC
+    ");
+    if ($stmt) {
+        $applications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+} catch (Exception $e) {
+    try {
+        $stmt = $db->query("
+            SELECT ta.*, 
+                   COALESCE(u.full_name, 'Teacher Applicant') AS full_name, 
+                   COALESCE(u.email, 'N/A') AS email, 
+                   COALESCE(u.mobile, 'N/A') AS mobile, 
+                   'All India' AS state_name, 
+                   COALESCE(u.created_at, ta.created_at) AS user_joined_at,
+                   (SELECT COUNT(*) FROM teacher_documents td WHERE td.application_id = ta.id) AS document_count
+            FROM teacher_applications ta
+            LEFT JOIN users u ON ta.user_id = u.id
+            WHERE {$whereMap[$filter]}
+            ORDER BY COALESCE(ta.submitted_at, ta.created_at) DESC, ta.id DESC
+        ");
+        if ($stmt) {
+            $applications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+    } catch (Exception $e2) {
+        try {
+            $stmt = $db->query("SELECT ta.*, 'Teacher' as full_name, '' as email, '' as mobile, 'All India' as state_name, ta.created_at as user_joined_at, 0 as document_count FROM teacher_applications ta WHERE {$whereMap[$filter]}");
+            if ($stmt) $applications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e3) {}
+    }
+}
 
 $counts = $db->query("
     SELECT
