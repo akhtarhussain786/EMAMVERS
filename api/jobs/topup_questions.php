@@ -43,41 +43,86 @@ function out($msg) { echo '[' . date('H:i:s') . '] ' . $msg . "\n"; }
 $db = Database::getConnection();
 out('Question bank top-up starting' . ($dryRun ? ' (DRY RUN)' : ''));
 
-// ── which buckets are below target? ──────────────────────────────────────
-$sql = "
-    SELECT t.exam_id, e.title AS exam_title, t.subject_id, s.name AS subject_name,
-           t.target_per_difficulty, d.difficulty,
-           COALESCE(cnt.total, 0) AS current_total
-    FROM exam_bank_targets t
-    JOIN exams e ON t.exam_id = e.id
-    JOIN subjects s ON t.subject_id = s.id
-    CROSS JOIN (SELECT 'easy' AS difficulty UNION SELECT 'medium' UNION SELECT 'hard') d
-    LEFT JOIN (
-        SELECT qe.exam_id, q.subject_id, q.difficulty, COUNT(*) AS total
-        FROM questions q
-        JOIN question_exams qe ON qe.question_id = q.id
-        WHERE q.status = 'published'
-        GROUP BY qe.exam_id, q.subject_id, q.difficulty
-    ) cnt ON cnt.exam_id = t.exam_id AND cnt.subject_id = t.subject_id AND cnt.difficulty = d.difficulty
-    WHERE t.auto_topup = 1
-      AND COALESCE(cnt.total, 0) < t.target_per_difficulty
-";
-$params = [];
-if ($onlyExam) { $sql .= " AND t.exam_id = ?"; $params[] = $onlyExam; }
-if ($onlySubj) { $sql .= " AND t.subject_id = ?"; $params[] = $onlySubj; }
-if ($onlyDiff) { $sql .= " AND d.difficulty = ?"; $params[] = $onlyDiff; }
-// Emptiest buckets first, so a limited run fixes the worst gaps.
-$sql .= " ORDER BY (t.target_per_difficulty - COALESCE(cnt.total,0)) DESC";
+// ── which buckets need questions? ────────────────────────────────────────
+//
+// Two modes. Unattended (cron) walks the configured targets and fills whatever
+// has fallen behind. Manual — an admin naming an exam and subject, which is
+// what the "Fill now" button does — generates for exactly that bucket, whether
+// or not a target row exists and whether or not it is already at target.
+// Without this the button reported "top-up started" and then did nothing for
+// any bucket the admin had not previously configured.
+$manualBucket = ($onlyExam && $onlySubj);
 
-$stmt = $db->prepare($sql);
-$stmt->execute($params);
-$buckets = $stmt->fetchAll();
+if ($manualBucket) {
+    $difficulties = $onlyDiff ? [$onlyDiff] : ['easy', 'medium', 'hard'];
+    $placeholders = implode(',', array_fill(0, count($difficulties), '?'));
 
-if (!$buckets) {
-    out('Every configured bucket is at or above target. Nothing to do.');
-    exit(0);
+    $stmt = $db->prepare("
+        SELECT e.id AS exam_id, e.title AS exam_title, s.id AS subject_id, s.name AS subject_name,
+               COALESCE(t.target_per_difficulty, 0) AS target_per_difficulty,
+               d.difficulty,
+               COALESCE(cnt.total, 0) AS current_total
+        FROM exams e
+        JOIN subjects s ON s.id = ?
+        CROSS JOIN (
+            SELECT 'easy' AS difficulty UNION SELECT 'medium' UNION SELECT 'hard'
+        ) d
+        LEFT JOIN exam_bank_targets t ON t.exam_id = e.id AND t.subject_id = s.id
+        LEFT JOIN (
+            SELECT qe.exam_id, q.subject_id, q.difficulty, COUNT(*) AS total
+            FROM questions q
+            JOIN question_exams qe ON qe.question_id = q.id
+            WHERE q.status = 'published'
+            GROUP BY qe.exam_id, q.subject_id, q.difficulty
+        ) cnt ON cnt.exam_id = e.id AND cnt.subject_id = s.id AND cnt.difficulty = d.difficulty
+        WHERE e.id = ?
+          AND d.difficulty IN ($placeholders)
+        ORDER BY FIELD(d.difficulty, 'easy', 'medium', 'hard')
+    ");
+    $stmt->execute(array_merge([$onlySubj, $onlyExam], $difficulties));
+    $buckets = $stmt->fetchAll();
+
+    if (!$buckets) {
+        out("ERROR: exam {$onlyExam} / subject {$onlySubj} does not exist.");
+        exit(1);
+    }
+    out(count($buckets) . ' bucket(s) requested manually; inserting at most ' . $maxInserts . ' question(s) this run.');
+} else {
+    $sql = "
+        SELECT t.exam_id, e.title AS exam_title, t.subject_id, s.name AS subject_name,
+               t.target_per_difficulty, d.difficulty,
+               COALESCE(cnt.total, 0) AS current_total
+        FROM exam_bank_targets t
+        JOIN exams e ON t.exam_id = e.id
+        JOIN subjects s ON t.subject_id = s.id
+        CROSS JOIN (SELECT 'easy' AS difficulty UNION SELECT 'medium' UNION SELECT 'hard') d
+        LEFT JOIN (
+            SELECT qe.exam_id, q.subject_id, q.difficulty, COUNT(*) AS total
+            FROM questions q
+            JOIN question_exams qe ON qe.question_id = q.id
+            WHERE q.status = 'published'
+            GROUP BY qe.exam_id, q.subject_id, q.difficulty
+        ) cnt ON cnt.exam_id = t.exam_id AND cnt.subject_id = t.subject_id AND cnt.difficulty = d.difficulty
+        WHERE t.auto_topup = 1
+          AND COALESCE(cnt.total, 0) < t.target_per_difficulty
+    ";
+    $params = [];
+    if ($onlyExam) { $sql .= " AND t.exam_id = ?"; $params[] = $onlyExam; }
+    if ($onlySubj) { $sql .= " AND t.subject_id = ?"; $params[] = $onlySubj; }
+    if ($onlyDiff) { $sql .= " AND d.difficulty = ?"; $params[] = $onlyDiff; }
+    // Emptiest buckets first, so a limited run fixes the worst gaps.
+    $sql .= " ORDER BY (t.target_per_difficulty - COALESCE(cnt.total,0)) DESC";
+
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
+    $buckets = $stmt->fetchAll();
+
+    if (!$buckets) {
+        out('Every configured bucket is at or above target. Nothing to do.');
+        exit(0);
+    }
+    out(count($buckets) . ' bucket(s) below target; inserting at most ' . $maxInserts . ' question(s) this run.');
 }
-out(count($buckets) . ' bucket(s) below target; inserting at most ' . $maxInserts . ' question(s) this run.');
 
 // ── AI key ───────────────────────────────────────────────────────────────
 $keyRow = $db->query("SELECT * FROM ai_api_keys WHERE is_active = 1 ORDER BY created_at DESC LIMIT 1")->fetch();
@@ -97,12 +142,24 @@ $totalDupes    = 0;
 foreach ($buckets as $b) {
     if ($totalInserted >= $maxInserts) { out('Insert limit reached; stopping.'); break; }
 
-    $shortfall = (int)$b['target_per_difficulty'] - (int)$b['current_total'];
-    $want      = min($batchSize, $shortfall, $maxInserts - $totalInserted);
+    // A cron run only makes up the shortfall against the configured target. A
+    // manual run has no target to work from — the admin asked for questions, so
+    // --limit is the quantity, not a ceiling on a shortfall of zero.
+    $remaining = $maxInserts - $totalInserted;
+    if ($manualBucket) {
+        $want = min($batchSize, $remaining);
+    } else {
+        $shortfall = (int)$b['target_per_difficulty'] - (int)$b['current_total'];
+        $want      = min($batchSize, $shortfall, $remaining);
+    }
     if ($want < 1) continue;
 
     $label = sprintf('%s / %s / %s', $b['exam_title'], $b['subject_name'], $b['difficulty']);
-    out(sprintf('  %-52s have %3d, target %3d -> requesting %d', $label, $b['current_total'], $b['target_per_difficulty'], $want));
+    if ($manualBucket) {
+        out(sprintf('  %-52s have %3d -> requesting %d (manual)', $label, $b['current_total'], $want));
+    } else {
+        out(sprintf('  %-52s have %3d, target %3d -> requesting %d', $label, $b['current_total'], $b['target_per_difficulty'], $want));
+    }
 
     if ($dryRun) { $totalInserted += $want; continue; }
 
@@ -219,35 +276,70 @@ function generateQuestions($apiKey, $provider, array $bucket, int $count): array
     return $valid;
 }
 
+/**
+ * Calls Gemini, retrying the failures the provider itself describes as
+ * temporary.
+ *
+ * 503 ("this model is currently experiencing high demand"), 429 and the 5xx
+ * family are transient: the request is fine and the same call succeeds later.
+ * Without a retry a nightly run was abandoned entirely whenever Gemini happened
+ * to be busy, which is how a healthy bucket stayed empty. 4xx other than 429 is
+ * our fault (bad model, bad key, malformed body) and is not worth repeating.
+ */
 function callGemini(string $apiKey, string $prompt): string {
-    $model = Config::get('GEMINI_MODEL', 'gemini-3.6-flash');
-    $ch = curl_init("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent");
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => json_encode([
-            'contents' => [['parts' => [['text' => $prompt]]]],
-            'generationConfig' => ['temperature' => 0.9, 'maxOutputTokens' => 32000],
-        ]),
-        CURLOPT_RETURNTRANSFER => true,
-        // Generous: a thinking model spends ~16s per question.
-        CURLOPT_TIMEOUT => 600,
-        CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'x-goog-api-key: ' . trim($apiKey)],
-    ]);
-    $response = curl_exec($ch);
-    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $err  = curl_error($ch);
-    curl_close($ch);
+    $model      = Config::get('GEMINI_MODEL', 'gemini-3.6-flash');
+    // Configurable so the job can be pointed at a proxy or a stub endpoint
+    // without editing code; defaults to Google's own host.
+    $baseUrl    = rtrim(Config::get('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'), '/');
+    $maxTries   = max(1, (int)Config::get('AI_HTTP_MAX_ATTEMPTS', 4));
+    $backoff    = max(1, (int)Config::get('AI_HTTP_BACKOFF_SECONDS', 5));
+    $lastError  = 'no attempt made';
 
-    if ($response === false) throw new RuntimeException('Gemini request failed: ' . $err);
-    if ($code !== 200) throw new RuntimeException("Gemini HTTP {$code}: " . substr($response, 0, 200));
+    for ($attempt = 1; $attempt <= $maxTries; $attempt++) {
+        $ch = curl_init("{$baseUrl}/models/{$model}:generateContent");
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode([
+                'contents' => [['parts' => [['text' => $prompt]]]],
+                'generationConfig' => ['temperature' => 0.9, 'maxOutputTokens' => 32000],
+            ]),
+            CURLOPT_RETURNTRANSFER => true,
+            // Generous: a thinking model spends ~16s per question.
+            CURLOPT_TIMEOUT => 600,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'x-goog-api-key: ' . trim($apiKey)],
+        ]);
+        $response = curl_exec($ch);
+        $code     = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err      = curl_error($ch);
+        curl_close($ch);
 
-    $decoded = json_decode($response, true);
-    $text = $decoded['candidates'][0]['content']['parts'][0]['text'] ?? '';
-    if ($text === '') {
-        $reason = $decoded['candidates'][0]['finishReason'] ?? 'unknown';
-        throw new RuntimeException('Gemini returned no text (finishReason: ' . $reason . ')');
+        $transport = ($response === false);
+        $retryable = $transport || $code === 429 || $code >= 500;
+
+        if (!$transport && $code === 200) {
+            $decoded = json_decode($response, true);
+            $text = $decoded['candidates'][0]['content']['parts'][0]['text'] ?? '';
+            if ($text !== '') return $text;
+
+            $reason = $decoded['candidates'][0]['finishReason'] ?? 'unknown';
+            // An empty body with a non-terminal reason is worth one more try.
+            $lastError = 'Gemini returned no text (finishReason: ' . $reason . ')';
+            $retryable = in_array($reason, ['unknown', 'OTHER', 'RECITATION'], true);
+        } elseif ($transport) {
+            $lastError = 'Gemini request failed: ' . $err;
+        } else {
+            $lastError = "Gemini HTTP {$code}: " . substr((string)$response, 0, 200);
+        }
+
+        if (!$retryable || $attempt === $maxTries) break;
+
+        $wait = $backoff * (2 ** ($attempt - 1));   // 5s, 10s, 20s
+        out(sprintf('    %s — retrying in %ds (attempt %d of %d)',
+            preg_replace('/\s+/', ' ', substr($lastError, 0, 90)), $wait, $attempt + 1, $maxTries));
+        sleep($wait);
     }
-    return $text;
+
+    throw new RuntimeException($lastError);
 }
 
 function callOpenAI(string $apiKey, string $prompt): string {
