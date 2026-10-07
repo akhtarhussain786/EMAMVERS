@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/page_guard.php';
 /**
  * Admin page: review teacher-submitted questions and manage teacher accounts.
  * Included by index.php, which supplies the session and CSRF-aware fetch wrapper.

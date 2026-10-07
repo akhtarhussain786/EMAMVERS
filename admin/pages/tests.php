@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/page_guard.php';
 require_once __DIR__ . '/../../api/config/db.php';
 $db = Database::getConnection();
 

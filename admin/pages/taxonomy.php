@@ -1,9 +1,17 @@
 <?php
+require_once __DIR__ . '/../includes/page_guard.php';
 require_once __DIR__ . '/../../api/config/db.php';
 $db = Database::getConnection();
 
 $message = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_exam'])) {
+// A state-changing POST must carry this admin's CSRF token, so a logged-in
+// admin cannot be made to submit this form by another site.
+$csrfFailed = false;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !adminCsrfValid($_POST['csrf_token'] ?? null)) {
+    $csrfFailed = true;
+    $message = 'Security validation failed (CSRF token missing or expired). Please reload the page and try again.';
+}
+if (!$csrfFailed && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_exam'])) {
     $title = trim($_POST['title']);
     $categoryId = intval($_POST['category_id']);
     $slug = trim($_POST['slug']);
@@ -37,6 +45,7 @@ $exams = $db->query("
     <div class="table-card">
         <div class="table-title" style="margin-bottom:1rem;">Add New Exam</div>
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(adminCsrfToken(), ENT_QUOTES); ?>">
             <input type="hidden" name="create_exam" value="1">
             <div class="form-group">
                 <label class="form-label">Category</label>

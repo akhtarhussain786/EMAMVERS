@@ -1,9 +1,17 @@
 <?php
+require_once __DIR__ . '/../includes/page_guard.php';
 require_once __DIR__ . '/../../api/config/db.php';
 $db = Database::getConnection();
 
 $message = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_import'])) {
+// A state-changing POST must carry this admin's CSRF token, so a logged-in
+// admin cannot be made to submit this form by another site.
+$csrfFailed = false;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !adminCsrfValid($_POST['csrf_token'] ?? null)) {
+    $csrfFailed = true;
+    $message = 'Security validation failed (CSRF token missing or expired). Please reload the page and try again.';
+}
+if (!$csrfFailed && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bulk_import'])) {
     $rawJson = trim($_POST['json_data']);
     if ($rawJson) {
         $questions = json_decode($rawJson, true);
@@ -84,6 +92,7 @@ $questions = $db->query("
     <div style="width:600px; margin:5% auto; background:var(--bg-main); border:1px solid var(--border-color); padding:2rem; border-radius:var(--radius-md);">
         <div class="table-title" style="margin-bottom:1rem;">Bulk Import Questions (JSON)</div>
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(adminCsrfToken(), ENT_QUOTES); ?>">
             <input type="hidden" name="bulk_import" value="1">
             <div class="form-group">
                 <label class="form-label">Paste JSON Array of Questions</label>

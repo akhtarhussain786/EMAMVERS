@@ -88,9 +88,12 @@ switch ($action) {
         break;
 
     case 'delete_target':
-        $id = intval($_GET['id'] ?? 0);
-        $examId = intval($_GET['exam_id'] ?? 0);
-        $subjectId = intval($_GET['subject_id'] ?? 0);
+        // Every other action here takes its parameters from the JSON body;
+        // this one only read the query string, so a caller that posted a body
+        // like the rest of the page does was told the ids were missing.
+        $body = getBody();
+        $examId    = intval($body['exam_id'] ?? $_GET['exam_id'] ?? 0);
+        $subjectId = intval($body['subject_id'] ?? $_GET['subject_id'] ?? 0);
         if (!$examId || !$subjectId) ajaxErr('exam_id and subject_id are required', 422);
         $db->prepare("DELETE FROM exam_bank_targets WHERE exam_id=? AND subject_id=?")->execute([$examId, $subjectId]);
         ajaxOk(null, 'Target removed');

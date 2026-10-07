@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/page_guard.php';
 /**
  * Admin page: question bank health per department, and top-up targets.
  * This is the screen that answers "how full is each department's bank?".

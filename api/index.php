@@ -355,8 +355,6 @@ if (($path === '/v1/health' || $path === '/health') && $method === 'GET') {
     UserController::markNotificationRead($params['id']);
 } elseif ($path === '/v1/user/target-exams' && $method === 'POST') {
     UserController::addTargetExam();
-} elseif ($path === '/v1/referrals/me' && $method === 'GET') {
-    ReferralController::getMyReferrals();
 } elseif ($path === '/v1/referrals/validate' && $method === 'POST') {
     ReferralController::validateCode();
 // ─── SUBSCRIPTIONS & PRO MEMBERSHIP ───────────────────────────────────────

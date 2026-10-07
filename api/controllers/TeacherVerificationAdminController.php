@@ -210,6 +210,16 @@ class TeacherVerificationAdminController {
             Response::error('Application not found', 404);
         }
 
+        // Asking for changes only makes sense while a decision is still open.
+        // On a settled application it would leave the candidate's privileges
+        // and their application state disagreeing.
+        if (in_array($app['status'], ['approved', 'rejected', 'withdrawn'], true)) {
+            Response::error(
+                "This application is already {$app['status']}. Reopen it before requesting changes.",
+                409
+            );
+        }
+
         $db->beginTransaction();
         try {
             // Update application status
@@ -278,6 +288,16 @@ class TeacherVerificationAdminController {
             Response::error('Application not found', 404);
         }
 
+        if ($app['status'] === 'rejected') {
+            Response::json(['application_id' => $appId, 'status' => 'rejected'], 'Application is already rejected');
+            return;
+        }
+
+        // Rejecting an application that was previously approved has to take the
+        // privilege back with it, otherwise the teacher keeps authoring rights
+        // after their verification has been revoked.
+        $wasApproved = ($app['status'] === 'approved');
+
         $db->beginTransaction();
         try {
             $upApp = $db->prepare("
@@ -290,6 +310,13 @@ class TeacherVerificationAdminController {
                 WHERE id = ?
             ");
             $upApp->execute([$adminId, $reasonCode, $message, $appId]);
+
+            if ($wasApproved) {
+                $db->prepare("UPDATE users SET user_type = 'student' WHERE id = ? AND user_type = 'teacher'")
+                   ->execute([$app['user_id']]);
+                $db->prepare("UPDATE teacher_profiles SET status = 'suspended' WHERE user_id = ?")
+                   ->execute([$app['user_id']]);
+            }
 
             $notif = $db->prepare("
                 INSERT INTO user_notifications (user_id, title, message, type)
@@ -340,7 +367,20 @@ class TeacherVerificationAdminController {
             return;
         }
 
-        // Verify mandatory documents are in verified status
+        // An application the candidate never submitted has not passed the
+        // declaration step and may still be half-filled, so it is not
+        // approvable however it is reached.
+        $reviewable = ['submitted', 'under_review', 'changes_required'];
+        if (!in_array($app['status'], $reviewable, true)) {
+            Response::error(
+                "This application is still in '{$app['status']}' state. Only an application the teacher has submitted can be approved.",
+                409
+            );
+        }
+
+        // Mandatory documents must exist. Approving with none on file would
+        // hand out teacher privileges with no identity or qualification
+        // evidence at all.
         $docStmt = $db->prepare("
             SELECT document_type, verification_status FROM teacher_documents
             WHERE application_id = ?
@@ -348,28 +388,38 @@ class TeacherVerificationAdminController {
         $docStmt->execute([$appId]);
         $docs = $docStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $hasVerifiedIdentity = false;
-        $hasVerifiedQualification = false;
-
+        // verification_status enumerates pending, verified, invalid, unclear and
+        // reupload_required: the last three mean the file cannot stand as proof.
+        $unusable = ['invalid', 'reupload_required'];
+        $present = [];
         foreach ($docs as $d) {
-            if ($d['document_type'] === 'identity' && $d['verification_status'] === 'verified') {
-                $hasVerifiedIdentity = true;
-            }
-            if ($d['document_type'] === 'qualification' && $d['verification_status'] === 'verified') {
-                $hasVerifiedQualification = true;
+            if (!in_array($d['verification_status'], $unusable, true)) {
+                $present[$d['document_type']] = true;
             }
         }
 
-        // Allow auto-verifying if reviewer explicitly approves all
-        if (!$hasVerifiedIdentity || !$hasVerifiedQualification) {
-            // Auto-mark all pending documents to verified upon final approval
-            $upDocs = $db->prepare("
-                UPDATE teacher_documents
-                SET verification_status = 'verified', reviewer_id = ?, verified_at = NOW()
-                WHERE application_id = ? AND verification_status = 'pending'
-            ");
-            $upDocs->execute([$adminId, $appId]);
+        $missing = [];
+        foreach (['identity', 'qualification'] as $required) {
+            if (empty($present[$required])) $missing[] = $required;
         }
+        if ($missing) {
+            Response::error(
+                'Cannot approve: the teacher has not uploaded ' . implode(' and ', $missing)
+                . ' ' . (count($missing) === 1 ? 'proof' : 'proofs')
+                . '. Use "request changes" to ask for the missing document.',
+                422
+            );
+        }
+
+        // Clicking approve on a reviewed application is the act of accepting
+        // the documents attached to it, so anything still pending is marked
+        // verified against this reviewer.
+        $upDocs = $db->prepare("
+            UPDATE teacher_documents
+            SET verification_status = 'verified', reviewer_id = ?, verified_at = NOW()
+            WHERE application_id = ? AND verification_status = 'pending'
+        ");
+        $upDocs->execute([$adminId, $appId]);
 
         $userId = $app['user_id'];
 
