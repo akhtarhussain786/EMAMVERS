@@ -72,7 +72,7 @@ void main() {
   }
 
   Future<void> login(WidgetTester tester, String identity, String password) async {
-    await tester.pumpWidget(const ExamVerseApp(initiallyAuthenticated: false));
+    await tester.pumpWidget(const ExamVerseApp(initiallyAuthenticated: false, initialHasSeenOnboarding: true));
     expect(await waitFor(tester, find.byType(TextField)), isTrue,
         reason: 'login form should render');
 
@@ -82,7 +82,11 @@ void main() {
     await tester.enterText(fields.at(1), password);
     await tester.pump();
 
-    await tester.tap(find.text('Log In to ExamVerse'));
+    // Match on the stem: the button label's branding casing has changed before
+    // ('ExamVerse' -> 'EXAMVERSE') and that should not break every test.
+    final loginBtn = find.textContaining('Log In to');
+    expect(loginBtn, findsWidgets, reason: 'login button should be present');
+    await tester.tap(loginBtn.first);
     await tester.pump();
   }
 
@@ -156,7 +160,10 @@ void main() {
       await login(tester, teacherEmail, teacherPassword);
       expect(await waitFor(tester, find.byType(TeacherDashboardView)), isTrue,
           reason: 'a teacher must land on the teacher panel');
-      expect(await waitFor(tester, find.text('Teacher Panel')), isTrue);
+      // Assert on the panel's function, not its branding: the title has already
+      // been renamed once ('Teacher Panel' -> 'Faculty Studio').
+      expect(await waitFor(tester, find.text('My Submissions')), isTrue,
+          reason: 'the teacher panel should expose its submissions section');
     });
 
     testWidgets('New Question opens the authoring form with a department picker', (tester) async {
@@ -215,7 +222,7 @@ void main() {
 
   group('READABILITY (light theme, real data)', () {
     testWidgets('login screen', (tester) async {
-      await tester.pumpWidget(const ExamVerseApp(initiallyAuthenticated: false));
+      await tester.pumpWidget(const ExamVerseApp(initiallyAuthenticated: false, initialHasSeenOnboarding: true));
       expect(await waitFor(tester, find.byType(TextField)), isTrue);
       await expectReadable(tester, 'login');
     });

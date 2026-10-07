@@ -4,7 +4,6 @@ import '../../core/constants.dart';
 import '../../widgets/design_system_widgets.dart';
 import 'submit_question_view.dart';
 import 'my_questions_view.dart';
-import 'become_teacher_view.dart';
 import 'teacher_documents_view.dart';
 
 /// Home screen for a teacher account. Teachers author questions; they do not

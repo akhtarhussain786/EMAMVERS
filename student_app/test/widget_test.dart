@@ -4,7 +4,7 @@ import 'package:student_app/main.dart';
 
 void main() {
   testWidgets('unauthenticated launch shows the login screen', (WidgetTester tester) async {
-    await tester.pumpWidget(const ExamVerseApp(initiallyAuthenticated: false));
+    await tester.pumpWidget(const ExamVerseApp(initiallyAuthenticated: false, initialHasSeenOnboarding: true));
     await tester.pump();
 
     expect(find.byType(MaterialApp), findsOneWidget);

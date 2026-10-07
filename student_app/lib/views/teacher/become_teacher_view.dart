@@ -948,8 +948,11 @@ class _BecomeTeacherViewState extends State<BecomeTeacherView> {
                   MaterialPageRoute(
                     builder: (ctx) => TeacherDashboardView(
                       onLogout: () async {
+                        // Resolve the navigator before the await: ctx may be unmounted
+                        // by the time the session write completes.
+                        final rootNav = Navigator.of(ctx);
                         await ApiService.setSession(ApiService.authToken, type: 'student');
-                        Navigator.of(ctx).pushNamedAndRemoveUntil('/', (route) => false);
+                        rootNav.pushNamedAndRemoveUntil('/', (route) => false);
                       },
                     ),
                   ),

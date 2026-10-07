@@ -26,20 +26,23 @@ void main() {
         ),
       );
 
-      // Verify fields & header
+      // Verify fields & header. Labels carry a required-field marker, so match
+      // on the stem rather than the exact string.
       expect(find.text('Welcome Back'), findsOneWidget);
-      expect(find.text('Mobile Number / Email'), findsOneWidget);
-      expect(find.text('Password'), findsOneWidget);
+      expect(find.textContaining('Mobile Number / Email'), findsWidgets);
+      expect(find.textContaining('Password'), findsWidgets);
 
-      // Tap Switch to Sign Up
-      final switchBtn = find.text('Sign Up');
-      expect(switchBtn, findsOneWidget);
-      await tester.ensureVisible(switchBtn);
-      await tester.tap(switchBtn);
+      // Tap Switch to Sign Up. The toggle label is now
+      // 'Create Account / Sign Up', so match on the stem.
+      final switchBtn = find.textContaining('Sign Up');
+      expect(switchBtn, findsWidgets);
+      await tester.ensureVisible(switchBtn.first);
+      await tester.tap(switchBtn.first);
       await tester.pumpAndSettle();
 
-      expect(find.text('Create Candidate Account'), findsOneWidget);
-      expect(find.text('Full Name'), findsOneWidget);
+      // Header is role-dependent: 'Create Student Account' or 'Register as Teacher / Faculty'.
+      expect(find.textContaining('Create Student Account'), findsWidgets);
+      expect(find.textContaining('Full Name'), findsWidgets);
 
     });
   });
