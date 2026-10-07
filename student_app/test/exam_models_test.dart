@@ -61,4 +61,85 @@ void main() {
       expect(q.pendingTimeSeconds, 0);
     });
   });
+
+  optionOrderingTests();
+}
+
+// ---------------------------------------------------------------------------
+// Option ordering and question type.
+//
+// The server shuffles option order per attempt and returns the options in that
+// order, but the player used to render a hardcoded ['A','B','C','D'] and look
+// each option up by key, so the shuffle never reached the candidate and a paper
+// with five options silently lost one. These cover the ordering contract.
+// ---------------------------------------------------------------------------
+
+QuestionOption opt(String key, String text, {String language = 'en'}) =>
+    QuestionOption(id: 0, optionKey: key, language: language, optionText: text);
+
+QuestionItem questionWith({
+  required List<QuestionOption> options,
+  String questionType = 'MCQ',
+}) =>
+    QuestionItem(
+      questionId: 42,
+      questionOrder: 1,
+      positiveMarks: 2,
+      negativeMarks: 0.5,
+      questionType: questionType,
+      translations: const [],
+      options: options,
+    );
+
+void optionOrderingTests() {
+  group('QuestionItem.orderedOptionKeys', () {
+    test('preserves the shuffled order the server sent', () {
+      final q = questionWith(options: [
+        opt('C', 'third'),
+        opt('A', 'first'),
+        opt('D', 'fourth'),
+        opt('B', 'second'),
+      ]);
+      expect(q.orderedOptionKeys, ['C', 'A', 'D', 'B']);
+    });
+
+    test('collapses the bilingual rows to one entry per key, keeping order', () {
+      // The paper ships 4 English + 4 Hindi rows for a 4-option question.
+      final q = questionWith(options: [
+        opt('C', 'third'), opt('C', 'तीसरा', language: 'hi'),
+        opt('B', 'second'), opt('B', 'दूसरा', language: 'hi'),
+        opt('A', 'first'), opt('A', 'पहला', language: 'hi'),
+        opt('D', 'fourth'), opt('D', 'चौथा', language: 'hi'),
+      ]);
+      expect(q.orderedOptionKeys, ['C', 'B', 'A', 'D']);
+    });
+
+    test('keeps a fifth option instead of dropping it', () {
+      final q = questionWith(options: [
+        opt('A', 'a'), opt('B', 'b'), opt('C', 'c'), opt('D', 'd'), opt('E', 'e'),
+      ]);
+      expect(q.orderedOptionKeys, ['A', 'B', 'C', 'D', 'E']);
+      expect(q.orderedOptionKeys.length, 5);
+    });
+
+    test('falls back to A-D for a choice question with no options', () {
+      expect(questionWith(options: const []).orderedOptionKeys,
+          ['A', 'B', 'C', 'D']);
+    });
+
+    test('offers no option keys for a typed-answer question', () {
+      final q = questionWith(options: const [], questionType: 'NUMERICAL');
+      expect(q.isNumericalEntry, isTrue);
+      expect(q.orderedOptionKeys, isEmpty);
+    });
+
+    test('treats TITA and NAT as typed-answer types', () {
+      for (final t in ['TITA', 'NAT', 'numerical', 'Fill_In_The_Blank']) {
+        expect(questionWith(options: const [], questionType: t).isNumericalEntry,
+            isTrue,
+            reason: '$t should be a typed-answer question');
+      }
+      expect(questionWith(options: const []).isNumericalEntry, isFalse);
+    });
+  });
 }

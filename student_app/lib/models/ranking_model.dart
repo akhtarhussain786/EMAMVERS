@@ -32,6 +32,24 @@ class UserRanking {
   int get rankImprovement => previousRank - currentRank;
   bool get isRankImproved => rankImprovement > 0;
 
+  /// Describes the candidate's movement against their previous ranked test.
+  /// previousRank is 0 until there is an earlier test to compare with, and a
+  /// drop reads as a drop rather than as an improvement of a negative number.
+  String get rankMovementLabel {
+    if (previousRank <= 0 || currentRank <= 0) {
+      return 'Attempt another test to start tracking your movement';
+    }
+    final moved = rankImprovement;
+    if (moved > 0) {
+      return '\u2191 $moved ${moved == 1 ? 'place' : 'places'} since your last test';
+    }
+    if (moved < 0) {
+      final dropped = -moved;
+      return '\u2193 $dropped ${dropped == 1 ? 'place' : 'places'} since your last test';
+    }
+    return 'Holding steady since your last test';
+  }
+
   int get questionsXp => correctAnswers * 4;
   int get accuracyXp => (accuracy * 3.5).round();
   int get testsXp => testCount * 20;

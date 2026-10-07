@@ -147,6 +147,29 @@ class QuestionItem {
   String get hindiQuestionText => textForLanguage('hi');
   bool get hasHindi => translations.any((t) => t.language == 'hi');
 
+  /// True when this question is answered by typing a value rather than
+  /// picking an option (TITA / numerical-entry questions).
+  bool get isNumericalEntry {
+    final t = questionType.toUpperCase();
+    return t == 'NUMERICAL' || t == 'TITA' || t == 'NAT' || t == 'FILL_IN_THE_BLANK';
+  }
+
+  /// Option keys in the order the server sent them.
+  ///
+  /// Each attempt stores its own shuffled option order, so two candidates
+  /// sitting the same question see the choices in different positions. Reading
+  /// the order off the payload keeps that shuffle intact, and copes with papers
+  /// that use five options instead of four. Falls back to A-D only when the
+  /// server sent no options at all for a choice-based question.
+  List<String> get orderedOptionKeys {
+    final keys = <String>[];
+    for (final o in options) {
+      if (!keys.contains(o.optionKey)) keys.add(o.optionKey);
+    }
+    if (keys.isNotEmpty) return keys;
+    return isNumericalEntry ? const <String>[] : const ['A', 'B', 'C', 'D'];
+  }
+
   List<QuestionOption> optionsForLanguage(String lang) {
     final filtered = options.where((o) => o.language == lang).toList();
     if (filtered.isNotEmpty) return filtered;

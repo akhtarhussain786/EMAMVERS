@@ -303,29 +303,51 @@ class _LeaderboardViewState extends State<LeaderboardView> {
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
-                                        item['state_name'] != null ? '${item['state_name']}' : 'All-India Ranker',
+                                        [
+                                          item['state_name'] != null
+                                              ? '${item['state_name']}'
+                                              : 'All-India Ranker',
+                                          if (item['accuracy'] != null) '${item['accuracy']}% accuracy',
+                                        ].join('  ·  '),
                                         style: const TextStyle(color: AppConstants.textMuted, fontSize: 11.5),
                                       ),
                                     ],
                                   ),
                                 ),
 
-                                // Accuracy Badge (No marks displayed)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: AppConstants.accentEmerald.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: AppConstants.accentEmerald.withValues(alpha: 0.3)),
-                                  ),
-                                  child: Text(
-                                    '${item['accuracy']}% Acc',
-                                    style: const TextStyle(
-                                      color: AppConstants.accentEmerald,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 11.5,
+                                // Share of the paper scored: this is what the
+                                // board is ordered on, so it is the figure shown.
+                                // Accuracy alone would not explain the order,
+                                // because it ignores unattempted questions and
+                                // negative marking.
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: AppConstants.accentEmerald.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: AppConstants.accentEmerald.withValues(alpha: 0.3)),
+                                      ),
+                                      child: Text(
+                                        '${item['score_percentage'] ?? item['accuracy']}%',
+                                        style: const TextStyle(
+                                          color: AppConstants.accentEmerald,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 11.5,
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                    if (item['max_score'] != null) ...[
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        '${item['score']}/${item['max_score']}',
+                                        style: const TextStyle(color: AppConstants.textMuted, fontSize: 10.5),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                               ],
                             ),

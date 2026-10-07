@@ -318,9 +318,9 @@ class RankCard extends StatelessWidget {
   const RankCard({
     super.key,
     required this.rank,
-    this.percentile = 96.8,
-    this.rankImprovementText = '↑ 18 positions this week',
-    this.bestRank = 89,
+    required this.percentile,
+    required this.rankImprovementText,
+    required this.bestRank,
     this.onTapViewDetails,
   });
 

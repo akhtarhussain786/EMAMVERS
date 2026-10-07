@@ -236,9 +236,7 @@ class _PassportViewState extends State<PassportView> {
               RankCard(
                 rank: userRanking.currentRank,
                 percentile: userRanking.percentile,
-                rankImprovementText: userRanking.previousRank > 0
-                    ? '↑ ${userRanking.rankImprovement} positions this week'
-                    : 'Attempt a test to start tracking your rank',
+                rankImprovementText: userRanking.rankMovementLabel,
                 bestRank: userRanking.bestRank,
               ),
               const SizedBox(height: AppConstants.space24),

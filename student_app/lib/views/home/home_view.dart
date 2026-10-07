@@ -195,7 +195,7 @@ class _HomeViewState extends State<HomeView> {
               RankCard(
                 rank: userRanking.currentRank,
                 percentile: userRanking.percentile,
-                rankImprovementText: '↑ ${userRanking.rankImprovement} positions this week',
+                rankImprovementText: userRanking.rankMovementLabel,
                 bestRank: userRanking.bestRank,
               ),
               const SizedBox(height: AppConstants.space24),

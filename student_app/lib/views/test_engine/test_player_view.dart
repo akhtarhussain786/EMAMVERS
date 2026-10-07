@@ -45,6 +45,10 @@ class _TestPlayerViewState extends State<TestPlayerView> {
   Timer? _autosaveTimer;
   DateTime _questionEnteredAt = DateTime.now();
   final Set<int> _dirtyQuestionIds = <int>{};
+
+  /// One controller per typed-answer question, kept alive across page changes
+  /// so a candidate's partially typed value survives navigation.
+  final Map<int, TextEditingController> _numericControllers = <int, TextEditingController>{};
   bool _isFlushing = false;
 
   @override
@@ -57,6 +61,9 @@ class _TestPlayerViewState extends State<TestPlayerView> {
   void dispose() {
     _timer?.cancel();
     _autosaveTimer?.cancel();
+    for (final c in _numericControllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -125,6 +132,7 @@ class _TestPlayerViewState extends State<TestPlayerView> {
   Map<String, dynamic> _payloadFor(QuestionItem q) => {
     'question_id': q.id,
     'selected_option_key': q.selectedOption,
+    'numerical_answer': q.numericalAnswer,
     'is_marked_for_review': q.isMarkedForReview ? 1 : 0,
     'time_spent_seconds': q.pendingTimeSeconds,
   };
@@ -157,6 +165,14 @@ class _TestPlayerViewState extends State<TestPlayerView> {
     final m = seconds ~/ 60;
     final s = seconds % 60;
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  void _onNumericalAnswerChanged(String value) {
+    _accrueTimeOnCurrentQuestion();
+    final trimmed = value.trim();
+    questions[currentIndex].numericalAnswer = trimmed.isEmpty ? null : trimmed;
+    _dirtyQuestionIds.add(questions[currentIndex].id);
+    setState(() {});
   }
 
   void _onOptionSelected(String optionKey) {
@@ -351,11 +367,14 @@ class _TestPlayerViewState extends State<TestPlayerView> {
                     _buildQuestionStem(currentQuestion),
                     const SizedBox(height: AppConstants.space24),
 
-                    // Options List
-                    ...['A', 'B', 'C', 'D'].map((optKey) {
-                      final isSelected = currentQuestion.selectedOption == optKey;
-                      return _buildOptionTile(currentQuestion, optKey, isSelected);
-                    }),
+                    // Options, in the order this attempt stored them.
+                    if (currentQuestion.isNumericalEntry)
+                      _buildNumericalEntry(currentQuestion)
+                    else
+                      ...currentQuestion.orderedOptionKeys.map((optKey) {
+                        final isSelected = currentQuestion.selectedOption == optKey;
+                        return _buildOptionTile(currentQuestion, optKey, isSelected);
+                      }),
                   ],
                 ),
               ),
@@ -555,6 +574,62 @@ class _TestPlayerViewState extends State<TestPlayerView> {
         style: const TextStyle(color: AppConstants.textPrimary, fontSize: 16, fontWeight: FontWeight.w700, height: 1.4),
       );
     }
+  }
+
+  /// Answer field for questions that are typed rather than chosen. Without
+  /// this a TITA question would render as four empty option tiles and could
+  /// not be answered at all.
+  Widget _buildNumericalEntry(QuestionItem q) {
+    final controller = _numericControllers.putIfAbsent(
+      q.id,
+      () => TextEditingController(text: q.numericalAnswer ?? ''),
+    );
+    if (controller.text != (q.numericalAnswer ?? '')) {
+      controller.text = q.numericalAnswer ?? '';
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppConstants.cardDark,
+        borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+        border: Border.all(color: AppConstants.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Type your answer',
+            style: TextStyle(color: AppConstants.textSecondary, fontSize: 12, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+            style: const TextStyle(color: AppConstants.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+            decoration: InputDecoration(
+              hintText: 'e.g. 42.5',
+              hintStyle: const TextStyle(color: AppConstants.textMuted, fontWeight: FontWeight.w400),
+              filled: true,
+              fillColor: AppConstants.surfaceElevated,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppConstants.radiusSmall),
+                borderSide: BorderSide(color: AppConstants.cardBorder),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppConstants.radiusSmall),
+                borderSide: BorderSide(color: AppConstants.cardBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppConstants.radiusSmall),
+                borderSide: const BorderSide(color: AppConstants.accentIndigo, width: 2),
+              ),
+            ),
+            onChanged: _onNumericalAnswerChanged,
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildOptionTile(QuestionItem q, String optKey, bool isSelected) {
