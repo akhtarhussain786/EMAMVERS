@@ -181,6 +181,9 @@ class ApiService {
     try {
       json = jsonDecode(response.body);
     } on FormatException {
+      if (response.statusCode >= 500) {
+        throw Exception('Server error (HTTP ${response.statusCode}). Please verify backend server is running.');
+      }
       throw Exception('Invalid response from server (HTTP ${response.statusCode}).');
     }
 
