@@ -513,11 +513,20 @@ class TestEngineController {
         $attemptedTotal = $correctCount + $wrongCount;
         $accuracy = $attemptedTotal > 0 ? round(($correctCount / $attemptedTotal) * 100, 2) : 0.00;
 
+        // What this paper was out of. Stored because raw marks mean nothing on
+        // their own: every ranking and scorecard needs the denominator, and a
+        // randomised attempt's paper is unique to it.
+        $maxScore = 0.0;
+        foreach ($testQuestions as $tq) {
+            $maxScore += floatval($tq['positive_marks']);
+        }
+
         // 5. Finalise the attempt first, then derive ranks dynamically across the cohort.
         $stmtFinal = $db->prepare("
             UPDATE test_attempts
             SET status = 'evaluated',
                 score = :score,
+                max_score = :max_score,
                 accuracy_percentage = :accuracy,
                 total_time_spent_seconds = :time_spent,
                 correct_count = :correct,
@@ -528,6 +537,7 @@ class TestEngineController {
         ");
         $stmtFinal->execute([
             'score' => $totalScore,
+            'max_score' => $maxScore,
             'accuracy' => $accuracy,
             'time_spent' => $totalTimeSpent,
             'correct' => $correctCount,
@@ -620,6 +630,12 @@ class TestEngineController {
     /**
      * Recomputes Central Rank, State Rank and Percentile across ALL candidates
      * who have evaluated attempts for a given test.
+     *
+     * A leaderboard ranks *candidates*, not attempts: a student who sits the
+     * same test five times occupies one position, earned by their best attempt.
+     * The resulting candidate rank is written to every attempt that student has
+     * on this test, so "my rank in this test" reads the same from any of them.
+     *
      * Tie-breaking standard:
      * 1. Higher Score DESC
      * 2. Higher Accuracy DESC
@@ -630,18 +646,37 @@ class TestEngineController {
     public static function recomputeRanksForTest($db, $testId) {
         if (!$testId) return;
 
+        // Ordered by share of the paper scored, not raw marks: a randomised
+        // test hands each candidate a differently sized paper, so raw totals
+        // would rank the longer paper above the better performance.
         $stmt = $db->prepare("
             SELECT att.id, att.user_id, att.score, att.accuracy_percentage, att.total_time_spent_seconds, u.state_id
             FROM test_attempts att
             JOIN users u ON att.user_id = u.id
             WHERE att.test_id = :test_id AND att.status = 'evaluated'
-            ORDER BY att.score DESC, att.accuracy_percentage DESC, att.total_time_spent_seconds ASC, att.submitted_at ASC, att.id ASC
+            ORDER BY (att.score / NULLIF(att.max_score, 0)) DESC,
+                     att.max_score DESC,
+                     att.accuracy_percentage DESC,
+                     att.total_time_spent_seconds ASC,
+                     att.submitted_at ASC,
+                     att.id ASC
         ");
         $stmt->execute(['test_id' => $testId]);
         $attempts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $totalCount = count($attempts);
-        if ($totalCount === 0) return;
+        if (!$attempts) return;
+
+        // Collapse to one entry per candidate. $attempts is already in
+        // tie-break order, so the first row seen for a user is their best.
+        $bestByUser = [];
+        $attemptsByUser = [];
+        foreach ($attempts as $att) {
+            $uid = intval($att['user_id']);
+            if (!isset($bestByUser[$uid])) $bestByUser[$uid] = $att;
+            $attemptsByUser[$uid][] = $att['id'];
+        }
+
+        $totalCount = count($bestByUser);
 
         $stateCounters = [];
         $updateStmt = $db->prepare("
@@ -650,8 +685,9 @@ class TestEngineController {
             WHERE id = :id
         ");
 
-        foreach ($attempts as $idx => $att) {
-            $centralRank = $idx + 1;
+        $position = 0;
+        foreach ($bestByUser as $uid => $att) {
+            $centralRank = ++$position;
             $sid = $att['state_id'];
             $stateRank = null;
             if ($sid) {
@@ -662,17 +698,20 @@ class TestEngineController {
                 $stateRank = $stateCounters[$sid];
             }
 
-            // Percentile: Share of the cohort this candidate outperformed or equaled
+            // Percentile: share of the cohort this candidate outperformed or equalled.
             $percentile = $totalCount > 1
                 ? round((($totalCount - $centralRank) / ($totalCount - 1)) * 100, 2)
                 : 100.00;
 
-            $updateStmt->execute([
-                'c' => $centralRank,
-                's' => $stateRank,
-                'p' => $percentile,
-                'id' => $att['id']
-            ]);
+            // Stamp the candidate's standing onto every attempt they hold here.
+            foreach ($attemptsByUser[$uid] as $attemptRowId) {
+                $updateStmt->execute([
+                    'c' => $centralRank,
+                    's' => $stateRank,
+                    'p' => $percentile,
+                    'id' => $attemptRowId
+                ]);
+            }
         }
     }
 

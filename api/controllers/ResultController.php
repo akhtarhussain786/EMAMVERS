@@ -62,18 +62,46 @@ class ResultController {
         $stmtRefresh->execute(['id' => $attemptId]);
         $result = $stmtRefresh->fetch() ?: $result;
 
-        // Calculate maximum obtainable marks for this test
-        $stmtMax = $db->prepare("SELECT COALESCE(SUM(positive_marks), 0) FROM test_questions WHERE test_id = ?");
-        $stmtMax->execute([$result['test_id']]);
-        $maxScore = floatval($stmtMax->fetchColumn());
-        if ($maxScore <= 0) $maxScore = 200.00;
+        // Maximum obtainable marks. Recorded on the attempt at evaluation time;
+        // the lookups below cover rows written before that column existed.
+        $maxScore = isset($result['max_score']) ? floatval($result['max_score']) : 0.0;
 
-        // Count total evaluated candidates for this test
-        $stmtCohort = $db->prepare("SELECT COUNT(*) FROM test_attempts WHERE test_id = ? AND status = 'evaluated'");
+        if ($maxScore <= 0) {
+            // A randomised attempt carries its own paper in attempt_questions.
+            $stmtMax = $db->prepare("SELECT COALESCE(SUM(positive_marks), 0) FROM attempt_questions WHERE attempt_id = ?");
+            $stmtMax->execute([$attemptId]);
+            $maxScore = floatval($stmtMax->fetchColumn());
+        }
+
+        if ($maxScore <= 0) {
+            // Fixed papers share one question set across every candidate.
+            $stmtMaxFixed = $db->prepare("SELECT COALESCE(SUM(positive_marks), 0) FROM test_questions WHERE test_id = ?");
+            $stmtMaxFixed->execute([$result['test_id']]);
+            $maxScore = floatval($stmtMaxFixed->fetchColumn());
+        }
+
+        if ($maxScore <= 0) {
+            // Last resort: the marks actually carried by the questions answered.
+            $stmtMaxAns = $db->prepare("
+                SELECT COALESCE(SUM(q.positive_marks), 0)
+                FROM attempt_answers aa
+                JOIN questions q ON q.id = aa.question_id
+                WHERE aa.attempt_id = ?
+            ");
+            $stmtMaxAns->execute([$attemptId]);
+            $maxScore = floatval($stmtMaxAns->fetchColumn());
+        }
+
+        // Candidates, not attempts: someone who sat this test five times is one
+        // person in the cohort the percentile is measured against.
+        $stmtCohort = $db->prepare("SELECT COUNT(DISTINCT user_id) FROM test_attempts WHERE test_id = ? AND status = 'evaluated'");
         $stmtCohort->execute([$result['test_id']]);
         $cohortSize = intval($stmtCohort->fetchColumn());
 
         $result['max_score'] = $maxScore;
+        $result['score_percentage'] = $maxScore > 0
+            ? round((floatval($result['score']) / $maxScore) * 100, 2)
+            : 0.00;
         $result['cohort_size'] = $cohortSize;
 
         // Fetch Sectional breakdown

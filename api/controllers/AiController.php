@@ -479,25 +479,169 @@ Generate {$count} questions now:";
         $user = AuthMiddleware::getAuthenticatedUser('student');
         $userId = $user['sub'] ?? ($user['id'] ?? null);
 
-        $input = json_decode(file_get_contents('php://input'), true);
-        $strategyName = $input['strategy_name'] ?? 'Balanced Approach';
-        $timePerSection = $input['time_per_section_minutes'] ?? 15;
-        $orderPreference = $input['order_preference'] ?? ['Reasoning', 'General Awareness', 'Quantitative Aptitude', 'English'];
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $db = Database::getConnection();
 
-        // Perform simulation calculation
-        $simulatedScoreGain = rand(12, 28);
-        $simulatedTimeSavedMinutes = rand(5, 14);
+        // Everything below is derived from this candidate's own evaluated
+        // attempts. With no history there is nothing to project, and saying so
+        // is more useful than printing a number we cannot stand behind.
+        $histStmt = $db->prepare("
+            SELECT score, accuracy_percentage, correct_count, wrong_count, unattempted_count
+            FROM test_attempts
+            WHERE user_id = ? AND status = 'evaluated'
+            ORDER BY id DESC
+            LIMIT 20
+        ");
+        $histStmt->execute([$userId]);
+        $attempts = $histStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $result = [
-            'strategy_name' => $strategyName,
-            'predicted_score_boost' => "+{$simulatedScoreGain} Marks",
-            'predicted_accuracy_change' => '+6.4%',
-            'time_saved_minutes' => $simulatedTimeSavedMinutes,
-            'recommended_order' => $orderPreference,
-            'simulation_summary' => "Running $strategyName allocates optimal time per section and is predicted to boost your score by ~$simulatedScoreGain marks."
-        ];
+        if (count($attempts) < 1) {
+            Response::json([
+                'simulated_strategies' => [],
+                'based_on_attempts'    => 0,
+                'message'              => 'Sit at least one full mock test and your strategy projections will appear here.',
+            ], 'Not enough attempt history to simulate a strategy');
+        }
 
-        Response::json($result, 'Strategy simulation completed');
+        $n          = count($attempts);
+        $scores     = array_map(fn($a) => floatval($a['score']), $attempts);
+        $meanScore  = array_sum($scores) / $n;
+        $variance   = $n > 1 ? array_sum(array_map(fn($x) => ($x - $meanScore) ** 2, $scores)) / ($n - 1) : 0.0;
+        $stdDev     = sqrt($variance);
+        $spread     = $stdDev > 0 ? $stdDev : max(1.0, abs($meanScore) * 0.1);
+
+        $totalCorrect = array_sum(array_map(fn($a) => intval($a['correct_count']), $attempts));
+        $totalWrong   = array_sum(array_map(fn($a) => intval($a['wrong_count']), $attempts));
+        $totalSkipped = array_sum(array_map(fn($a) => intval($a['unattempted_count']), $attempts));
+        $attemptedQ   = $totalCorrect + $totalWrong;
+        $accuracy     = $attemptedQ > 0 ? $totalCorrect / $attemptedQ : 0.0;
+        $skippedPer   = $totalSkipped / $n;
+
+        // Per-section performance, for the ordering recommendation.
+        $secStmt = $db->prepare("
+            SELECT s.name AS section_name,
+                   SUM(CASE WHEN aa.is_correct = 1 THEN 1 ELSE 0 END)  AS correct,
+                   SUM(CASE WHEN aa.is_answered = 1 THEN 1 ELSE 0 END) AS answered,
+                   SUM(COALESCE(aa.marks_awarded, 0))                  AS marks,
+                   SUM(COALESCE(aa.time_spent_seconds, 0))             AS seconds
+            FROM test_attempts att
+            JOIN attempt_answers aa ON aa.attempt_id = att.id
+            JOIN questions q        ON aa.question_id = q.id
+            JOIN subjects s         ON q.subject_id = s.id
+            WHERE att.user_id = ? AND att.status = 'evaluated'
+            GROUP BY s.id, s.name
+            HAVING answered > 0
+        ");
+        $secStmt->execute([$userId]);
+        $sections = $secStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $sectionStats = [];
+        foreach ($sections as $sec) {
+            $answered = intval($sec['answered']);
+            $minutes  = floatval($sec['seconds']) / 60.0;
+            $sectionStats[] = [
+                'section_name'      => $sec['section_name'],
+                'accuracy'          => $answered > 0 ? round((intval($sec['correct']) / $answered) * 100, 1) : 0.0,
+                'marks_per_minute'  => $minutes > 0.01 ? round(floatval($sec['marks']) / $minutes, 2) : 0.0,
+                'minutes_spent'     => round($minutes, 1),
+                'questions_handled' => $answered,
+            ];
+        }
+        // Most marks earned per minute first: that is where time pays best.
+        usort($sectionStats, fn($a, $b) => $b['marks_per_minute'] <=> $a['marks_per_minute']);
+        $recommendedOrder = array_column($sectionStats, 'section_name');
+
+        // Marking scheme actually applied to this candidate's papers.
+        $markStmt = $db->prepare("
+            SELECT AVG(aq.positive_marks) AS pos, AVG(aq.negative_marks) AS neg
+            FROM test_attempts att
+            JOIN attempt_questions aq ON aq.attempt_id = att.id
+            WHERE att.user_id = ? AND att.status = 'evaluated'
+        ");
+        $markStmt->execute([$userId]);
+        $marking    = $markStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        $posMarks   = isset($marking['pos']) && $marking['pos'] !== null ? floatval($marking['pos']) : 2.0;
+        $negMarks   = isset($marking['neg']) && $marking['neg'] !== null ? floatval($marking['neg']) : 0.5;
+        $breakEven  = ($posMarks + $negMarks) > 0 ? $negMarks / ($posMarks + $negMarks) : 0.0;
+
+        // Expected marks per skipped question if answered at this candidate's
+        // own demonstrated accuracy: p*(+marks) - (1-p)*(penalty).
+        $evPerSkipped = ($accuracy * $posMarks) - ((1 - $accuracy) * $negMarks);
+        $clearingGain = round($skippedPer * $evPerSkipped, 1);
+
+        $band = function ($delta) use ($meanScore, $spread) {
+            $low  = round($meanScore + $delta - $spread / 2, 1);
+            $high = round($meanScore + $delta + $spread / 2, 1);
+            return $low . ' – ' . $high . ' marks';
+        };
+
+        $plural = fn($n, $word) => (abs($n - 1) < 0.0001 ? "$n $word" : "$n {$word}s");
+
+        $accuracyPct  = round($accuracy * 100, 1);
+        $breakEvenPct = round($breakEven * 100, 1);
+        $strategies   = [];
+
+        // 1. Clear the blanks — worth it only above the break-even accuracy.
+        if ($skippedPer >= 0.5) {
+            if ($evPerSkipped > 0) {
+                $strategies[] = [
+                    'name'                  => 'Clear the blanks',
+                    'estimated_score_range' => $band($clearingGain),
+                    'rationale'             => "You leave about " . $plural(round($skippedPer, 1), 'question') . " unanswered per mock. At your own {$accuracyPct}% accuracy each one is worth "
+                                               . round($evPerSkipped, 2) . " marks on average (+{$posMarks} correct, -{$negMarks} wrong), so attempting them all projects about "
+                                               . ($clearingGain >= 0 ? '+' : '') . $plural($clearingGain, 'mark') . ".",
+                    'projected_delta_marks' => $clearingGain,
+                ];
+            } else {
+                $strategies[] = [
+                    'name'                  => 'Leave the blanks alone',
+                    'estimated_score_range' => $band(0),
+                    'rationale'             => "Your {$accuracyPct}% accuracy sits below the {$breakEvenPct}% break-even point for this marking scheme (+{$posMarks} / -{$negMarks}), so guessing the "
+                                               . $plural(round($skippedPer, 1), 'question') . " you skip would cost you marks, not earn them. Raise accuracy first.",
+                    'projected_delta_marks' => 0,
+                ];
+            }
+        }
+
+        // 2. Accuracy discipline — the marks handed back through wrong answers.
+        if ($totalWrong > 0) {
+            $wrongPer     = $totalWrong / $n;
+            $penaltyPer   = round($wrongPer * $negMarks, 1);
+            $strategies[] = [
+                'name'                  => 'Accuracy first',
+                'estimated_score_range' => $band($penaltyPer / 2),
+                'rationale'             => "Negative marking costs you about " . $plural($penaltyPer, 'mark') . " per mock across "
+                                           . $plural(round($wrongPer, 1), 'wrong answer') . ". Halving those mistakes recovers roughly "
+                                           . $plural(round($penaltyPer / 2, 1), 'mark') . " without answering a single extra question.",
+                'projected_delta_marks' => round($penaltyPer / 2, 1),
+            ];
+        }
+
+        // 3. Section order — only meaningful with a measured spread in efficiency.
+        if (count($sectionStats) >= 2) {
+            $best  = $sectionStats[0];
+            $worst = $sectionStats[count($sectionStats) - 1];
+            $strategies[] = [
+                'name'                  => 'Strongest section first',
+                'estimated_score_range' => $band(0),
+                'rationale'             => "You earn {$best['marks_per_minute']} marks/minute in {$best['section_name']} versus {$worst['marks_per_minute']} in {$worst['section_name']}. "
+                                           . "Opening with {$best['section_name']} banks your reliable marks before the clock pressures the weaker section.",
+                'projected_delta_marks' => 0,
+            ];
+        }
+
+        Response::json([
+            'simulated_strategies'  => $strategies,
+            'based_on_attempts'     => $n,
+            'average_score'         => round($meanScore, 1),
+            'score_std_dev'         => round($stdDev, 1),
+            'accuracy_percentage'   => $accuracyPct,
+            'break_even_accuracy'   => $breakEvenPct,
+            'avg_skipped_per_mock'  => round($skippedPer, 1),
+            'marking_scheme'        => ['positive' => $posMarks, 'negative' => $negMarks],
+            'recommended_order'     => $recommendedOrder,
+            'section_stats'         => $sectionStats,
+        ], 'Strategy simulation completed');
     }
 
     // ─── PRIVATE: API CALLERS ─────────────────────────────────────────
