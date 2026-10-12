@@ -353,22 +353,33 @@ class RankCard extends StatelessWidget {
           const SizedBox(height: AppConstants.space16),
           Text('#$rank', style: const TextStyle(color: AppConstants.onAccent, fontSize: 44, fontWeight: FontWeight.w800, height: 1.0)),
           const SizedBox(height: 6),
-          Wrap(
-            alignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            runSpacing: 4,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text.rich(
+              TextSpan(
                 children: [
-                  const Icon(Icons.arrow_upward, color: AppConstants.accentEmerald, size: 14),
-                  const SizedBox(width: 4),
-                  Text(rankImprovementText, style: const TextStyle(color: AppConstants.onAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+                  const WidgetSpan(
+                    alignment: PlaceholderAlignment.middle,
+                    child: Padding(
+                      padding: EdgeInsets.only(right: 4),
+                      child: Icon(Icons.arrow_upward, color: AppConstants.accentEmerald, size: 14),
+                    ),
+                  ),
+                  TextSpan(
+                    text: rankImprovementText,
+                    style: const TextStyle(color: AppConstants.onAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  if (bestRank > 0) ...[
+                    const TextSpan(text: '  •  '),
+                    TextSpan(
+                      text: 'Best Rank: #$bestRank',
+                      style: const TextStyle(color: AppConstants.onAccent, fontSize: 12, fontWeight: FontWeight.normal),
+                    ),
+                  ],
                 ],
               ),
-              Text('• Best Rank: #$bestRank', style: const TextStyle(color: AppConstants.onAccent, fontSize: 12)),
-            ],
+              textAlign: TextAlign.center,
+            ),
           ),
         ],
       ),
@@ -418,7 +429,6 @@ class EmptyStateWidget extends StatelessWidget {
   final String description;
   final String? buttonLabel;
   final VoidCallback? onButtonPressed;
-  final Widget? customIllustration;
 
   const EmptyStateWidget({
     super.key,
@@ -427,7 +437,6 @@ class EmptyStateWidget extends StatelessWidget {
     required this.description,
     this.buttonLabel,
     this.onButtonPressed,
-    this.customIllustration,
   });
 
   @override
@@ -438,14 +447,11 @@ class EmptyStateWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (customIllustration != null)
-              customIllustration!
-            else
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(color: AppConstants.cardDark, shape: BoxShape.circle, border: Border.all(color: AppConstants.cardBorder)),
-                child: Icon(icon, size: 40, color: AppConstants.textMuted),
-              ),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(color: AppConstants.cardDark, shape: BoxShape.circle, border: Border.all(color: AppConstants.cardBorder)),
+              child: Icon(icon, size: 40, color: AppConstants.textMuted),
+            ),
             const SizedBox(height: AppConstants.space16),
             Text(title, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),

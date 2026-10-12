@@ -167,7 +167,7 @@ class _AiCoachViewState extends State<AiCoachView> {
                             children: [
                               Text(
                                 'AI Exam Twin',
-                                style: TextStyle(color: AppConstants.onAccent, fontSize: 18, fontWeight: FontWeight.w800),
+                                style: TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.w800),
                                 overflow: TextOverflow.ellipsis,
                               ),
                               SizedBox(height: 2),
@@ -217,10 +217,14 @@ class _AiCoachViewState extends State<AiCoachView> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'PREPARATION READINESS GAUGE',
-                          style: TextStyle(color: AppConstants.onAccent, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.6),
+                        const Expanded(
+                          child: Text(
+                            'PREPARATION READINESS GAUGE',
+                            style: TextStyle(color: AppConstants.textSecondary, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.6),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(

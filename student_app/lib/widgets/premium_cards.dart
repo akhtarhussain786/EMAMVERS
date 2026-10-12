@@ -418,7 +418,7 @@ class AiInsightCard extends StatelessWidget {
           Text(
             title,
             style: const TextStyle(
-              color: AppConstants.onAccent,
+              color: AppConstants.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.w800,
             ),
