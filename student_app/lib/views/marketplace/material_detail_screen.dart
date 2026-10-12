@@ -75,7 +75,7 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
             pinned: true,
             backgroundColor: AppConstants.primaryDark,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios, color: AppConstants.textPrimary, size: 18),
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
               onPressed: () => Navigator.pop(context),
             ),
             flexibleSpace: FlexibleSpaceBar(
@@ -84,7 +84,7 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [Color(0xFF1a0533), Color(0xFF0d1b3e)],
+                    colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
                   ),
                 ),
                 child: SafeArea(
@@ -97,31 +97,33 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: AppConstants.accentYellow.withValues(alpha: 0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: AppConstants.accentYellow.withValues(alpha: 0.3)),
                           ),
                           child: Text(m['exam_title'] ?? m['subject_name'] ?? 'Study Material',
-                              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppConstants.accentYellow)),
+                              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
                         ),
                         const SizedBox(height: 12),
                         Text(m['title'] ?? '',
-                            style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w800, color: AppConstants.onAccent),
+                            style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white),
                             maxLines: 2),
                         const SizedBox(height: 8),
                         Row(children: [
-                          CircleAvatar(radius: 14, backgroundColor: AppConstants.accentYellow,
-                              child: Text((m['creator_name'] ?? 'C')[0].toUpperCase(),
-                                  style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, color: AppConstants.textPrimary))),
+                          CircleAvatar(
+                            radius: 14,
+                            backgroundColor: Colors.white.withValues(alpha: 0.25),
+                            child: Text((m['creator_name'] ?? 'C')[0].toUpperCase(),
+                                style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white)),
+                          ),
                           const SizedBox(width: 8),
                           Text(m['creator_name'] ?? '',
-                              style: GoogleFonts.inter(fontSize: 12, color: AppConstants.textSecondary, fontWeight: FontWeight.w600)),
+                              style: GoogleFonts.inter(fontSize: 12, color: Colors.white.withValues(alpha: 0.9), fontWeight: FontWeight.w600)),
                           const Spacer(),
                           // Rating
-                          Icon(Icons.star, size: 14, color: Colors.amber.shade400),
+                          const Icon(Icons.star_rounded, size: 16, color: Color(0xFFF59E0B)),
                           const SizedBox(width: 4),
                           Text('$rating ($ratingCount)',
-                              style: GoogleFonts.inter(fontSize: 12, color: AppConstants.textSecondary)),
+                              style: GoogleFonts.inter(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w700)),
                         ]),
                       ],
                     ),
@@ -232,42 +234,58 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
       ),
 
       // Bottom Buy Bar
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-        decoration: BoxDecoration(
-          color: AppConstants.cardDark,
-          border: Border(top: BorderSide(color: AppConstants.textPrimary.withValues(alpha: 0.08))),
-        ),
-        child: Row(children: [
-          // Price
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Price', style: GoogleFonts.inter(fontSize: 11, color: AppConstants.textMuted)),
-            Text(isFree ? 'FREE' : '₹${price.toStringAsFixed(0)}',
-                style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w900,
-                    color: isFree ? Colors.green.shade400 : AppConstants.textPrimary)),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+          decoration: BoxDecoration(
+            color: AppConstants.cardDark,
+            border: const Border(top: BorderSide(color: AppConstants.cardBorder)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, -3),
+              ),
+            ],
+          ),
+          child: Row(children: [
+            // Price
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Price', style: GoogleFonts.inter(fontSize: 11, color: AppConstants.textMuted, fontWeight: FontWeight.w600)),
+                Text(isFree ? 'FREE' : '₹${price.toStringAsFixed(0)}',
+                    style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w900,
+                        color: isFree ? const Color(0xFF059669) : AppConstants.accentBlue)),
+              ],
+            ),
+            const SizedBox(width: 20),
+            // Action Button
+            Expanded(child: _isPurchased
+                ? ElevatedButton.icon(
+                    onPressed: () {/* download */},
+                    icon: const Icon(Icons.download_rounded, size: 18),
+                    label: Text('Download Now', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF059669),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))))
+                : ElevatedButton(
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => PurchaseFlowScreen(material: m))),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: AppConstants.accentBlue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                    child: Text(isFree ? 'Get for Free' : 'Buy Now — ₹${price.toStringAsFixed(0)}',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 15)),
+                  )),
           ]),
-          const SizedBox(width: 20),
-          // Action Button
-          Expanded(child: _isPurchased
-              ? ElevatedButton.icon(
-                  onPressed: () {/* download */},
-                  icon: const Icon(Icons.download, size: 18),
-                  label: Text('Download Now', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green.shade700,
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))))
-              : ElevatedButton(
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => PurchaseFlowScreen(material: m))),
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: AppConstants.accentYellow,
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                  child: Text(isFree ? 'Get for Free' : 'Buy Now — ₹${price.toStringAsFixed(0)}',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 15)),
-                )),
-        ]),
+        ),
       ),
     );
   }

@@ -57,7 +57,7 @@ class _WrongQuestionsViewState extends State<WrongQuestionsView> {
                     children: [
                       Icon(Icons.check_circle_outline, size: 64, color: AppConstants.accentGreen),
                       const SizedBox(height: 12),
-                      const Text('No recorded mistakes yet!', style: TextStyle(color: AppConstants.onAccent, fontSize: 18, fontWeight: FontWeight.bold)),
+                      const Text('No recorded mistakes yet!', style: TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 6),
                       const Text('Questions you answer wrong during full mock tests\nwill automatically appear here for revision.',
                           textAlign: TextAlign.center, style: TextStyle(color: AppConstants.textMuted, fontSize: 12)),
@@ -119,7 +119,7 @@ class _WrongQuestionsViewState extends State<WrongQuestionsView> {
                                     ],
                                   ),
                                   const SizedBox(height: 12),
-                                  Text(qText, style: const TextStyle(color: AppConstants.onAccent, fontSize: 15, fontWeight: FontWeight.w600)),
+                                  Text(qText, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 15, fontWeight: FontWeight.w600)),
                                   const SizedBox(height: 12),
                                   Row(
                                     children: [
@@ -191,7 +191,7 @@ class _WrongQuestionsViewState extends State<WrongQuestionsView> {
                                       color: AppConstants.primaryDark,
                                       borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: Text(solText, style: const TextStyle(color: AppConstants.onAccent, fontSize: 13, height: 1.4)),
+                                    child: Text(solText, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 13, height: 1.4)),
                                   ),
                                 ],
                               ),

@@ -271,7 +271,7 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
         }),
         items: const [
           PremiumNavBarItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
-          PremiumNavBarItem(icon: Icons.storefront_outlined, activeIcon: Icons.storefront, label: 'Market'),
+          PremiumNavBarItem(icon: Icons.menu_book_outlined, activeIcon: Icons.menu_book_rounded, label: 'Study Store'),
           PremiumNavBarItem(icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome, label: 'AI Twin'),
           PremiumNavBarItem(icon: Icons.leaderboard_outlined, activeIcon: Icons.leaderboard_rounded, label: 'Ranks'),
           PremiumNavBarItem(icon: Icons.person_outline, activeIcon: Icons.person_rounded, label: 'Passport'),

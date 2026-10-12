@@ -418,6 +418,7 @@ class EmptyStateWidget extends StatelessWidget {
   final String description;
   final String? buttonLabel;
   final VoidCallback? onButtonPressed;
+  final Widget? customIllustration;
 
   const EmptyStateWidget({
     super.key,
@@ -426,6 +427,7 @@ class EmptyStateWidget extends StatelessWidget {
     required this.description,
     this.buttonLabel,
     this.onButtonPressed,
+    this.customIllustration,
   });
 
   @override
@@ -436,11 +438,14 @@ class EmptyStateWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(color: AppConstants.cardDark, shape: BoxShape.circle, border: Border.all(color: AppConstants.cardBorder)),
-              child: Icon(icon, size: 40, color: AppConstants.textMuted),
-            ),
+            if (customIllustration != null)
+              customIllustration!
+            else
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(color: AppConstants.cardDark, shape: BoxShape.circle, border: Border.all(color: AppConstants.cardBorder)),
+                child: Icon(icon, size: 40, color: AppConstants.textMuted),
+              ),
             const SizedBox(height: AppConstants.space16),
             Text(title, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),

@@ -3,6 +3,7 @@ import '../../core/constants.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/api_service.dart';
+import '../../widgets/edu_lottie.dart';
 
 class PurchaseFlowScreen extends StatefulWidget {
   final Map<String, dynamic> material;
@@ -94,12 +95,14 @@ class _PurchaseFlowScreenState extends State<PurchaseFlowScreen>
         title: Text('Complete Purchase', style: GoogleFonts.inter(color: AppConstants.textPrimary, fontWeight: FontWeight.w700)),
         leading: IconButton(icon: const Icon(Icons.arrow_back_ios, color: AppConstants.textPrimary, size: 18), onPressed: () => Navigator.pop(context)),
       ) : null,
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 400),
-        child: _step == 0 ? _buildDetails()
-            : _step == 1 ? _buildProcessing()
-            : _step == 2 ? _buildSuccess()
-            : _buildError(),
+      body: SafeArea(
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          child: _step == 0 ? _buildDetails()
+              : _step == 1 ? _buildProcessing()
+              : _step == 2 ? _buildSuccess()
+              : _buildError(),
+        ),
       ),
     );
   }
@@ -204,19 +207,9 @@ class _PurchaseFlowScreenState extends State<PurchaseFlowScreen>
     return Center(child: Padding(
       padding: const EdgeInsets.all(32),
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        ScaleTransition(
-          scale: _successAnim,
-          child: Container(
-            width: 100, height: 100,
-            decoration: BoxDecoration(
-                color: Colors.green.shade700.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.green.shade400, width: 2)),
-            child: Icon(Icons.check_rounded, size: 54, color: Colors.green.shade400),
-          ),
-        ),
-        const SizedBox(height: 28),
-        Text('Payment Successful!', style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w900, color: AppConstants.textPrimary)),
+        EduLottie.celebration(size: 110),
+        const SizedBox(height: 18),
+        Text('Payment Successful!', style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w900, color: AppConstants.textPrimary)),
         const SizedBox(height: 8),
         Text('"${m['title']}" is now unlocked', style: GoogleFonts.inter(fontSize: 14, color: AppConstants.textMuted), textAlign: TextAlign.center),
         const SizedBox(height: 32),
