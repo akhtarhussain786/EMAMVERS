@@ -16,14 +16,14 @@ class AppConstants {
     const envUrl = String.fromEnvironment('API_BASE_URL');
     if (envUrl.isNotEmpty) return envUrl;
 
-    const useStaging = bool.fromEnvironment('USE_STAGING', defaultValue: false);
-    if (useStaging) return stagingBaseUrl;
+    // Default to live staging server unless explicitly requested local
+    const useLocal = bool.fromEnvironment('USE_LOCAL', defaultValue: false);
+    if (useLocal) {
+      if (kIsWeb) return 'http://localhost/EXAMVERSE/api';
+      return 'http://$hostLanIp/EXAMVERSE/api';
+    }
 
-    if (kReleaseMode) return stagingBaseUrl;
-
-    // In local development / debug mode, connect directly to local XAMPP backend
-    if (kIsWeb) return 'http://localhost/EXAMVERSE/api';
-    return 'http://$hostLanIp/EXAMVERSE/api';
+    return stagingBaseUrl;
   }
 
   /// Formats server-relative URLs (/uploads/...) into complete HTTP URLs.
