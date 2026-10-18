@@ -60,9 +60,11 @@ class _ExamDetailViewState extends State<ExamDetailView> {
           leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppConstants.textPrimary), onPressed: widget.onBack),
           title: const Text('Exam Details', style: TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
         ),
-        body: const Padding(
-          padding: EdgeInsets.all(AppConstants.space20),
-          child: SkeletonListLoader(count: 4, itemHeight: 120),
+        body: SafeArea(
+          child: const Padding(
+            padding: EdgeInsets.all(AppConstants.space20),
+            child: SkeletonListLoader(count: 4, itemHeight: 120),
+          ),
         ),
       );
     }

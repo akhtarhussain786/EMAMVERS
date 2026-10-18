@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'core/api_service.dart';
 import 'core/constants.dart';
@@ -28,6 +29,18 @@ import 'views/practice/build_practice_view.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // From Android 15 the system draws edge to edge and will not tint the bars
+  // for us. The app is on a white surface, so the status and navigation icons
+  // have to be asked for in dark, or they render white on white and vanish.
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarIconBrightness: Brightness.dark,
+    systemNavigationBarDividerColor: Colors.transparent,
+  ));
   // Resume a stored session so "Remember me" survives an app restart.
   final hasSession = await ApiService.restoreSession();
   final prefs = await SharedPreferences.getInstance();

@@ -5,6 +5,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../core/api_service.dart';
 import '../../widgets/edu_lottie.dart';
 import 'material_detail_screen.dart';
+import '../../widgets/premium_nav_bar.dart';
 
 class MarketplaceScreen extends StatefulWidget {
   const MarketplaceScreen({super.key});
@@ -305,8 +306,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
                       onRefresh: _loadMaterials,
                       color: AppConstants.accentBlue,
                       child: GridView.builder(
-                        // 100 bottom padding so cards are never obscured by bottom nav
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+                        // Clears the floating nav bar, gesture inset included,
+                        // so the last row of cards is never obscured.
+                        padding: EdgeInsets.fromLTRB(
+                            16, 12, 16, PremiumNavBar.spaceFor(context)),
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           crossAxisSpacing: 12,
@@ -330,7 +333,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
         ),
       ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 85),
+        // Lifts the action button clear of the floating nav bar.
+        padding: EdgeInsets.only(bottom: PremiumNavBar.spaceFor(context)),
         child: FloatingActionButton.extended(
           onPressed: () => Navigator.pushNamed(context, '/become-creator'),
           backgroundColor: AppConstants.accentBlue,
@@ -457,6 +461,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
   void _showFilterSheet() {
     showModalBottomSheet(
       context: context,
+      // Keeps the sheet's own content clear of the gesture bar.
+      useSafeArea: true,
       backgroundColor: AppConstants.cardDark,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),

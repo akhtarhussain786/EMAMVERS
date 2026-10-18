@@ -75,11 +75,18 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.primaryDark,
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppConstants.accentYellow))
-          : _errorMsg.isNotEmpty
-              ? _buildErrorView()
-              : _buildArticleContent(),
+      // top: false because the article content is a CustomScrollView whose
+      // SliverAppBar is a collapsing header meant to run under the status bar.
+      // The bottom CTA below applies the bottom inset itself.
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: _loading
+            ? const Center(child: CircularProgressIndicator(color: AppConstants.accentYellow))
+            : _errorMsg.isNotEmpty
+                ? _buildErrorView()
+                : _buildArticleContent(),
+      ),
       bottomNavigationBar: _article != null ? _buildBottomCta() : null,
     );
   }
@@ -442,7 +449,10 @@ class _CurrentAffairsArticleViewState extends State<CurrentAffairsArticleView> {
 
   Widget _buildBottomCta() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+      // The 28px tail was a guess at the gesture bar; use the real inset so
+      // the button is reachable on every device and not padded twice.
+      padding: EdgeInsets.fromLTRB(
+          20, 12, 20, 12 + MediaQuery.viewPaddingOf(context).bottom),
       decoration: BoxDecoration(
         color: AppConstants.cardDark,
         border: Border(top: BorderSide(color: AppConstants.textPrimary.withValues(alpha: 0.08))),

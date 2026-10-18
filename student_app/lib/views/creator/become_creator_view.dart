@@ -79,7 +79,9 @@ class _BecomeCreatorViewState extends State<BecomeCreatorView> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: _submitted ? _buildSuccessView() : _buildFormView(),
+      body: SafeArea(
+        child: _submitted ? _buildSuccessView() : _buildFormView(),
+      ),
     );
   }
 

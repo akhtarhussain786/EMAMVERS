@@ -81,9 +81,11 @@ class _ResultViewState extends State<ResultView> {
           title: const Text('Result Analysis', style: TextStyle(color: AppConstants.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
           leading: IconButton(icon: const Icon(Icons.home, color: AppConstants.textPrimary), onPressed: widget.onHome),
         ),
-        body: const Padding(
-          padding: EdgeInsets.all(AppConstants.space20),
-          child: SkeletonListLoader(count: 3, itemHeight: 120),
+        body: SafeArea(
+          child: const Padding(
+            padding: EdgeInsets.all(AppConstants.space20),
+            child: SkeletonListLoader(count: 3, itemHeight: 120),
+          ),
         ),
       );
     }

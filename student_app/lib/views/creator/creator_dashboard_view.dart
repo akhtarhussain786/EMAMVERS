@@ -160,11 +160,13 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
           ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppConstants.accentYellow))
-          : _errorMsg.isNotEmpty
-              ? _buildErrorView()
-              : _buildDashboardContent(),
+      body: SafeArea(
+        child: _loading
+            ? const Center(child: CircularProgressIndicator(color: AppConstants.accentYellow))
+            : _errorMsg.isNotEmpty
+                ? _buildErrorView()
+                : _buildDashboardContent(),
+      ),
     );
   }
 

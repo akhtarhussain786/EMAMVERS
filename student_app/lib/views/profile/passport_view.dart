@@ -9,6 +9,7 @@ import 'edit_profile_view.dart';
 import 'test_history_view.dart';
 import 'referrals_view.dart';
 import '../subscription/subscriptions_view.dart';
+import '../../widgets/premium_nav_bar.dart';
 
 class PassportView extends StatefulWidget {
   final VoidCallback? onLogout;
@@ -49,7 +50,9 @@ class _PassportViewState extends State<PassportView> {
     if (isLoading) {
       return const Scaffold(
         backgroundColor: AppConstants.primaryDark,
-        body: Center(child: CircularProgressIndicator(color: AppConstants.accentCyan)),
+        body: SafeArea(
+          child: Center(child: CircularProgressIndicator(color: AppConstants.accentCyan)),
+        ),
       );
     }
 
@@ -76,7 +79,9 @@ class _PassportViewState extends State<PassportView> {
       backgroundColor: AppConstants.primaryDark,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(AppConstants.space20, AppConstants.space20, AppConstants.space20, 100),
+          // Clears the floating nav bar, including the device's gesture inset.
+          padding: EdgeInsets.fromLTRB(AppConstants.space20, AppConstants.space20,
+              AppConstants.space20, PremiumNavBar.spaceFor(context)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

@@ -4,6 +4,7 @@ import '../../core/api_service.dart';
 import '../../widgets/premium_cards.dart';
 import '../../widgets/design_system_widgets.dart';
 import '../../widgets/skeleton_loader.dart';
+import '../../widgets/premium_nav_bar.dart';
 
 class AiCoachView extends StatefulWidget {
   const AiCoachView({super.key});
@@ -135,11 +136,12 @@ class _AiCoachViewState extends State<AiCoachView> {
       backgroundColor: AppConstants.primaryDark,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
+          padding: EdgeInsets.fromLTRB(
             AppConstants.space20,
             AppConstants.space20,
             AppConstants.space20,
-            100, // Bottom padding for floating nav bar
+            // Clears the floating nav bar, gesture inset included.
+            PremiumNavBar.spaceFor(context),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
