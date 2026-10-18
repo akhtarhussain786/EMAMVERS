@@ -542,7 +542,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
                     ),
                     Switch(
                       value: _freeOnly,
-                      activeColor: AppConstants.accentEmerald,
+                      activeThumbColor: AppConstants.accentEmerald,
                       onChanged: (v) => setS(() => _freeOnly = v),
                     ),
                   ],

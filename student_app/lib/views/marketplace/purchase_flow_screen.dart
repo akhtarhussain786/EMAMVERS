@@ -13,27 +13,10 @@ class PurchaseFlowScreen extends StatefulWidget {
   State<PurchaseFlowScreen> createState() => _PurchaseFlowScreenState();
 }
 
-class _PurchaseFlowScreenState extends State<PurchaseFlowScreen>
-    with SingleTickerProviderStateMixin {
+class _PurchaseFlowScreenState extends State<PurchaseFlowScreen> {
   int _step = 0; // 0=details, 1=processing, 2=success, 3=error
   String _selectedMethod = 'upi';
   String _errorMsg = '';
-  late AnimationController _successCtrl;
-  late Animation<double> _successAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _successCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
-    _successAnim = Tween<double>(begin: 0, end: 1)
-        .animate(CurvedAnimation(parent: _successCtrl, curve: Curves.elasticOut));
-  }
-
-  @override
-  void dispose() {
-    _successCtrl.dispose();
-    super.dispose();
-  }
 
   Future<void> _purchase() async {
     setState(() => _step = 1);
@@ -49,8 +32,8 @@ class _PurchaseFlowScreenState extends State<PurchaseFlowScreen>
       });
 
       if (!mounted) return;
+      // The success step shows a Lottie celebration, which drives itself.
       setState(() => _step = 2);
-      _successCtrl.forward();
     } catch (e) {
       if (!mounted) return;
       setState(() {
