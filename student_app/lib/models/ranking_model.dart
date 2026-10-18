@@ -50,6 +50,20 @@ class UserRanking {
     return 'Holding steady since your last test';
   }
 
+  /// Achievements the candidate has actually earned.
+  ///
+  /// The passport rendered a fixed list with five of six marked unlocked, so a
+  /// student who had solved nothing was shown "1,000 Solved" and "Top 500" as
+  /// earned. Each entry is now a predicate over real figures.
+  List<Achievement> get achievements => [
+        Achievement('100 Questions', totalQuestionsSolved >= 100),
+        Achievement('500 Solved', totalQuestionsSolved >= 500),
+        Achievement('1,000 Solved', totalQuestionsSolved >= 1000),
+        Achievement('7-Day Streak', streakDays >= 7),
+        Achievement('Top 500', currentRank > 0 && currentRank <= 500),
+        Achievement('Accuracy Master', testCount >= 3 && accuracy >= 85),
+      ];
+
   int get questionsXp => correctAnswers * 4;
   int get accuracyXp => (accuracy * 3.5).round();
   int get testsXp => testCount * 20;
@@ -96,4 +110,11 @@ class UserRanking {
       'xp_points': xpPoints,
     };
   }
+}
+
+/// One passport achievement and whether this candidate has earned it.
+class Achievement {
+  final String label;
+  final bool unlocked;
+  const Achievement(this.label, this.unlocked);
 }

@@ -271,12 +271,22 @@ class _PassportViewState extends State<PassportView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Rank Contribution', style: TextStyle(color: AppConstants.onAccent, fontSize: 15, fontWeight: FontWeight.bold)),
+                    // Titled "Rank Contribution" before, which said these
+                    // points decide the rank. They do not: rank comes from the
+                    // share of each paper scored. These are activity points.
+                    const Text('Activity Points', style: TextStyle(color: AppConstants.onAccent, fontSize: 15, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Earned for practising. Your rank comes from your test scores.',
+                      style: TextStyle(color: AppConstants.textMuted, fontSize: 11.5),
+                    ),
                     const SizedBox(height: AppConstants.space12),
                     _buildXpRow('Questions Solved', '+${userRanking.questionsXp} XP', AppConstants.accentCyan),
                     _buildXpRow('Accuracy Bonus', '+${userRanking.accuracyXp} XP', AppConstants.accentEmerald),
                     _buildXpRow('Mock Tests', '+${userRanking.testsXp} XP', AppConstants.accentPurple),
                     _buildXpRow('Consistency Streak', '+${userRanking.streakXp} XP', AppConstants.accentAmber),
+                    const Divider(color: AppConstants.cardBorder, height: 20),
+                    _buildXpRow('Total', '${userRanking.totalCalculatedXp} XP', AppConstants.accentIndigo),
                   ],
                 ),
               ),
@@ -289,12 +299,8 @@ class _PassportViewState extends State<PassportView> {
                 spacing: 10,
                 runSpacing: 10,
                 children: [
-                  _buildBadge('100 Questions', Icons.military_tech, true),
-                  _buildBadge('500 Solved', Icons.star, true),
-                  _buildBadge('1,000 Solved', Icons.workspace_premium, true),
-                  _buildBadge('7-Day Streak', Icons.local_fire_department, true),
-                  _buildBadge('Top 500', Icons.emoji_events, true),
-                  _buildBadge('Accuracy Master', Icons.psychology, false),
+                  for (final a in userRanking.achievements)
+                    _buildBadge(a.label, _badgeIcons[a.label] ?? Icons.military_tech, a.unlocked),
                 ],
               ),
               const SizedBox(height: AppConstants.space24),
@@ -386,6 +392,15 @@ class _PassportViewState extends State<PassportView> {
       ),
     );
   }
+
+  static const Map<String, IconData> _badgeIcons = {
+    '100 Questions': Icons.military_tech,
+    '500 Solved': Icons.star,
+    '1,000 Solved': Icons.workspace_premium,
+    '7-Day Streak': Icons.local_fire_department,
+    'Top 500': Icons.emoji_events,
+    'Accuracy Master': Icons.psychology,
+  };
 
   Widget _buildBadge(String label, IconData icon, bool isUnlocked) {
     return Container(

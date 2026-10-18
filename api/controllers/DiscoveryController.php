@@ -80,8 +80,20 @@ class DiscoveryController {
             $userProfile = $uStmt->fetch(PDO::FETCH_ASSOC);
         }
 
+        // The home dashboard renders a rank card and lifetime stat tiles from a
+        // user_ranking key this payload never carried, so it fell back to an
+        // empty map and showed every candidate rank 0 with zero tests taken.
+        // Built by the same code that serves the leaderboard, so the two
+        // screens cannot disagree.
+        require_once __DIR__ . '/ChallengeController.php';
+        $userRanking = ChallengeController::allTimeRankingFor(
+            $db,
+            $viewer['sub'] ?? ($viewer['id'] ?? null)
+        );
+
         Response::json([
             'user_profile' => $userProfile,
+            'user_ranking' => $userRanking,
             'resume_attempt' => $resume,
             'categories' => $categories,
             'featured_exams' => $exams,
@@ -146,6 +158,50 @@ class DiscoveryController {
         ");
         $stmtTests->execute(['exam_id' => $exam['id']]);
         $tests = $stmtTests->fetchAll();
+
+        // ep.total_questions is the pattern's design, not the paper. Listing it
+        // advertised a 100-question mock over a bank holding 17, and the
+        // candidate then sat 17. Replace each row's figures with the paper they
+        // will actually get, keeping the pattern's under their own keys.
+        $fixedStmt = $db->prepare("
+            SELECT COUNT(*) AS cnt, COALESCE(SUM(positive_marks), 0) AS marks
+            FROM test_questions WHERE test_id = ?
+        ");
+        $poolStmt = $db->prepare("
+            SELECT COUNT(*)
+            FROM questions q
+            JOIN question_exams qe ON qe.question_id = q.id
+            WHERE qe.exam_id = ?
+              AND q.status = 'published'
+              AND EXISTS (SELECT 1 FROM question_options o WHERE o.question_id = q.id AND o.is_correct = 1)
+        ");
+        $poolStmt->execute([$exam['id']]);
+        $examPool = intval($poolStmt->fetchColumn());
+
+        foreach ($tests as &$t) {
+            $t['pattern_total_questions'] = intval($t['total_questions']);
+            $t['pattern_total_marks']     = floatval($t['total_marks']);
+
+            if (intval($t['is_randomised']) === 1) {
+                $perQuestionMarks = $t['pattern_total_questions'] > 0
+                    ? $t['pattern_total_marks'] / $t['pattern_total_questions']
+                    : 0.0;
+                $actual = min($t['pattern_total_questions'] ?: $examPool, $examPool);
+                $t['total_questions'] = $actual;
+                $t['total_marks']     = round($actual * $perQuestionMarks, 2);
+            } else {
+                $fixedStmt->execute([$t['id']]);
+                $fixed = $fixedStmt->fetch(PDO::FETCH_ASSOC) ?: ['cnt' => 0, 'marks' => 0];
+                $t['total_questions'] = intval($fixed['cnt']);
+                $t['total_marks']     = round(floatval($fixed['marks']), 2);
+            }
+
+            $t['is_short_of_pattern'] =
+                intval($t['total_questions']) < intval($t['pattern_total_questions']);
+            // A paper with nothing in it cannot be sat; the list can grey it out.
+            $t['is_playable'] = intval($t['total_questions']) > 0;
+        }
+        unset($t);
 
         Response::json([
             'exam' => $exam,

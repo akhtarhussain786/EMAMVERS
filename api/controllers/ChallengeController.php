@@ -216,7 +216,28 @@ class ChallengeController {
             $myRank = self::resolveMyRank($db, $userId, $boardWhere, $boardParams, $myAccuracy);
         }
 
-        $userRanking = [
+        $userRanking = self::buildUserRanking($db, $userId, $myRank, $totalRanked, $myAccuracy);
+
+        Response::json([
+            'context'        => $context,
+            'exam_id'        => $examId,
+            'test_id'        => $testId,
+            'leaderboard'    => $leaderboard,
+            'user_ranking'   => $userRanking,
+            'total_ranked'   => $totalRanked,
+            'tie_break_rule' => '1. Share of paper scored DESC, 2. Paper size DESC, 3. Accuracy DESC, 4. Time Spent ASC, 5. Submission Time ASC'
+        ], 'Leaderboard loaded successfully');
+    }
+
+    /**
+     * The candidate's own standing and lifetime figures.
+     *
+     * Shared with the home screen, which previously read a user_ranking key
+     * that /v1/home never sent and so showed every student rank 0 with zero
+     * tests. Computing it in one place keeps the two screens from disagreeing.
+     */
+    public static function buildUserRanking($db, $userId, $myRank = 0, $totalRanked = 0, $myAccuracy = 0.0) {
+        $ranking = [
             'current_rank'           => $myRank,
             'previous_rank'          => 0,
             'best_rank'              => 0,
@@ -230,64 +251,65 @@ class ChallengeController {
         ];
 
         if ($myRank > 0 && $totalRanked > 1) {
-            $userRanking['percentile'] = round((($totalRanked - $myRank) / ($totalRanked - 1)) * 100, 1);
+            $ranking['percentile'] = round((($totalRanked - $myRank) / ($totalRanked - 1)) * 100, 1);
         } elseif ($myRank === 1 && $totalRanked === 1) {
-            $userRanking['percentile'] = 100.0;
+            $ranking['percentile'] = 100.0;
         }
 
-        if ($userId) {
-            $statStmt = $db->prepare("
-                SELECT COUNT(*) as tests_count,
-                       COALESCE(SUM(correct_count), 0) as correct_q,
-                       COALESCE(SUM(correct_count + wrong_count), 0) as total_q,
-                       COALESCE(SUM(score), 0) as total_score
-                FROM test_attempts
-                WHERE user_id = ? AND status = 'evaluated'
-            ");
-            $statStmt->execute([$userId]);
-            $ustats = $statStmt->fetch(PDO::FETCH_ASSOC);
-            if ($ustats && intval($ustats['tests_count']) > 0) {
-                $tests = intval($ustats['tests_count']);
-                $correct = intval($ustats['correct_q']);
-                $totalQ = intval($ustats['total_q']);
-                $acc = $totalQ > 0 ? round(($correct / $totalQ) * 100, 1) : 0.0;
-                $userRanking['test_count'] = $tests;
-                $userRanking['total_questions_solved'] = $totalQ;
-                $userRanking['correct_answers'] = $correct;
-                $userRanking['accuracy'] = $acc;
-                $userRanking['xp_points'] = intval(round(floatval($ustats['total_score']) * 10));
-            }
+        if (!$userId) return $ranking;
 
-            // Real rank history: recomputeRanksForTest() stamps each attempt
-            // with the candidate rank its owner held in that test.
-            $histStmt = $db->prepare("
-                SELECT central_rank
-                FROM test_attempts
-                WHERE user_id = ? AND status = 'evaluated' AND central_rank > 0
-                ORDER BY submitted_at DESC, id DESC
-            ");
-            $histStmt->execute([$userId]);
-            $history = array_map('intval', $histStmt->fetchAll(PDO::FETCH_COLUMN));
-            if ($history) {
-                $userRanking['best_rank'] = min($history);
-                // The standing held before the most recent test.
-                if (count($history) > 1) {
-                    $userRanking['previous_rank'] = $history[1];
-                }
-            }
-
-            $userRanking['streak_days'] = self::currentStreakDays($db, $userId);
+        $statStmt = $db->prepare("
+            SELECT COUNT(*) as tests_count,
+                   COALESCE(SUM(correct_count), 0) as correct_q,
+                   COALESCE(SUM(correct_count + wrong_count), 0) as total_q,
+                   COALESCE(SUM(score), 0) as total_score
+            FROM test_attempts
+            WHERE user_id = ? AND status = 'evaluated'
+        ");
+        $statStmt->execute([$userId]);
+        $ustats = $statStmt->fetch(PDO::FETCH_ASSOC);
+        if ($ustats && intval($ustats['tests_count']) > 0) {
+            $totalQ = intval($ustats['total_q']);
+            $correct = intval($ustats['correct_q']);
+            $ranking['test_count']             = intval($ustats['tests_count']);
+            $ranking['total_questions_solved'] = $totalQ;
+            $ranking['correct_answers']        = $correct;
+            $ranking['accuracy']               = $totalQ > 0 ? round(($correct / $totalQ) * 100, 1) : 0.0;
+            $ranking['xp_points']              = intval(round(floatval($ustats['total_score']) * 10));
         }
 
-        Response::json([
-            'context'        => $context,
-            'exam_id'        => $examId,
-            'test_id'        => $testId,
-            'leaderboard'    => $leaderboard,
-            'user_ranking'   => $userRanking,
-            'total_ranked'   => $totalRanked,
-            'tie_break_rule' => '1. Share of paper scored DESC, 2. Paper size DESC, 3. Accuracy DESC, 4. Time Spent ASC, 5. Submission Time ASC'
-        ], 'Leaderboard loaded successfully');
+        // Real rank history: recomputeRanksForTest() stamps each attempt with
+        // the candidate rank its owner held in that test.
+        $histStmt = $db->prepare("
+            SELECT central_rank
+            FROM test_attempts
+            WHERE user_id = ? AND status = 'evaluated' AND central_rank > 0
+            ORDER BY submitted_at DESC, id DESC
+        ");
+        $histStmt->execute([$userId]);
+        $history = array_map('intval', $histStmt->fetchAll(PDO::FETCH_COLUMN));
+        if ($history) {
+            $ranking['best_rank'] = min($history);
+            if (count($history) > 1) {
+                $ranking['previous_rank'] = $history[1];
+            }
+        }
+
+        $ranking['streak_days'] = self::currentStreakDays($db, $userId);
+        return $ranking;
+    }
+
+    /**
+     * All-time standing for a candidate, for callers with no board context of
+     * their own (the home dashboard).
+     */
+    public static function allTimeRankingFor($db, $userId) {
+        if (!$userId) return self::buildUserRanking($db, null);
+        $where = ["att.status = 'evaluated'"];
+        $accuracy = 0.0;
+        $rank  = self::resolveMyRank($db, $userId, $where, [], $accuracy);
+        $total = self::countRankedCandidates($db, $where, []);
+        return self::buildUserRanking($db, $userId, $rank, $total, $accuracy);
     }
 
     /** Size of the ranked cohort (candidates, not attempts) for a board. */
@@ -309,47 +331,58 @@ class ChallengeController {
      * outside the 100 rows the board returns. Counts the candidates whose best
      * attempt beats this candidate's best on the same tie-break order.
      */
+    /**
+     * Rank of one candidate across the whole cohort, for someone who fell
+     * outside the rows the board returns.
+     *
+     * Ranks every candidate with the same window and the same tie-break the
+     * board uses, then reads off this candidate's position. Counting only the
+     * candidates with a strictly better score instead put a candidate tied at
+     * the top of the board at rank 1 while the board itself, which breaks ties
+     * on paper size, showed them second — so the home screen and the Ranks tab
+     * reported different numbers for the same person.
+     */
     private static function resolveMyRank($db, $userId, $whereClauses, $params, &$myAccuracy) {
         $whereSql = implode(' AND ', $whereClauses);
 
-        $mineSql = "
-            SELECT att.score, att.max_score, att.accuracy_percentage, att.total_time_spent_seconds, att.submitted_at, att.id
-            FROM test_attempts att
-            JOIN users u ON att.user_id = u.id
-            WHERE $whereSql AND att.user_id = :me_id
-            ORDER BY (att.score / NULLIF(att.max_score, 0)) DESC,
-                     att.max_score DESC,
-                     att.accuracy_percentage DESC,
-                     att.total_time_spent_seconds ASC, att.submitted_at ASC, att.id ASC
-            LIMIT 1
+        $sql = "
+            SELECT ranked.rnk, ranked.accuracy_percentage
+            FROM (
+                SELECT best.user_id, best.accuracy_percentage,
+                       ROW_NUMBER() OVER (
+                           ORDER BY (best.score / NULLIF(best.max_score, 0)) DESC,
+                                    best.max_score DESC,
+                                    best.accuracy_percentage DESC,
+                                    best.total_time_spent_seconds ASC,
+                                    best.submitted_at ASC,
+                                    best.attempt_id ASC
+                       ) AS rnk
+                FROM (
+                    SELECT att.id AS attempt_id, att.user_id, att.score, att.max_score,
+                           att.accuracy_percentage, att.total_time_spent_seconds, att.submitted_at,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY att.user_id
+                               ORDER BY (att.score / NULLIF(att.max_score, 0)) DESC,
+                                        att.max_score DESC,
+                                        att.accuracy_percentage DESC,
+                                        att.total_time_spent_seconds ASC,
+                                        att.submitted_at ASC, att.id ASC
+                           ) AS rn
+                    FROM test_attempts att
+                    JOIN users u ON att.user_id = u.id
+                    WHERE $whereSql
+                ) best
+                WHERE best.rn = 1
+            ) ranked
+            WHERE ranked.user_id = :me_id
         ";
-        $mineStmt = $db->prepare($mineSql);
-        $mineStmt->execute(array_merge($params, ['me_id' => $userId]));
-        $mine = $mineStmt->fetch(PDO::FETCH_ASSOC);
-        if (!$mine) return 0;
+        $stmt = $db->prepare($sql);
+        $stmt->execute(array_merge($params, ['me_id' => $userId]));
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) return 0;
 
-        $myAccuracy = floatval($mine['accuracy_percentage']);
-
-        // Compared as a share of the paper, matching how the board is ordered.
-        $aheadSql = "
-            SELECT COUNT(*) FROM (
-                SELECT att.user_id,
-                       MAX(att.score / NULLIF(att.max_score, 0)) AS best_ratio
-                FROM test_attempts att
-                JOIN users u ON att.user_id = u.id
-                WHERE $whereSql AND att.user_id <> :me_id2
-                GROUP BY att.user_id
-                HAVING best_ratio > :my_ratio
-            ) ahead
-        ";
-        $myMax   = floatval($mine['max_score'] ?? 0);
-        $myRatio = $myMax > 0 ? floatval($mine['score']) / $myMax : 0.0;
-        $aheadStmt = $db->prepare($aheadSql);
-        $aheadStmt->execute(array_merge($params, [
-            'me_id2'   => $userId,
-            'my_ratio' => $myRatio,
-        ]));
-        return intval($aheadStmt->fetchColumn()) + 1;
+        $myAccuracy = floatval($row['accuracy_percentage']);
+        return intval($row['rnk']);
     }
 
     /**

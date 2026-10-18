@@ -233,7 +233,12 @@ class _AiCoachViewState extends State<AiCoachView> {
                             color: AppConstants.accentEmerald.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Text('Top 4% Aspirants', style: TextStyle(color: AppConstants.accentEmerald, fontSize: 11, fontWeight: FontWeight.bold)),
+                          // Was a fixed "Top 4% Aspirants" shown to everyone.
+                          // No cohort percentile is computed for the twin, so
+                          // the badge now reports the readiness the gauge is
+                          // actually displaying.
+                          child: Text('${readiness.toStringAsFixed(0)}% ready',
+                              style: const TextStyle(color: AppConstants.accentEmerald, fontSize: 11, fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
