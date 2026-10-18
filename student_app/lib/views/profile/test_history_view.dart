@@ -71,7 +71,7 @@ class _TestHistoryViewState extends State<TestHistoryView> {
       backgroundColor: AppConstants.primaryDark,
       appBar: AppBar(
         backgroundColor: AppConstants.scaffoldDark,
-        title: const Text('Test History', style: TextStyle(color: AppConstants.onAccent, fontSize: 18, fontWeight: FontWeight.bold)),
+        title: const Text('Test History', style: TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
         elevation: 0,
       ),
       body: SafeArea(

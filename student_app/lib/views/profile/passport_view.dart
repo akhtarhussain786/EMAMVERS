@@ -76,7 +76,7 @@ class _PassportViewState extends State<PassportView> {
       backgroundColor: AppConstants.primaryDark,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppConstants.space20),
+          padding: const EdgeInsets.fromLTRB(AppConstants.space20, AppConstants.space20, AppConstants.space20, 100),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

@@ -134,11 +134,12 @@ class _ResultViewState extends State<ResultView> {
         title: Text(testTitle, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
         leading: IconButton(icon: const Icon(Icons.home, color: AppConstants.textPrimary), onPressed: widget.onHome),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppConstants.space20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppConstants.space20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // Score & Rank Hero Card
             Container(
               padding: const EdgeInsets.all(AppConstants.space24),
@@ -328,7 +329,8 @@ class _ResultViewState extends State<ResultView> {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _heroBadge(String label, String value) {
