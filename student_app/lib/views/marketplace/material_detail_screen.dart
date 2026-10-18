@@ -38,9 +38,25 @@ class _MaterialDetailScreenState extends State<MaterialDetailScreen> {
       final data = await ApiService.getAuth('/v1/marketplace/my-purchases');
       final purchases = data as List? ?? [];
       if (mounted) {
-        setState(() => _isPurchased = purchases.any((p) => p['material_id'] == widget.materialId));
+        // The server only serves the file for a completed payment, so a
+        // pending or failed row must not read as purchased here either —
+        // otherwise the screen offers Download and the download 403s.
+        setState(() => _isPurchased = purchases.any((p) =>
+            p['material_id'] == widget.materialId &&
+            (p['payment_status'] ?? 'completed').toString() == 'completed'));
       }
-    } catch (_) {}
+    } catch (e) {
+      // Failing silently left a candidate who had already paid looking at the
+      // Buy button with no hint that the check had not run.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not confirm your purchases: $e'),
+            backgroundColor: AppConstants.accentRose,
+          ),
+        );
+      }
+    }
   }
 
   @override

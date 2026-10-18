@@ -74,7 +74,22 @@ class _AiCoachViewState extends State<AiCoachView> {
       setState(() {
         simulatedStrategies = (res is Map ? res['simulated_strategies'] : null) as List? ?? [];
       });
-    } catch (_) {}
+      if (simulatedStrategies.isEmpty) {
+        final note = (res is Map ? res['message'] : null)?.toString();
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(note?.isNotEmpty == true
+              ? note!
+              : 'Sit a full mock test and your strategy projections will appear here.'),
+        ));
+      }
+    } catch (e) {
+      // Swallowing this left the button doing nothing at all on failure.
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Could not run the simulation: $e'),
+        backgroundColor: AppConstants.accentRose,
+      ));
+    }
   }
 
   @override

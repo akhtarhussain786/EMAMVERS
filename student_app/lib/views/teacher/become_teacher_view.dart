@@ -52,6 +52,7 @@ class _BecomeTeacherViewState extends State<BecomeTeacherView> {
     setState(() => _isLoading = true);
     try {
       final res = await ApiService.getAuth('/v1/teacher/application');
+      if (!mounted) return;
       if (res != null && res is Map<String, dynamic>) {
         setState(() {
           _application = res;

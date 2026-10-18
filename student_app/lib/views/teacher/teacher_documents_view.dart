@@ -27,13 +27,23 @@ class _TeacherDocumentsViewState extends State<TeacherDocumentsView> {
     setState(() => _isLoading = true);
     try {
       final res = await ApiService.getAuth('/v1/teacher/application');
+      if (!mounted) return;
       if (res != null && res is Map<String, dynamic>) {
         setState(() {
           _application = res;
         });
       }
     } catch (e) {
-      // Error handling
+      // A failed load left the screen blank with no explanation; surface it so
+      // the teacher knows to retry rather than seeing an empty document list.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not load your documents: $e'),
+            backgroundColor: AppConstants.accentRose,
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

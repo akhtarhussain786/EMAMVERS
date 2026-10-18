@@ -137,6 +137,10 @@ class _CreatorDashboardViewState extends State<CreatorDashboardView> {
         }
       }
     }
+
+    // Created for this dialog, so it is this method's to release; the value is
+    // read above before the controller goes.
+    amountCtrl.dispose();
   }
 
   @override

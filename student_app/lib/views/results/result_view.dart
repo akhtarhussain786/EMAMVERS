@@ -351,6 +351,8 @@ class _ResultViewState extends State<ResultView> {
     final commentCtrl = TextEditingController();
     bool isSubmitting = false;
 
+    // The sheet is not awaited, so release the controller when it closes
+    // rather than leaking one per report the candidate opens.
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -472,6 +474,6 @@ class _ResultViewState extends State<ResultView> {
           },
         );
       },
-    );
+    ).whenComplete(commentCtrl.dispose);
   }
 }

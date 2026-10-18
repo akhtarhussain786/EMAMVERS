@@ -259,6 +259,10 @@ class _SubscriptionsViewState extends State<SubscriptionsView> {
       setState(() => _isProcessingPayment = false);
 
       final paymentCompleted = await _openCashfreePaymentSheet(orderRes, plan);
+      // The candidate can leave while the sheet is open, so every setState
+      // past this point needs the guard; without it, backing out of payment
+      // threw setState() called after dispose().
+      if (!mounted) return;
 
       if (paymentCompleted == true) {
         // 3. Verify Payment
@@ -269,8 +273,8 @@ class _SubscriptionsViewState extends State<SubscriptionsView> {
           'payment_method': _selectedPaymentMethod,
         });
 
-        setState(() => _isProcessingPayment = false);
         if (!mounted) return;
+        setState(() => _isProcessingPayment = false);
         _showSuccessDialog(planName, verifyRes?['expiry_date'], verifyRes?['receipt_no'], orderId);
       }
     } catch (e) {

@@ -18,6 +18,14 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
   final _otpController = TextEditingController();
   final _newPasswordController = TextEditingController();
 
+  @override
+  void dispose() {
+    _identityController.dispose();
+    _otpController.dispose();
+    _newPasswordController.dispose();
+    super.dispose();
+  }
+
   void _showSnackBar(String message, {bool isError = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
