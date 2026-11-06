@@ -63,6 +63,8 @@ void main() {
   });
 
   optionOrderingTests();
+
+  paperSizeTests();
 }
 
 // ---------------------------------------------------------------------------
@@ -140,6 +142,73 @@ void optionOrderingTests() {
             reason: '$t should be a typed-answer question');
       }
       expect(questionWith(options: const []).isNumericalEntry, isFalse);
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Paper size.
+//
+// The exam detail list showed ep.total_questions — the pattern's design — so a
+// mock advertised 100 questions over a bank holding 17 and the candidate sat
+// 17. It also derived marks as questions x 2 instead of reading the real
+// total. These cover the figures the card is given.
+// ---------------------------------------------------------------------------
+void paperSizeTests() {
+  group('TestItem paper size', () {
+    Map<String, dynamic> row({
+      int total = 17,
+      dynamic marks = '34.00',
+      int pattern = 100,
+      dynamic playable = true,
+      dynamic short = true,
+    }) =>
+        {
+          'id': 5,
+          'title': 'SSC CGL Mock',
+          'test_type': 'full_mock',
+          'is_paid': 0,
+          'price': '0.00',
+          'total_questions': total,
+          'total_marks': marks,
+          'pattern_total_questions': pattern,
+          'is_playable': playable,
+          'is_short_of_pattern': short,
+          'total_attempts': 4,
+        };
+
+    test('reports the paper it will sit, not the pattern target', () {
+      final t = TestItem.fromJson(row());
+      expect(t.totalQuestions, 17);
+      expect(t.patternTotalQuestions, 100);
+      expect(t.isShortOfPattern, isTrue);
+    });
+
+    test('takes marks from the payload rather than assuming two per question',
+        () {
+      // A 17-question paper at 2 marks each is 34; questions x 2 agrees here,
+      // so use a scheme where it does not to catch the assumption.
+      final t = TestItem.fromJson(row(total: 10, marks: '40.00'));
+      expect(t.totalMarks, 40.0,
+          reason: 'questions x 2 would have produced 20');
+    });
+
+    test('a paper with nothing in it is not playable', () {
+      final t = TestItem.fromJson(row(total: 0, marks: '0.00', playable: false));
+      expect(t.isPlayable, isFalse);
+      expect(t.totalQuestions, 0);
+    });
+
+    test('falls back to the question count when the flag is absent', () {
+      final withQs = row()..remove('is_playable');
+      expect(TestItem.fromJson(withQs).isPlayable, isTrue);
+      final empty = row(total: 0)..remove('is_playable');
+      expect(TestItem.fromJson(empty).isPlayable, isFalse);
+    });
+
+    test('a full paper is not flagged short', () {
+      final t = TestItem.fromJson(row(total: 100, marks: '200.00', short: false));
+      expect(t.isShortOfPattern, isFalse);
     });
   });
 }

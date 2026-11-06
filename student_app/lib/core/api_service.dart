@@ -169,6 +169,11 @@ class ApiService {
   static dynamic _processResponse(http.Response response) {
     if (response.statusCode == 401) {
       final message = _messageFrom(response.body) ?? 'Your session has expired. Please sign in again.';
+      // The shell subscribes to this to clear the session and show the login
+      // screen. It was never invoked, so an expired token surfaced as an
+      // inline error on whichever screen made the call and left the candidate
+      // stuck there with a dead session.
+      onUnauthorized?.call();
       throw UnauthorizedException(message);
     }
 

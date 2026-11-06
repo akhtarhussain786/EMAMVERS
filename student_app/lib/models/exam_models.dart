@@ -65,6 +65,16 @@ class TestItem {
   final int? totalDurationSeconds;
   final int totalAttempts;
 
+  /// False when no questions are attached or drawable, so the paper cannot be
+  /// sat at all; the list greys it out rather than opening an empty test.
+  final bool isPlayable;
+
+  /// True when the bank cannot fill the paper to the exam pattern's design.
+  final bool isShortOfPattern;
+
+  /// What the pattern asks for, kept so the shortfall can be explained.
+  final int? patternTotalQuestions;
+
   TestItem({
     required this.id,
     required this.title,
@@ -76,6 +86,9 @@ class TestItem {
     this.totalMarks,
     this.totalDurationSeconds,
     this.totalAttempts = 0,
+    this.isPlayable = true,
+    this.isShortOfPattern = false,
+    this.patternTotalQuestions,
   });
 
   factory TestItem.fromJson(Map<String, dynamic> json) {
@@ -92,6 +105,14 @@ class TestItem {
       totalAttempts: json['total_attempts'] is int
           ? json['total_attempts']
           : int.tryParse('${json['total_attempts'] ?? 0}') ?? 0,
+      isPlayable: json['is_playable'] == null
+          ? (json['total_questions'] ?? 0) > 0
+          : (json['is_playable'] == true || json['is_playable'] == 1),
+      isShortOfPattern:
+          json['is_short_of_pattern'] == true || json['is_short_of_pattern'] == 1,
+      patternTotalQuestions: json['pattern_total_questions'] is int
+          ? json['pattern_total_questions']
+          : int.tryParse('${json['pattern_total_questions'] ?? ''}'),
     );
   }
 }

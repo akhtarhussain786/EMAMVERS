@@ -27,13 +27,23 @@ class _TeacherDocumentsViewState extends State<TeacherDocumentsView> {
     setState(() => _isLoading = true);
     try {
       final res = await ApiService.getAuth('/v1/teacher/application');
+      if (!mounted) return;
       if (res != null && res is Map<String, dynamic>) {
         setState(() {
           _application = res;
         });
       }
     } catch (e) {
-      // Error handling
+      // A failed load left the screen blank with no explanation; surface it so
+      // the teacher knows to retry rather than seeing an empty document list.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not load your documents: $e'),
+            backgroundColor: AppConstants.accentRose,
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -169,74 +179,76 @@ class _TeacherDocumentsViewState extends State<TeacherDocumentsView> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppConstants.accentCyan))
-          : RefreshIndicator(
-              color: AppConstants.accentCyan,
-              backgroundColor: AppConstants.cardDark,
-              onRefresh: _fetchApplication,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _buildStatusOverviewCard(status, docs),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Upload KYC Documents',
-                    style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: AppConstants.textPrimary),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Upload your government ID and educational qualification certificates for compliance verification.',
-                    style: GoogleFonts.inter(fontSize: 12, color: AppConstants.textSecondary),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // 1. Identity Proof
-                  _buildDocCard(
-                    type: 'identity',
-                    title: 'Government Identity Proof',
-                    subtitle: 'Aadhaar Card, PAN Card, Voter ID, or Passport',
-                    icon: Icons.badge_outlined,
-                    isRequired: true,
-                    docs: docs,
-                  ),
-                  const SizedBox(height: 14),
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: AppConstants.accentCyan))
+            : RefreshIndicator(
+                color: AppConstants.accentCyan,
+                backgroundColor: AppConstants.cardDark,
+                onRefresh: _fetchApplication,
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    _buildStatusOverviewCard(status, docs),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Upload KYC Documents',
+                      style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: AppConstants.textPrimary),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Upload your government ID and educational qualification certificates for compliance verification.',
+                      style: GoogleFonts.inter(fontSize: 12, color: AppConstants.textSecondary),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // 1. Identity Proof
+                    _buildDocCard(
+                      type: 'identity',
+                      title: 'Government Identity Proof',
+                      subtitle: 'Aadhaar Card, PAN Card, Voter ID, or Passport',
+                      icon: Icons.badge_outlined,
+                      isRequired: true,
+                      docs: docs,
+                    ),
+                    const SizedBox(height: 14),
 
-                  // 2. Qualification Degree
-                  _buildDocCard(
-                    type: 'qualification',
-                    title: 'Educational Degree / Marksheet',
-                    subtitle: 'Graduation / Post-Graduation Degree Certificate',
-                    icon: Icons.school_outlined,
-                    isRequired: true,
-                    docs: docs,
-                  ),
-                  const SizedBox(height: 14),
+                    // 2. Qualification Degree
+                    _buildDocCard(
+                      type: 'qualification',
+                      title: 'Educational Degree / Marksheet',
+                      subtitle: 'Graduation / Post-Graduation Degree Certificate',
+                      icon: Icons.school_outlined,
+                      isRequired: true,
+                      docs: docs,
+                    ),
+                    const SizedBox(height: 14),
 
-                  // 3. Experience Proof
-                  _buildDocCard(
-                    type: 'experience',
-                    title: 'Teaching Experience Proof',
-                    subtitle: 'Institution Relieving Letter or Work Certificate',
-                    icon: Icons.work_outline,
-                    isRequired: false,
-                    docs: docs,
-                  ),
-                  const SizedBox(height: 14),
+                    // 3. Experience Proof
+                    _buildDocCard(
+                      type: 'experience',
+                      title: 'Teaching Experience Proof',
+                      subtitle: 'Institution Relieving Letter or Work Certificate',
+                      icon: Icons.work_outline,
+                      isRequired: false,
+                      docs: docs,
+                    ),
+                    const SizedBox(height: 14),
 
-                  // 4. Resume / CV
-                  _buildDocCard(
-                    type: 'resume',
-                    title: 'Teacher Resume / CV',
-                    subtitle: 'Latest updated curriculum vitae (PDF)',
-                    icon: Icons.description_outlined,
-                    isRequired: false,
-                    docs: docs,
-                  ),
-                  const SizedBox(height: 40),
-                ],
+                    // 4. Resume / CV
+                    _buildDocCard(
+                      type: 'resume',
+                      title: 'Teacher Resume / CV',
+                      subtitle: 'Latest updated curriculum vitae (PDF)',
+                      icon: Icons.description_outlined,
+                      isRequired: false,
+                      docs: docs,
+                    ),
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
-            ),
+      ),
     );
   }
 

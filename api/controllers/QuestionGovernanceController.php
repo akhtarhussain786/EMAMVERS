@@ -139,11 +139,19 @@ class QuestionGovernanceController {
         ");
         $stmt->execute([$questionA, $questionB, $decision, $reason, $adminId]);
 
-        // If exact_duplicate or conflict, handle status
+        // Retire the duplicate. questions.status is
+        // enum('draft','review','published','rejected'); this wrote
+        // 'unpublished', which the column cannot hold, so with
+        // STRICT_TRANS_TABLES the UPDATE raised "Data truncated for column
+        // 'status'" and the whole decision failed instead of being recorded.
         if ($decision === 'exact_duplicate') {
-            // Mark question B as duplicate/unpublished
-            $up = $db->prepare("UPDATE questions SET status = 'unpublished' WHERE id = ?");
-            $up->execute([$questionB]);
+            $up = $db->prepare("
+                UPDATE questions
+                SET status = 'rejected',
+                    rejection_reason = CONCAT('Duplicate of question #', ?)
+                WHERE id = ?
+            ");
+            $up->execute([$questionA, $questionB]);
         }
 
         // Audit log

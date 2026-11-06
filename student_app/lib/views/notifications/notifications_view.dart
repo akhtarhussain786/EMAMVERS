@@ -84,10 +84,22 @@ class _NotificationsViewState extends State<NotificationsView> {
                     separatorBuilder: (_, _) => const SizedBox(height: AppConstants.space12),
                     itemBuilder: (context, i) {
                       final item = notifications[i];
-                      final title = item['title'] ?? item['message'] ?? 'Notification';
-                      final desc = item['desc'] ?? item['body'] ?? '';
-                      final time = item['time'] ?? item['created_at'] ?? 'Today';
-                      final color = item['color'] is Color ? item['color'] as Color : AppConstants.accentCyan;
+                      // The API returns title, message, type, created_at and
+                      // action_url. This read 'desc'/'body' for the text and
+                      // 'time' for the timestamp, neither of which is ever
+                      // sent, so every notification rendered with its body
+                      // missing. 'color' and 'icon' were read the same way and
+                      // could never arrive over JSON at all; the type decides
+                      // them instead, so a payment notice no longer looks
+                      // identical to a question approval.
+                      final title = (item['title'] ?? '').toString().trim();
+                      final message = (item['message'] ?? '').toString().trim();
+                      final heading = title.isNotEmpty
+                          ? title
+                          : (message.isNotEmpty ? message : 'Notification');
+                      final desc = title.isNotEmpty ? message : '';
+                      final time = _relativeTime(item['created_at']);
+                      final color = _colorForType(item['type']);
 
                       final isRead = item['is_read'] == 1 || item['is_read'] == true;
 
@@ -102,7 +114,7 @@ class _NotificationsViewState extends State<NotificationsView> {
                             CircleAvatar(
                               radius: 20,
                               backgroundColor: color.withValues(alpha: 0.15),
-                              child: Icon(item['icon'] as IconData? ?? Icons.notifications, color: color, size: 20),
+                              child: Icon(_iconForType(item['type']), color: color, size: 20),
                             ),
                             const SizedBox(width: AppConstants.space12),
                             Expanded(
@@ -113,7 +125,7 @@ class _NotificationsViewState extends State<NotificationsView> {
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Expanded(
-                                        child: Text(title, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
+                                        child: Text(heading, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
                                       ),
                                       Text(time, style: const TextStyle(color: AppConstants.textMuted, fontSize: 11)),
                                     ],
@@ -134,5 +146,45 @@ class _NotificationsViewState extends State<NotificationsView> {
                   ),
       ),
     );
+  }
+
+  /// created_at arrives as a MySQL datetime string. Showing it verbatim put
+  /// "2026-10-07 12:34:56" in a 11px slot next to the title.
+  static String _relativeTime(dynamic raw) {
+    final parsed = DateTime.tryParse((raw ?? '').toString().replaceFirst(' ', 'T'));
+    if (parsed == null) return '';
+    final diff = DateTime.now().difference(parsed);
+    if (diff.isNegative || diff.inMinutes < 1) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${parsed.day.toString().padLeft(2, '0')}/'
+        '${parsed.month.toString().padLeft(2, '0')}/${parsed.year}';
+  }
+
+  static Color _colorForType(dynamic type) {
+    switch ((type ?? '').toString()) {
+      case 'subscription':
+        return AppConstants.accentEmerald;
+      case 'teacher_application':
+        return AppConstants.accentIndigo;
+      case 'result':
+        return AppConstants.accentBlue;
+      default:
+        return AppConstants.accentCyan;
+    }
+  }
+
+  static IconData _iconForType(dynamic type) {
+    switch ((type ?? '').toString()) {
+      case 'subscription':
+        return Icons.workspace_premium_outlined;
+      case 'teacher_application':
+        return Icons.verified_user_outlined;
+      case 'result':
+        return Icons.assignment_turned_in_outlined;
+      default:
+        return Icons.notifications_outlined;
+    }
   }
 }

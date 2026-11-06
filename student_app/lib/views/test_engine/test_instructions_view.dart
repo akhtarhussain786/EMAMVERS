@@ -53,9 +53,11 @@ class _TestInstructionsViewState extends State<TestInstructionsView> {
           title: const Text('Test Instructions', style: TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
           leading: IconButton(icon: const Icon(Icons.close, color: AppConstants.textPrimary), onPressed: widget.onCancel),
         ),
-        body: const Padding(
-          padding: EdgeInsets.all(AppConstants.space24),
-          child: SkeletonListLoader(count: 3, itemHeight: 120),
+        body: SafeArea(
+          child: const Padding(
+            padding: EdgeInsets.all(AppConstants.space24),
+            child: SkeletonListLoader(count: 3, itemHeight: 120),
+          ),
         ),
       );
     }

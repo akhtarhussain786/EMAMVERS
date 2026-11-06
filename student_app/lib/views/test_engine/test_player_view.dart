@@ -263,9 +263,11 @@ class _TestPlayerViewState extends State<TestPlayerView> {
           title: const Text('Loading Test Engine...', style: TextStyle(color: AppConstants.onAccent, fontSize: 16)),
           leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppConstants.onAccent), onPressed: widget.onExit),
         ),
-        body: const Padding(
-          padding: EdgeInsets.all(AppConstants.space24),
-          child: SkeletonListLoader(count: 3, itemHeight: 140),
+        body: SafeArea(
+          child: const Padding(
+            padding: EdgeInsets.all(AppConstants.space24),
+            child: SkeletonListLoader(count: 3, itemHeight: 140),
+          ),
         ),
       );
     }
@@ -274,14 +276,16 @@ class _TestPlayerViewState extends State<TestPlayerView> {
       return Scaffold(
         backgroundColor: AppConstants.primaryDark,
         appBar: AppBar(backgroundColor: AppConstants.cardDark, title: const Text('Test Attempt')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('No questions found for this test.', style: TextStyle(color: AppConstants.textSecondary)),
-              const SizedBox(height: 16),
-              ElevatedButton(onPressed: widget.onExit, child: const Text('Back')),
-            ],
+        body: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('No questions found for this test.', style: TextStyle(color: AppConstants.textSecondary)),
+                const SizedBox(height: 16),
+                ElevatedButton(onPressed: widget.onExit, child: const Text('Back')),
+              ],
+            ),
           ),
         ),
       );
@@ -432,6 +436,8 @@ class _TestPlayerViewState extends State<TestPlayerView> {
   void _openQuestionPalette(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      // Keeps the sheet's own content clear of the gesture bar.
+      useSafeArea: true,
       backgroundColor: AppConstants.cardDark,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) {

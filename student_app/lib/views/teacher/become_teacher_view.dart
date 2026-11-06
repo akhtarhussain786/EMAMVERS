@@ -52,6 +52,7 @@ class _BecomeTeacherViewState extends State<BecomeTeacherView> {
     setState(() => _isLoading = true);
     try {
       final res = await ApiService.getAuth('/v1/teacher/application');
+      if (!mounted) return;
       if (res != null && res is Map<String, dynamic>) {
         setState(() {
           _application = res;
@@ -267,32 +268,34 @@ class _BecomeTeacherViewState extends State<BecomeTeacherView> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppConstants.accentYellow))
-          : RefreshIndicator(
-              color: AppConstants.accentYellow,
-              backgroundColor: AppConstants.cardDark,
-              onRefresh: _fetchApplication,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeaderBanner(),
-                    const SizedBox(height: 16),
-                    _buildStatusCard(),
-                    const SizedBox(height: 20),
-                    if (status == 'approved')
-                      _buildApprovedView()
-                    else if (status == 'submitted' || status == 'under_review')
-                      _buildUnderReviewView()
-                    else
-                      _buildApplicationForm(),
-                  ],
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: AppConstants.accentYellow))
+            : RefreshIndicator(
+                color: AppConstants.accentYellow,
+                backgroundColor: AppConstants.cardDark,
+                onRefresh: _fetchApplication,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeaderBanner(),
+                      const SizedBox(height: 16),
+                      _buildStatusCard(),
+                      const SizedBox(height: 20),
+                      if (status == 'approved')
+                        _buildApprovedView()
+                      else if (status == 'submitted' || status == 'under_review')
+                        _buildUnderReviewView()
+                      else
+                        _buildApplicationForm(),
+                    ],
+                  ),
                 ),
               ),
-            ),
+      ),
     );
   }
 

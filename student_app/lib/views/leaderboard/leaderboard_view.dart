@@ -4,6 +4,7 @@ import '../../core/api_service.dart';
 import '../../models/ranking_model.dart';
 import '../../widgets/design_system_widgets.dart';
 import '../../widgets/skeleton_loader.dart';
+import '../../widgets/premium_nav_bar.dart';
 
 class LeaderboardView extends StatefulWidget {
   const LeaderboardView({super.key});
@@ -54,7 +55,9 @@ class _LeaderboardViewState extends State<LeaderboardView> {
       backgroundColor: AppConstants.primaryDark,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(AppConstants.space20, AppConstants.space20, AppConstants.space20, 100),
+          // Clears the floating nav bar, including the device's gesture inset.
+          padding: EdgeInsets.fromLTRB(AppConstants.space20, AppConstants.space20,
+              AppConstants.space20, PremiumNavBar.spaceFor(context)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

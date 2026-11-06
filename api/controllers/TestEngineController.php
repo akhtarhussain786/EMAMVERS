@@ -9,6 +9,7 @@ class TestEngineController {
         $db = Database::getConnection();
         $stmt = $db->prepare("
             SELECT t.id, t.title, t.instructions, t.test_type, t.is_paid, t.price,
+                   t.exam_id, t.is_randomised,
                    ep.id as pattern_id, ep.name as pattern_name, ep.timer_mode, ep.total_duration_seconds, 
                    ep.total_questions, ep.total_marks, ep.default_positive_marks, ep.default_negative_marks,
                    ep.navigation_policy, ep.languages, e.title as exam_title
@@ -24,13 +25,89 @@ class TestEngineController {
 
         // Fetch section breakdown
         $stmtSections = $db->prepare("
-            SELECT ps.id, ps.section_name, ps.question_count, ps.positive_marks, ps.negative_marks, ps.duration_seconds
+            SELECT ps.id, ps.section_name, ps.subject_id, ps.question_count, ps.positive_marks, ps.negative_marks, ps.duration_seconds
             FROM pattern_sections ps
             WHERE ps.pattern_id = :pattern_id
             ORDER BY ps.sort_order ASC
         ");
         $stmtSections->execute(['pattern_id' => $test['pattern_id']]);
-        $test['sections'] = $stmtSections->fetchAll();
+        $sections = $stmtSections->fetchAll();
+
+        // total_questions and total_marks came straight off the pattern, which
+        // states what the paper is designed to be, not what it contains. A
+        // pattern asking for 100 questions over a bank holding 17 produced an
+        // instructions screen promising 100 and a paper of 17. Report the size
+        // the candidate will actually sit, and keep the pattern's figures under
+        // their own keys so the design intent is still visible.
+        $test['pattern_total_questions'] = intval($test['total_questions']);
+        $test['pattern_total_marks']     = floatval($test['total_marks']);
+
+        if (intval($test['is_randomised']) === 1) {
+            // A randomised paper is drawn per attempt, so its size is bounded
+            // by what the bank can supply for each section.
+            $availStmt = $db->prepare("
+                SELECT COUNT(*)
+                FROM questions q
+                JOIN question_exams qe ON qe.question_id = q.id
+                WHERE qe.exam_id = :exam_id
+                  AND q.status = 'published'
+                  AND (:subject_id IS NULL OR q.subject_id = :subject_id2)
+                  AND EXISTS (
+                      SELECT 1 FROM question_options o
+                      WHERE o.question_id = q.id AND o.is_correct = 1
+                  )
+            ");
+
+            $realQuestions = 0;
+            $realMarks     = 0.0;
+            foreach ($sections as &$sec) {
+                $subjectId = $sec['subject_id'] !== null ? intval($sec['subject_id']) : null;
+                $availStmt->execute([
+                    'exam_id'     => $test['exam_id'],
+                    'subject_id'  => $subjectId,
+                    'subject_id2' => $subjectId,
+                ]);
+                $available = intval($availStmt->fetchColumn());
+                $wanted    = intval($sec['question_count']);
+                $actual    = $wanted > 0 ? min($wanted, $available) : $available;
+
+                $sec['planned_question_count'] = $wanted;
+                $sec['question_count']         = $actual;
+                $realQuestions += $actual;
+                $realMarks     += $actual * floatval($sec['positive_marks']);
+            }
+            unset($sec);
+
+            if (!$sections) {
+                // No sections defined: the whole bank for this exam is the pool.
+                $availStmt->execute([
+                    'exam_id' => $test['exam_id'], 'subject_id' => null, 'subject_id2' => null,
+                ]);
+                $available     = intval($availStmt->fetchColumn());
+                $realQuestions = min(intval($test['total_questions']) ?: $available, $available);
+                $realMarks     = $realQuestions * floatval($test['default_positive_marks']);
+            }
+
+            $test['total_questions'] = $realQuestions;
+            $test['total_marks']     = round($realMarks, 2);
+        } else {
+            // A fixed paper is exactly the questions attached to it.
+            $fixedStmt = $db->prepare("
+                SELECT COUNT(*) AS cnt, COALESCE(SUM(positive_marks), 0) AS marks
+                FROM test_questions WHERE test_id = ?
+            ");
+            $fixedStmt->execute([$testId]);
+            $fixed = $fixedStmt->fetch(PDO::FETCH_ASSOC) ?: ['cnt' => 0, 'marks' => 0];
+            $test['total_questions'] = intval($fixed['cnt']);
+            $test['total_marks']     = round(floatval($fixed['marks']), 2);
+        }
+
+        // True when the paper cannot be filled to the pattern's design, so the
+        // screen can say so rather than quietly showing a smaller number.
+        $test['is_short_of_pattern'] =
+            intval($test['total_questions']) < intval($test['pattern_total_questions']);
+
+        $test['sections'] = $sections;
 
         Response::json($test, 'Test instructions loaded successfully');
     }

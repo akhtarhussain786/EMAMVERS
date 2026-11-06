@@ -11,6 +11,7 @@ import '../map_learning/map_learning_home_view.dart';
 import '../friends/friends_leaderboard_view.dart';
 import '../notebook/mistake_notebook_view.dart';
 import '../discovery/question_bank_view.dart';
+import '../../widgets/premium_nav_bar.dart';
 
 class HomeView extends StatefulWidget {
   final Function(int examId) onSelectExam;
@@ -113,7 +114,9 @@ class _HomeViewState extends State<HomeView> {
       backgroundColor: AppConstants.primaryDark,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(AppConstants.space20, AppConstants.space20, AppConstants.space20, 100),
+          // Clears the floating nav bar, including the device's gesture inset.
+          padding: EdgeInsets.fromLTRB(AppConstants.space20, AppConstants.space20,
+              AppConstants.space20, PremiumNavBar.spaceFor(context)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
