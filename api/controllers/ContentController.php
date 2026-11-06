@@ -358,6 +358,48 @@ Generate 4 questions now:";
         $bestRankStmt->execute([$userId]);
         $bestRankVal = $bestRankStmt->fetchColumn();
 
+        // The standing held before the most recent test, for the
+        // "improved / slipped N places" line on the passport. Zero when the
+        // candidate has no earlier ranked attempt to compare against.
+        $prevRankStmt = $db->prepare("
+            SELECT central_rank
+            FROM test_attempts
+            WHERE user_id = ? AND status = 'evaluated' AND central_rank > 0
+            ORDER BY id DESC
+            LIMIT 1 OFFSET 1
+        ");
+        $prevRankStmt->execute([$userId]);
+        $prevRankVal = $prevRankStmt->fetchColumn();
+        $previousRank = $prevRankVal ? intval($prevRankVal) : 0;
+
+        // Consecutive days, ending today or yesterday, with an evaluated attempt.
+        $streakStmt = $db->prepare("
+            SELECT DISTINCT DATE(submitted_at) AS d
+            FROM test_attempts
+            WHERE user_id = ? AND status = 'evaluated' AND submitted_at IS NOT NULL
+            ORDER BY d DESC
+        ");
+        $streakStmt->execute([$userId]);
+        $streakDays = 0;
+        $streakRows = $streakStmt->fetchAll(PDO::FETCH_COLUMN);
+        if ($streakRows) {
+            $today = new DateTimeImmutable('today');
+            $first = new DateTimeImmutable($streakRows[0]);
+            if ((int)$today->diff($first)->days <= 1) {
+                $streakDays = 1;
+                $cursor = $first;
+                for ($i = 1; $i < count($streakRows); $i++) {
+                    $day = new DateTimeImmutable($streakRows[$i]);
+                    if ((int)$cursor->diff($day)->days === 1) {
+                        $streakDays++;
+                        $cursor = $day;
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+
         $currentRank = $latestRankRow && $latestRankRow['central_rank'] ? intval($latestRankRow['central_rank']) : 0;
         $bestRank = $bestRankVal ? intval($bestRankVal) : ($currentRank > 0 ? $currentRank : 0);
         $percentile = $latestRankRow && $latestRankRow['percentile'] !== null ? floatval($latestRankRow['percentile']) : 0.0;
@@ -414,7 +456,7 @@ Generate 4 questions now:";
             'passport_id'            => 'EXAMVERSE-PASS-' . str_pad($userId, 6, '0', STR_PAD_LEFT),
             'current_rank'           => $currentRank,
             'rank'                   => $currentRank,
-            'previous_rank'          => $currentRank > 0 ? $currentRank + 3 : 0,
+            'previous_rank'          => $previousRank,
             'best_rank'              => $bestRank,
             'percentile'             => $percentile,
             'total_questions_solved' => $totalSolved,
@@ -422,7 +464,7 @@ Generate 4 questions now:";
             'incorrect_answers'      => $totalWrong,
             'accuracy'               => $accuracy,
             'test_count'             => $testsTaken,
-            'streak_days'            => 5,
+            'streak_days'            => $streakDays,
             'xp_points'              => $xpPoints,
             'entries'                => $passportEntries,
             'recent_attempts'        => $recentAttempts,

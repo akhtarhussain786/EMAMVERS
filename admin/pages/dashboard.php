@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/page_guard.php';
 require_once __DIR__ . '/../../api/config/db.php';
 $db = Database::getConnection();
 
@@ -8,6 +9,7 @@ $activeTeachers = 0;
 $totalQuestions = 0;
 $approvedQuestions = 0;
 $pendingQuestions = 0;
+$draftQuestions = 0;
 $rejectedQuestions = 0;
 $totalTopics = 0;
 
@@ -30,13 +32,20 @@ $verifiedTeachersCount = 0;
 try { $totalStudents = (int)$db->query("SELECT COUNT(*) FROM users WHERE user_type = 'student' OR user_type IS NULL")->fetchColumn(); } catch (Exception $e) {}
 try { $activeTeachers = (int)$db->query("SELECT COUNT(*) FROM users WHERE user_type = 'teacher'")->fetchColumn(); } catch (Exception $e) {}
 try { $totalQuestions = (int)$db->query("SELECT COUNT(*) FROM questions")->fetchColumn(); } catch (Exception $e) {}
-try { $approvedQuestions = (int)$db->query("SELECT COUNT(*) FROM questions WHERE status IN ('approved', 'published')")->fetchColumn(); } catch (Exception $e) {}
-try { $pendingQuestions = (int)$db->query("SELECT COUNT(*) FROM questions WHERE status = 'pending_review' OR status = 'draft'")->fetchColumn(); } catch (Exception $e) {}
+// 'approved' is not a status in this schema; published is the live state.
+try { $approvedQuestions = (int)$db->query("SELECT COUNT(*) FROM questions WHERE status = 'published'")->fetchColumn(); } catch (Exception $e) {}
+// questions.status is enum('draft','review','published','rejected'). This asked
+// for 'pending_review', which is not one of them, so the Pending Review card
+// read zero while questions sat in the queue waiting for an admin.
+try { $pendingQuestions = (int)$db->query("SELECT COUNT(*) FROM questions WHERE status = 'review'")->fetchColumn(); } catch (Exception $e) {}
+try { $draftQuestions = (int)$db->query("SELECT COUNT(*) FROM questions WHERE status = 'draft'")->fetchColumn(); } catch (Exception $e) {}
 try { $rejectedQuestions = (int)$db->query("SELECT COUNT(*) FROM questions WHERE status = 'rejected'")->fetchColumn(); } catch (Exception $e) {}
 try { $totalTopics = (int)$db->query("SELECT COUNT(DISTINCT topic_id) FROM questions WHERE topic_id IS NOT NULL")->fetchColumn(); } catch (Exception $e) {}
 
 // Duplicates & Flags
-try { $exactDuplicates = (int)$db->query("SELECT COUNT(*) FROM question_duplicate_candidates WHERE match_method = 'exact_hash' OR status = 'pending'")->fetchColumn(); } catch (Exception $e) {}
+// The OR here counted every pending candidate as an exact-hash match, so the
+// two duplicate figures overlapped and their total over-reported.
+try { $exactDuplicates = (int)$db->query("SELECT COUNT(*) FROM question_duplicate_candidates WHERE match_method = 'exact_hash'")->fetchColumn(); } catch (Exception $e) {}
 try { $nearDuplicates = (int)$db->query("SELECT COUNT(*) FROM question_duplicate_candidates WHERE match_method = 'structure_hash'")->fetchColumn(); } catch (Exception $e) {}
 try { $answerConflicts = (int)$db->query("SELECT COUNT(*) FROM question_reports WHERE report_reason = 'wrong_answer'")->fetchColumn(); } catch (Exception $e) {}
 try { $languageVariants = (int)$db->query("SELECT COUNT(*) FROM question_translations WHERE language != 'en'")->fetchColumn(); } catch (Exception $e) {}

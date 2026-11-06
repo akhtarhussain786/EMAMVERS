@@ -25,11 +25,35 @@ class PremiumNavBar extends StatelessWidget {
     required this.items,
   });
 
+  /// Height of the bar itself: 22px icon + 8px padding each side inside the
+  /// pill, plus 10px each side inside the container.
+  static const double barHeight = 58;
+
+  /// Gap between the bar and the bottom edge of the safe area.
+  static const double bottomGap = 16;
+
+  /// Vertical space the floating bar occupies at the bottom of the screen,
+  /// including the device's own gesture or navigation-bar inset.
+  ///
+  /// The shell sets extendBody, so tab content is drawn behind this bar. A
+  /// scrollable tab has to add this much bottom padding or its last row sits
+  /// underneath the bar and cannot be read or tapped.
+  static double spaceFor(BuildContext context) =>
+      barHeight + bottomGap + MediaQuery.viewPaddingOf(context).bottom;
+
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      // The gesture bar / navigation bar inset has to be added here: with a
+      // fixed 16px margin the pill sat inside the system gesture area on
+      // devices that draw edge to edge, which is every device from Android 15.
+      margin: EdgeInsets.fromLTRB(
+        16,
+        0,
+        16,
+        bottomGap + MediaQuery.viewPaddingOf(context).bottom,
+      ),
       decoration: BoxDecoration(
         color: AppConstants.cardDark.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(24),
@@ -89,6 +113,7 @@ class PremiumNavBar extends StatelessWidget {
           );
         }),
       ),
-    );
-  }
+    ),
+  );
+}
 }

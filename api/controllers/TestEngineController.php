@@ -9,6 +9,7 @@ class TestEngineController {
         $db = Database::getConnection();
         $stmt = $db->prepare("
             SELECT t.id, t.title, t.instructions, t.test_type, t.is_paid, t.price,
+                   t.exam_id, t.is_randomised,
                    ep.id as pattern_id, ep.name as pattern_name, ep.timer_mode, ep.total_duration_seconds, 
                    ep.total_questions, ep.total_marks, ep.default_positive_marks, ep.default_negative_marks,
                    ep.navigation_policy, ep.languages, e.title as exam_title
@@ -24,13 +25,89 @@ class TestEngineController {
 
         // Fetch section breakdown
         $stmtSections = $db->prepare("
-            SELECT ps.id, ps.section_name, ps.question_count, ps.positive_marks, ps.negative_marks, ps.duration_seconds
+            SELECT ps.id, ps.section_name, ps.subject_id, ps.question_count, ps.positive_marks, ps.negative_marks, ps.duration_seconds
             FROM pattern_sections ps
             WHERE ps.pattern_id = :pattern_id
             ORDER BY ps.sort_order ASC
         ");
         $stmtSections->execute(['pattern_id' => $test['pattern_id']]);
-        $test['sections'] = $stmtSections->fetchAll();
+        $sections = $stmtSections->fetchAll();
+
+        // total_questions and total_marks came straight off the pattern, which
+        // states what the paper is designed to be, not what it contains. A
+        // pattern asking for 100 questions over a bank holding 17 produced an
+        // instructions screen promising 100 and a paper of 17. Report the size
+        // the candidate will actually sit, and keep the pattern's figures under
+        // their own keys so the design intent is still visible.
+        $test['pattern_total_questions'] = intval($test['total_questions']);
+        $test['pattern_total_marks']     = floatval($test['total_marks']);
+
+        if (intval($test['is_randomised']) === 1) {
+            // A randomised paper is drawn per attempt, so its size is bounded
+            // by what the bank can supply for each section.
+            $availStmt = $db->prepare("
+                SELECT COUNT(*)
+                FROM questions q
+                JOIN question_exams qe ON qe.question_id = q.id
+                WHERE qe.exam_id = :exam_id
+                  AND q.status = 'published'
+                  AND (:subject_id IS NULL OR q.subject_id = :subject_id2)
+                  AND EXISTS (
+                      SELECT 1 FROM question_options o
+                      WHERE o.question_id = q.id AND o.is_correct = 1
+                  )
+            ");
+
+            $realQuestions = 0;
+            $realMarks     = 0.0;
+            foreach ($sections as &$sec) {
+                $subjectId = $sec['subject_id'] !== null ? intval($sec['subject_id']) : null;
+                $availStmt->execute([
+                    'exam_id'     => $test['exam_id'],
+                    'subject_id'  => $subjectId,
+                    'subject_id2' => $subjectId,
+                ]);
+                $available = intval($availStmt->fetchColumn());
+                $wanted    = intval($sec['question_count']);
+                $actual    = $wanted > 0 ? min($wanted, $available) : $available;
+
+                $sec['planned_question_count'] = $wanted;
+                $sec['question_count']         = $actual;
+                $realQuestions += $actual;
+                $realMarks     += $actual * floatval($sec['positive_marks']);
+            }
+            unset($sec);
+
+            if (!$sections) {
+                // No sections defined: the whole bank for this exam is the pool.
+                $availStmt->execute([
+                    'exam_id' => $test['exam_id'], 'subject_id' => null, 'subject_id2' => null,
+                ]);
+                $available     = intval($availStmt->fetchColumn());
+                $realQuestions = min(intval($test['total_questions']) ?: $available, $available);
+                $realMarks     = $realQuestions * floatval($test['default_positive_marks']);
+            }
+
+            $test['total_questions'] = $realQuestions;
+            $test['total_marks']     = round($realMarks, 2);
+        } else {
+            // A fixed paper is exactly the questions attached to it.
+            $fixedStmt = $db->prepare("
+                SELECT COUNT(*) AS cnt, COALESCE(SUM(positive_marks), 0) AS marks
+                FROM test_questions WHERE test_id = ?
+            ");
+            $fixedStmt->execute([$testId]);
+            $fixed = $fixedStmt->fetch(PDO::FETCH_ASSOC) ?: ['cnt' => 0, 'marks' => 0];
+            $test['total_questions'] = intval($fixed['cnt']);
+            $test['total_marks']     = round(floatval($fixed['marks']), 2);
+        }
+
+        // True when the paper cannot be filled to the pattern's design, so the
+        // screen can say so rather than quietly showing a smaller number.
+        $test['is_short_of_pattern'] =
+            intval($test['total_questions']) < intval($test['pattern_total_questions']);
+
+        $test['sections'] = $sections;
 
         Response::json($test, 'Test instructions loaded successfully');
     }
@@ -513,11 +590,20 @@ class TestEngineController {
         $attemptedTotal = $correctCount + $wrongCount;
         $accuracy = $attemptedTotal > 0 ? round(($correctCount / $attemptedTotal) * 100, 2) : 0.00;
 
+        // What this paper was out of. Stored because raw marks mean nothing on
+        // their own: every ranking and scorecard needs the denominator, and a
+        // randomised attempt's paper is unique to it.
+        $maxScore = 0.0;
+        foreach ($testQuestions as $tq) {
+            $maxScore += floatval($tq['positive_marks']);
+        }
+
         // 5. Finalise the attempt first, then derive ranks dynamically across the cohort.
         $stmtFinal = $db->prepare("
             UPDATE test_attempts
             SET status = 'evaluated',
                 score = :score,
+                max_score = :max_score,
                 accuracy_percentage = :accuracy,
                 total_time_spent_seconds = :time_spent,
                 correct_count = :correct,
@@ -528,6 +614,7 @@ class TestEngineController {
         ");
         $stmtFinal->execute([
             'score' => $totalScore,
+            'max_score' => $maxScore,
             'accuracy' => $accuracy,
             'time_spent' => $totalTimeSpent,
             'correct' => $correctCount,
@@ -620,6 +707,12 @@ class TestEngineController {
     /**
      * Recomputes Central Rank, State Rank and Percentile across ALL candidates
      * who have evaluated attempts for a given test.
+     *
+     * A leaderboard ranks *candidates*, not attempts: a student who sits the
+     * same test five times occupies one position, earned by their best attempt.
+     * The resulting candidate rank is written to every attempt that student has
+     * on this test, so "my rank in this test" reads the same from any of them.
+     *
      * Tie-breaking standard:
      * 1. Higher Score DESC
      * 2. Higher Accuracy DESC
@@ -630,18 +723,37 @@ class TestEngineController {
     public static function recomputeRanksForTest($db, $testId) {
         if (!$testId) return;
 
+        // Ordered by share of the paper scored, not raw marks: a randomised
+        // test hands each candidate a differently sized paper, so raw totals
+        // would rank the longer paper above the better performance.
         $stmt = $db->prepare("
             SELECT att.id, att.user_id, att.score, att.accuracy_percentage, att.total_time_spent_seconds, u.state_id
             FROM test_attempts att
             JOIN users u ON att.user_id = u.id
             WHERE att.test_id = :test_id AND att.status = 'evaluated'
-            ORDER BY att.score DESC, att.accuracy_percentage DESC, att.total_time_spent_seconds ASC, att.submitted_at ASC, att.id ASC
+            ORDER BY (att.score / NULLIF(att.max_score, 0)) DESC,
+                     att.max_score DESC,
+                     att.accuracy_percentage DESC,
+                     att.total_time_spent_seconds ASC,
+                     att.submitted_at ASC,
+                     att.id ASC
         ");
         $stmt->execute(['test_id' => $testId]);
         $attempts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $totalCount = count($attempts);
-        if ($totalCount === 0) return;
+        if (!$attempts) return;
+
+        // Collapse to one entry per candidate. $attempts is already in
+        // tie-break order, so the first row seen for a user is their best.
+        $bestByUser = [];
+        $attemptsByUser = [];
+        foreach ($attempts as $att) {
+            $uid = intval($att['user_id']);
+            if (!isset($bestByUser[$uid])) $bestByUser[$uid] = $att;
+            $attemptsByUser[$uid][] = $att['id'];
+        }
+
+        $totalCount = count($bestByUser);
 
         $stateCounters = [];
         $updateStmt = $db->prepare("
@@ -650,8 +762,9 @@ class TestEngineController {
             WHERE id = :id
         ");
 
-        foreach ($attempts as $idx => $att) {
-            $centralRank = $idx + 1;
+        $position = 0;
+        foreach ($bestByUser as $uid => $att) {
+            $centralRank = ++$position;
             $sid = $att['state_id'];
             $stateRank = null;
             if ($sid) {
@@ -662,17 +775,20 @@ class TestEngineController {
                 $stateRank = $stateCounters[$sid];
             }
 
-            // Percentile: Share of the cohort this candidate outperformed or equaled
+            // Percentile: share of the cohort this candidate outperformed or equalled.
             $percentile = $totalCount > 1
                 ? round((($totalCount - $centralRank) / ($totalCount - 1)) * 100, 2)
                 : 100.00;
 
-            $updateStmt->execute([
-                'c' => $centralRank,
-                's' => $stateRank,
-                'p' => $percentile,
-                'id' => $att['id']
-            ]);
+            // Stamp the candidate's standing onto every attempt they hold here.
+            foreach ($attemptsByUser[$uid] as $attemptRowId) {
+                $updateStmt->execute([
+                    'c' => $centralRank,
+                    's' => $stateRank,
+                    'p' => $percentile,
+                    'id' => $attemptRowId
+                ]);
+            }
         }
     }
 

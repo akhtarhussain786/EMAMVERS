@@ -4,6 +4,7 @@ import '../../core/api_service.dart';
 import '../../widgets/premium_cards.dart';
 import '../../widgets/design_system_widgets.dart';
 import '../../widgets/skeleton_loader.dart';
+import '../../widgets/premium_nav_bar.dart';
 
 class AiCoachView extends StatefulWidget {
   const AiCoachView({super.key});
@@ -73,7 +74,22 @@ class _AiCoachViewState extends State<AiCoachView> {
       setState(() {
         simulatedStrategies = (res is Map ? res['simulated_strategies'] : null) as List? ?? [];
       });
-    } catch (_) {}
+      if (simulatedStrategies.isEmpty) {
+        final note = (res is Map ? res['message'] : null)?.toString();
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(note?.isNotEmpty == true
+              ? note!
+              : 'Sit a full mock test and your strategy projections will appear here.'),
+        ));
+      }
+    } catch (e) {
+      // Swallowing this left the button doing nothing at all on failure.
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Could not run the simulation: $e'),
+        backgroundColor: AppConstants.accentRose,
+      ));
+    }
   }
 
   @override
@@ -135,11 +151,12 @@ class _AiCoachViewState extends State<AiCoachView> {
       backgroundColor: AppConstants.primaryDark,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
+          padding: EdgeInsets.fromLTRB(
             AppConstants.space20,
             AppConstants.space20,
             AppConstants.space20,
-            100, // Bottom padding for floating nav bar
+            // Clears the floating nav bar, gesture inset included.
+            PremiumNavBar.spaceFor(context),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,7 +184,7 @@ class _AiCoachViewState extends State<AiCoachView> {
                             children: [
                               Text(
                                 'AI Exam Twin',
-                                style: TextStyle(color: AppConstants.onAccent, fontSize: 18, fontWeight: FontWeight.w800),
+                                style: TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.w800),
                                 overflow: TextOverflow.ellipsis,
                               ),
                               SizedBox(height: 2),
@@ -217,17 +234,26 @@ class _AiCoachViewState extends State<AiCoachView> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'PREPARATION READINESS GAUGE',
-                          style: TextStyle(color: AppConstants.onAccent, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.6),
+                        const Expanded(
+                          child: Text(
+                            'PREPARATION READINESS GAUGE',
+                            style: TextStyle(color: AppConstants.textSecondary, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.6),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: AppConstants.accentEmerald.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Text('Top 4% Aspirants', style: TextStyle(color: AppConstants.accentEmerald, fontSize: 11, fontWeight: FontWeight.bold)),
+                          // Was a fixed "Top 4% Aspirants" shown to everyone.
+                          // No cohort percentile is computed for the twin, so
+                          // the badge now reports the readiness the gauge is
+                          // actually displaying.
+                          child: Text('${readiness.toStringAsFixed(0)}% ready',
+                              style: const TextStyle(color: AppConstants.accentEmerald, fontSize: 11, fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),

@@ -26,6 +26,12 @@ class _MapLearningHomeViewState extends State<MapLearningHomeView> {
     _loadData();
   }
 
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
   void _loadData() async {
     setState(() => isLoading = true);
     try {

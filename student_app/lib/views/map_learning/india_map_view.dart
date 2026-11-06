@@ -76,10 +76,11 @@ class _IndiaMapViewState extends State<IndiaMapView> {
       backgroundColor: AppConstants.primaryDark,
       appBar: AppBar(
         backgroundColor: AppConstants.scaffoldDark,
-        title: const Text('Interactive Map Learning', style: TextStyle(color: AppConstants.onAccent, fontSize: 18, fontWeight: FontWeight.bold)),
+        title: const Text('Interactive Map Learning', style: TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
         elevation: 0,
       ),
-      body: Stack(
+      body: SafeArea(
+        child: Stack(
         children: [
           // INTERACTIVE MAP CANVAS
           Positioned.fill(
@@ -178,9 +179,9 @@ class _IndiaMapViewState extends State<IndiaMapView> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(selectedLocation!.name, style: const TextStyle(color: AppConstants.onAccent, fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text(selectedLocation!.name, style: const TextStyle(color: AppConstants.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
                         IconButton(
-                          icon: const Icon(Icons.close, color: AppConstants.onAccent, size: 18),
+                          icon: const Icon(Icons.close, color: AppConstants.textPrimary, size: 18),
                           onPressed: () => setState(() => selectedLocation = null),
                         ),
                       ],
@@ -205,6 +206,7 @@ class _IndiaMapViewState extends State<IndiaMapView> {
             ),
         ],
       ),
-    );
+    ),
+  );
   }
 }

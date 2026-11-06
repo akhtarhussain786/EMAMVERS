@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'core/api_service.dart';
 import 'core/constants.dart';
@@ -25,9 +26,22 @@ import 'views/teacher/teacher_documents_view.dart';
 import 'views/map_learning/map_learning_home_view.dart';
 import 'views/notebook/mistake_notebook_view.dart';
 import 'views/practice/build_practice_view.dart';
+import 'views/discovery/question_bank_view.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // From Android 15 the system draws edge to edge and will not tint the bars
+  // for us. The app is on a white surface, so the status and navigation icons
+  // have to be asked for in dark, or they render white on white and vanish.
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarIconBrightness: Brightness.dark,
+    systemNavigationBarDividerColor: Colors.transparent,
+  ));
   // Resume a stored session so "Remember me" survives an app restart.
   final hasSession = await ApiService.restoreSession();
   final prefs = await SharedPreferences.getInstance();
@@ -139,6 +153,7 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
         '/teacher-documents': (_) => const TeacherDocumentsView(),
         '/map-learning': (_) => const MapLearningHomeView(),
         '/mistake-notebook': (_) => const MistakeNotebookView(),
+        '/question-bank': (_) => const StudentQuestionBankView(),
       },
       home: !isAuthenticated
           ? (!hasSeenOnboarding
@@ -271,7 +286,7 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
         }),
         items: const [
           PremiumNavBarItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
-          PremiumNavBarItem(icon: Icons.storefront_outlined, activeIcon: Icons.storefront, label: 'Market'),
+          PremiumNavBarItem(icon: Icons.menu_book_outlined, activeIcon: Icons.menu_book_rounded, label: 'Study Store'),
           PremiumNavBarItem(icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome, label: 'AI Twin'),
           PremiumNavBarItem(icon: Icons.leaderboard_outlined, activeIcon: Icons.leaderboard_rounded, label: 'Ranks'),
           PremiumNavBarItem(icon: Icons.person_outline, activeIcon: Icons.person_rounded, label: 'Passport'),

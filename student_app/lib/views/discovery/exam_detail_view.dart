@@ -60,9 +60,11 @@ class _ExamDetailViewState extends State<ExamDetailView> {
           leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppConstants.textPrimary), onPressed: widget.onBack),
           title: const Text('Exam Details', style: TextStyle(color: AppConstants.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
         ),
-        body: const Padding(
-          padding: EdgeInsets.all(AppConstants.space20),
-          child: SkeletonListLoader(count: 4, itemHeight: 120),
+        body: SafeArea(
+          child: const Padding(
+            padding: EdgeInsets.all(AppConstants.space20),
+            child: SkeletonListLoader(count: 4, itemHeight: 120),
+          ),
         ),
       );
     }
@@ -141,7 +143,7 @@ class _ExamDetailViewState extends State<ExamDetailView> {
                   children: [
                     Expanded(child: _patternMetric('Duration', '${(pattern!['total_duration_seconds'] / 60).round()}m')),
                     Container(width: 1, height: 28, color: AppConstants.cardBorder),
-                    Expanded(child: _patternMetric('Questions', '${pattern!['total_questions']} Qs')),
+                    Expanded(child: _patternMetric('Pattern Qs', '${pattern!['total_questions']} Qs')),
                     Container(width: 1, height: 28, color: AppConstants.cardBorder),
                     Expanded(child: _patternMetric('Marks', '${pattern!['total_marks']}')),
                     Container(width: 1, height: 28, color: AppConstants.cardBorder),
@@ -162,17 +164,47 @@ class _ExamDetailViewState extends State<ExamDetailView> {
               separatorBuilder: (_, _) => const SizedBox(height: 12),
               itemBuilder: (context, i) {
                 final test = tests[i];
-                return TestCard(
-                  title: test.title,
-                  category: exam?['title'] ?? 'MOCK TEST',
-                  totalQuestions: test.totalQuestions ?? 0,
-                  totalMarks: (test.totalQuestions ?? 0) * 2,
-                  durationMinutes: test.totalDurationSeconds != null ? (test.totalDurationSeconds! / 60).round() : 60,
-                  // Real evaluated-attempt count from the API.
-                  totalAttempts: test.totalAttempts,
-                  difficulty: test.testType.replaceAll('_', ' '),
-                  isFree: !test.isPaid,
-                  onTapStart: () => widget.onStartTest(test.id),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Opacity(
+                      opacity: test.isPlayable ? 1.0 : 0.55,
+                      child: TestCard(
+                        title: test.title,
+                        category: exam?['title'] ?? 'MOCK TEST',
+                        totalQuestions: test.totalQuestions ?? 0,
+                        // The marks the paper actually carries. This was
+                        // questions x 2, which invented a total whenever the
+                        // marking scheme was anything else.
+                        totalMarks: (test.totalMarks ?? 0).round(),
+                        durationMinutes: test.totalDurationSeconds != null ? (test.totalDurationSeconds! / 60).round() : 60,
+                        // Real evaluated-attempt count from the API.
+                        totalAttempts: test.totalAttempts,
+                        difficulty: test.testType.replaceAll('_', ' '),
+                        isFree: !test.isPaid,
+                        onTapStart: test.isPlayable
+                            ? () => widget.onStartTest(test.id)
+                            : () => ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('No questions have been published for this test yet.'),
+                                  ),
+                                ),
+                      ),
+                    ),
+                    // The counts above are the paper the candidate will sit. If
+                    // the bank cannot fill the exam pattern, say so here rather
+                    // than advertising the pattern's figure and serving fewer.
+                    if (test.isShortOfPattern && test.patternTotalQuestions != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6, left: 4, right: 4),
+                        child: Text(
+                          test.isPlayable
+                              ? 'Showing ${test.totalQuestions} of ${test.patternTotalQuestions} questions in the full pattern — more are still being added.'
+                              : 'Questions for this test are still being added.',
+                          style: const TextStyle(color: AppConstants.textMuted, fontSize: 11.5, height: 1.3),
+                        ),
+                      ),
+                  ],
                 );
               },
             ),

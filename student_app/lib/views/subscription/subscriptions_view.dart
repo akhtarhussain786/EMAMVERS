@@ -259,6 +259,10 @@ class _SubscriptionsViewState extends State<SubscriptionsView> {
       setState(() => _isProcessingPayment = false);
 
       final paymentCompleted = await _openCashfreePaymentSheet(orderRes, plan);
+      // The candidate can leave while the sheet is open, so every setState
+      // past this point needs the guard; without it, backing out of payment
+      // threw setState() called after dispose().
+      if (!mounted) return;
 
       if (paymentCompleted == true) {
         // 3. Verify Payment
@@ -269,8 +273,8 @@ class _SubscriptionsViewState extends State<SubscriptionsView> {
           'payment_method': _selectedPaymentMethod,
         });
 
-        setState(() => _isProcessingPayment = false);
         if (!mounted) return;
+        setState(() => _isProcessingPayment = false);
         _showSuccessDialog(planName, verifyRes?['expiry_date'], verifyRes?['receipt_no'], orderId);
       }
     } catch (e) {
@@ -487,56 +491,58 @@ class _SubscriptionsViewState extends State<SubscriptionsView> {
         title: const Text('ExamVerse Pro Passes',
             style: TextStyle(color: AppConstants.textPrimary, fontSize: 17, fontWeight: FontWeight.bold)),
       ),
-      body: _isLoading
-          ? const Padding(
-              padding: EdgeInsets.all(AppConstants.space20),
-              child: SkeletonListLoader(count: 3, itemHeight: 140),
-            )
-          : _error != null
-              ? Center(
-                  child: EmptyStateWidget(
-                    icon: Icons.cloud_off,
-                    title: 'Could not load subscription plans',
-                    description: _error!,
-                    buttonLabel: 'Try Again',
-                    onButtonPressed: _loadPlans,
+      body: SafeArea(
+        child: _isLoading
+            ? const Padding(
+                padding: EdgeInsets.all(AppConstants.space20),
+                child: SkeletonListLoader(count: 3, itemHeight: 140),
+              )
+            : _error != null
+                ? Center(
+                    child: EmptyStateWidget(
+                      icon: Icons.cloud_off,
+                      title: 'Could not load subscription plans',
+                      description: _error!,
+                      buttonLabel: 'Try Again',
+                      onButtonPressed: _loadPlans,
+                    ),
+                  )
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.all(AppConstants.space20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Active Status Banner
+                        _buildActiveStatusBanner(),
+                        const SizedBox(height: AppConstants.space24),
+
+                        // Feature Checklist
+                        const Text('WHAT YOU UNLOCK WITH PRO',
+                            style: TextStyle(
+                                color: AppConstants.textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5)),
+                        const SizedBox(height: AppConstants.space12),
+                        _buildFeaturesGrid(),
+                        const SizedBox(height: 28),
+
+                        // Subscription Plans Cards
+                        const Text('CHOOSE YOUR MEMBERSHIP PLAN',
+                            style: TextStyle(
+                                color: AppConstants.textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5)),
+                        const SizedBox(height: AppConstants.space12),
+
+                        ..._plans.map((plan) => _buildPlanCard(plan)),
+
+                        const SizedBox(height: 30),
+                      ],
+                    ),
                   ),
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(AppConstants.space20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Active Status Banner
-                      _buildActiveStatusBanner(),
-                      const SizedBox(height: AppConstants.space24),
-
-                      // Feature Checklist
-                      const Text('WHAT YOU UNLOCK WITH PRO',
-                          style: TextStyle(
-                              color: AppConstants.textPrimary,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5)),
-                      const SizedBox(height: AppConstants.space12),
-                      _buildFeaturesGrid(),
-                      const SizedBox(height: 28),
-
-                      // Subscription Plans Cards
-                      const Text('CHOOSE YOUR MEMBERSHIP PLAN',
-                          style: TextStyle(
-                              color: AppConstants.textPrimary,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5)),
-                      const SizedBox(height: AppConstants.space12),
-
-                      ..._plans.map((plan) => _buildPlanCard(plan)),
-
-                      const SizedBox(height: 30),
-                    ],
-                  ),
-                ),
+      ),
     );
   }
 

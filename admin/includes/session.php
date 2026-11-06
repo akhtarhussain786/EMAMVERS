@@ -38,6 +38,18 @@ function adminIsLoggedIn(): bool {
     return isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true;
 }
 
+/**
+ * Id of the signed-in admin, or null when there is no admin session.
+ *
+ * admin/ajax/settings.php called this for its audit trail while it was never
+ * defined anywhere, so every action on that endpoint — saving SMS, payment and
+ * general settings included — died with an undefined-function fatal.
+ */
+function adminCurrentUserId(): ?int {
+    $id = $_SESSION['admin_user']['id'] ?? null;
+    return $id !== null ? intval($id) : null;
+}
+
 /** Current CSRF token, generated on first use. */
 function adminCsrfToken(): string {
     if (empty($_SESSION['admin_csrf'])) {

@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/page_guard.php';
 require_once __DIR__ . '/../../api/config/db.php';
 $db = Database::getConnection();
 
@@ -9,6 +10,10 @@ $messageType = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = trim($_POST['action'] ?? '');
 
+    if (!adminCsrfValid($_POST['csrf_token'] ?? null)) {
+        $message = 'Security validation failed (CSRF token missing or expired). Please reload and try again.';
+        $messageType = 'error';
+    } else {
     if ($action === 'toggle_status' && isset($_POST['user_id'])) {
         $userId = intval($_POST['user_id']);
         $newStatus = trim($_POST['new_status'] ?? '');
@@ -56,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = count($ids) . " candidates updated to " . ucfirst($newStatus) . " status.";
             $messageType = "success";
         }
+    }
     }
 }
 
@@ -201,6 +207,7 @@ $plansList = $db->query("SELECT id, name, duration_days, price FROM subscription
     <!-- Candidate Table Card with Bulk Action Support -->
     <div class="table-card" style="background: #ffffff; border-radius: 12px; border: 1px solid var(--border-color, #e2e8f0); box-shadow: var(--shadow-sm); overflow: hidden;">
         <form id="bulkForm" method="post" action="index.php?page=users">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(adminCsrfToken(), ENT_QUOTES); ?>">
             <input type="hidden" name="action" id="bulkActionInput" value="">
             <input type="hidden" name="new_status" id="bulkStatusInput" value="">
 
@@ -358,6 +365,7 @@ $plansList = $db->query("SELECT id, name, duration_days, price FROM subscription
 
 <!-- Single Action Hidden Form -->
 <form id="singleActionForm" method="post" action="index.php?page=users" style="display:none;">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(adminCsrfToken(), ENT_QUOTES); ?>">
     <input type="hidden" name="action" id="singleActionInput" value="">
     <input type="hidden" name="user_id" id="singleUserIdInput" value="">
     <input type="hidden" name="new_status" id="singleNewStatusInput" value="">

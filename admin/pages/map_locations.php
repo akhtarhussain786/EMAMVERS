@@ -1,10 +1,18 @@
 <?php
+require_once __DIR__ . '/../includes/page_guard.php';
 require_once __DIR__ . '/../../api/config/db.php';
 $db = Database::getConnection();
 
 // Handle add location form submit
 $message = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_location') {
+// A state-changing POST must carry this admin's CSRF token, so a logged-in
+// admin cannot be made to submit this form by another site.
+$csrfFailed = false;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !adminCsrfValid($_POST['csrf_token'] ?? null)) {
+    $csrfFailed = true;
+    $message = 'Security validation failed (CSRF token missing or expired). Please reload the page and try again.';
+}
+if (!$csrfFailed && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_location') {
     $name = trim($_POST['name']);
     $category_id = intval($_POST['category_id']);
     $state = trim($_POST['state']);
@@ -52,6 +60,7 @@ $categories = $db->query("SELECT * FROM map_categories ORDER BY name ASC")->fetc
         <div class="table-title">Add New Map Learning Location</div>
     </div>
     <form method="POST" action="" style="padding: 20px;">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(adminCsrfToken(), ENT_QUOTES); ?>">
         <input type="hidden" name="action" value="add_location">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
             <div>

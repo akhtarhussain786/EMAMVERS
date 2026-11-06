@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 class AppConstants {
@@ -14,6 +15,13 @@ class AppConstants {
   static String get apiBaseUrl {
     const envUrl = String.fromEnvironment('API_BASE_URL');
     if (envUrl.isNotEmpty) return envUrl;
+
+    // Default to live staging server unless explicitly requested local
+    const useLocal = bool.fromEnvironment('USE_LOCAL', defaultValue: false);
+    if (useLocal) {
+      if (kIsWeb) return 'http://localhost/EXAMVERSE/api';
+      return 'http://$hostLanIp/EXAMVERSE/api';
+    }
 
     return stagingBaseUrl;
   }

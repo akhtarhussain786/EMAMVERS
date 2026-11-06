@@ -176,12 +176,14 @@ class _MapQuizViewState extends State<MapQuizView> {
       return Scaffold(
         backgroundColor: AppConstants.primaryDark,
         appBar: AppBar(backgroundColor: AppConstants.scaffoldDark, title: const Text('Map Quiz Mode')),
-        body: EmptyStateWidget(
-          icon: loadError != null ? Icons.cloud_off : Icons.map,
-          title: loadError != null ? 'Could not load the quiz' : 'No Map Questions Available',
-          description: loadError ?? 'No map locations have been published yet.',
-          buttonLabel: loadError != null ? 'Try again' : null,
-          onButtonPressed: loadError != null ? _loadQuiz : null,
+        body: SafeArea(
+          child: EmptyStateWidget(
+            icon: loadError != null ? Icons.cloud_off : Icons.map,
+            title: loadError != null ? 'Could not load the quiz' : 'No Map Questions Available',
+            description: loadError ?? 'No map locations have been published yet.',
+            buttonLabel: loadError != null ? 'Try again' : null,
+            onButtonPressed: loadError != null ? _loadQuiz : null,
+          ),
         ),
       );
     }

@@ -103,7 +103,7 @@ class ReadinessCard extends StatelessWidget {
                           width: 80,
                           height: 80,
                           child: CircularProgressIndicator(
-                            value: score / 100.0,
+                            value: (score / 100.0).clamp(0.0, 1.0),
                             strokeWidth: 8,
                             backgroundColor: AppConstants.onAccent.withValues(alpha: 0.15),
                             valueColor: const AlwaysStoppedAnimation<Color>(AppConstants.onAccent),
@@ -201,7 +201,11 @@ class AiMissionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double progress = completedCount / totalCount;
+    // A mission with no items made this NaN, and LinearProgressIndicator
+    // asserts on a value outside 0..1. Clamped so an empty or over-long
+    // mission still renders.
+    final double progress =
+        totalCount > 0 ? (completedCount / totalCount).clamp(0.0, 1.0) : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(AppConstants.space20),
@@ -418,7 +422,7 @@ class AiInsightCard extends StatelessWidget {
           Text(
             title,
             style: const TextStyle(
-              color: AppConstants.onAccent,
+              color: AppConstants.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.w800,
             ),

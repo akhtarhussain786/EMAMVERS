@@ -50,6 +50,8 @@ class _FriendsLeaderboardViewState extends State<FriendsLeaderboardView> {
   void _syncContactsModal() {
     showModalBottomSheet(
       context: context,
+      // Keeps the sheet's own content clear of the gesture bar.
+      useSafeArea: true,
       backgroundColor: AppConstants.cardDark,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(

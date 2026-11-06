@@ -45,3 +45,42 @@ $initial = strtoupper(substr($adminUser['full_name'] ?? 'A', 0, 1));
         </div>
     </div>
 </header>
+
+<script>
+/*
+ * CSRF token for admin AJAX.
+ *
+ * admin/ajax/_guard.php rejects any non-read-only action without a token, but
+ * several pages (AI generator, creators, marketplace, question bank, question
+ * review) called those endpoints with no token at all, so every button on them
+ * answered 403. Rather than thread the token through two dozen call sites, the
+ * header is attached here to requests aimed at admin/ajax/ — and only those,
+ * so calls to the public API or to third parties are left untouched.
+ */
+window.ADMIN_CSRF_TOKEN = '<?php echo htmlspecialchars(adminCsrfToken(), ENT_QUOTES); ?>';
+(function () {
+    const nativeFetch = window.fetch.bind(window);
+    const isAdminAjax = (url) => {
+        try {
+            return new URL(url, window.location.href).pathname.includes('/admin/ajax/');
+        } catch (e) {
+            return false;
+        }
+    };
+
+    window.fetch = function (resource, init) {
+        const url = (typeof resource === 'string') ? resource
+                  : (resource && resource.url) ? resource.url : '';
+        if (!isAdminAjax(url)) {
+            return nativeFetch(resource, init);
+        }
+        const options = Object.assign({}, init || {});
+        const headers = new Headers(options.headers || {});
+        if (!headers.has('X-CSRF-Token')) {
+            headers.set('X-CSRF-Token', window.ADMIN_CSRF_TOKEN);
+        }
+        options.headers = headers;
+        return nativeFetch(resource, options);
+    };
+})();
+</script>

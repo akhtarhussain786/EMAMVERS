@@ -65,6 +65,16 @@ class TestItem {
   final int? totalDurationSeconds;
   final int totalAttempts;
 
+  /// False when no questions are attached or drawable, so the paper cannot be
+  /// sat at all; the list greys it out rather than opening an empty test.
+  final bool isPlayable;
+
+  /// True when the bank cannot fill the paper to the exam pattern's design.
+  final bool isShortOfPattern;
+
+  /// What the pattern asks for, kept so the shortfall can be explained.
+  final int? patternTotalQuestions;
+
   TestItem({
     required this.id,
     required this.title,
@@ -76,6 +86,9 @@ class TestItem {
     this.totalMarks,
     this.totalDurationSeconds,
     this.totalAttempts = 0,
+    this.isPlayable = true,
+    this.isShortOfPattern = false,
+    this.patternTotalQuestions,
   });
 
   factory TestItem.fromJson(Map<String, dynamic> json) {
@@ -92,6 +105,14 @@ class TestItem {
       totalAttempts: json['total_attempts'] is int
           ? json['total_attempts']
           : int.tryParse('${json['total_attempts'] ?? 0}') ?? 0,
+      isPlayable: json['is_playable'] == null
+          ? (json['total_questions'] ?? 0) > 0
+          : (json['is_playable'] == true || json['is_playable'] == 1),
+      isShortOfPattern:
+          json['is_short_of_pattern'] == true || json['is_short_of_pattern'] == 1,
+      patternTotalQuestions: json['pattern_total_questions'] is int
+          ? json['pattern_total_questions']
+          : int.tryParse('${json['pattern_total_questions'] ?? ''}'),
     );
   }
 }
@@ -146,6 +167,29 @@ class QuestionItem {
   String get englishQuestionText => textForLanguage('en');
   String get hindiQuestionText => textForLanguage('hi');
   bool get hasHindi => translations.any((t) => t.language == 'hi');
+
+  /// True when this question is answered by typing a value rather than
+  /// picking an option (TITA / numerical-entry questions).
+  bool get isNumericalEntry {
+    final t = questionType.toUpperCase();
+    return t == 'NUMERICAL' || t == 'TITA' || t == 'NAT' || t == 'FILL_IN_THE_BLANK';
+  }
+
+  /// Option keys in the order the server sent them.
+  ///
+  /// Each attempt stores its own shuffled option order, so two candidates
+  /// sitting the same question see the choices in different positions. Reading
+  /// the order off the payload keeps that shuffle intact, and copes with papers
+  /// that use five options instead of four. Falls back to A-D only when the
+  /// server sent no options at all for a choice-based question.
+  List<String> get orderedOptionKeys {
+    final keys = <String>[];
+    for (final o in options) {
+      if (!keys.contains(o.optionKey)) keys.add(o.optionKey);
+    }
+    if (keys.isNotEmpty) return keys;
+    return isNumericalEntry ? const <String>[] : const ['A', 'B', 'C', 'D'];
+  }
 
   List<QuestionOption> optionsForLanguage(String lang) {
     final filtered = options.where((o) => o.language == lang).toList();

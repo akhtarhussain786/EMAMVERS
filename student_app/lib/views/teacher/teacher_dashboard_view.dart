@@ -4,7 +4,6 @@ import '../../core/constants.dart';
 import '../../widgets/design_system_widgets.dart';
 import 'submit_question_view.dart';
 import 'my_questions_view.dart';
-import 'become_teacher_view.dart';
 import 'teacher_documents_view.dart';
 
 /// Home screen for a teacher account. Teachers author questions; they do not
@@ -122,16 +121,16 @@ class _TeacherDashboardViewState extends State<TeacherDashboardView> {
                         Row(children: [
                           _statCard('Awaiting Review', stats?['pending_review'] ?? 0, AppConstants.accentAmber),
                           const SizedBox(width: 12),
-                          _statCard('Approved', stats?['approved'] ?? 0, AppConstants.accentEmerald),
+                          _statCard('Changes Needed', stats?['changes_requested'] ?? 0, AppConstants.accentPurple),
                         ]),
                         const SizedBox(height: 12),
                         Row(children: [
                           _statCard('Rejected', stats?['rejected'] ?? 0, AppConstants.accentRose),
                           const SizedBox(width: 12),
                           _statCard(
-                            'Approval Rate',
-                            stats?['approval_rate'] == null ? '—' : '${stats!['approval_rate']}%',
-                            AppConstants.accentPurple,
+                            'Approved (Live)',
+                            stats?['approved'] ?? 0,
+                            AppConstants.accentEmerald,
                           ),
                         ]),
                         const SizedBox(height: AppConstants.space24),
@@ -271,7 +270,11 @@ class StatusChip extends StatelessWidget {
         break;
       case 'rejected':
         color = AppConstants.accentRose;
-        label = 'Needs changes';
+        label = 'Rejected';
+        break;
+      case 'changes_requested':
+        color = AppConstants.accentPurple;
+        label = 'Changes Requested';
         break;
       case 'review':
         color = AppConstants.accentAmber;

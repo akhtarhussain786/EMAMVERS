@@ -36,7 +36,7 @@ class QuestionReviewController {
         $db = null;
         self::actingAdminId($db);
 
-        $status    = in_array($_GET['status'] ?? '', ['review','published','rejected'], true) ? $_GET['status'] : 'review';
+        $status    = in_array($_GET['status'] ?? '', ['review','published','rejected','changes_requested'], true) ? $_GET['status'] : 'review';
         $subjectId = isset($_GET['subject_id']) ? intval($_GET['subject_id']) : 0;
         $limit     = min(100, max(1, intval($_GET['limit'] ?? 50)));
 
@@ -46,14 +46,15 @@ class QuestionReviewController {
         $whereSql = implode(' AND ', $where);
 
         $stmt = $db->prepare("
-            SELECT q.id, q.status, q.difficulty, q.created_at, q.reviewed_at, q.rejection_reason,
+            SELECT q.id, q.status, q.difficulty, q.image_url, q.marks, q.negative_marks, q.created_at, q.reviewed_at, q.rejection_reason, q.admin_comment,
                    qt.question_text, qt.solution_text AS explanation,
-                   s.name AS subject_name, t.name AS topic_name,
+                   s.name AS subject_name, c.name AS chapter_name, t.name AS topic_name,
                    u.full_name AS author_name, tp.display_name AS author_display_name,
                    tp.questions_approved, tp.questions_rejected
             FROM questions q
             LEFT JOIN question_translations qt ON q.id = qt.question_id AND qt.language = 'en'
             LEFT JOIN subjects s ON q.subject_id = s.id
+            LEFT JOIN chapters c ON q.chapter_id = c.id
             LEFT JOIN topics t ON q.topic_id = t.id
             LEFT JOIN users u ON q.author_user_id = u.id
             LEFT JOIN teacher_profiles tp ON tp.user_id = q.author_user_id
@@ -181,6 +182,82 @@ class QuestionReviewController {
         }
 
         Response::json(['question_id' => intval($id), 'status' => 'rejected'], 'Question rejected and the teacher notified');
+    }
+
+    /** Requests modifications from the teacher with mandatory feedback instructions. */
+    public static function requestChanges($id) {
+        $db = null;
+        $adminId = self::actingAdminId($db);
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+
+        $comment = trim($input['comment'] ?? ($input['reason'] ?? ''));
+        if ($comment === '') {
+            Response::error('Feedback instructions are mandatory when requesting changes', 422);
+        }
+        if (mb_strlen($comment) > 1000) {
+            Response::error('Comment must be under 1000 characters', 422);
+        }
+
+        $question = self::loadPending($db, $id);
+
+        $db->beginTransaction();
+        try {
+            $db->prepare("
+                UPDATE questions
+                SET status = 'changes_requested', reviewed_by = ?, reviewed_at = NOW(),
+                    rejection_reason = ?, admin_comment = ?
+                WHERE id = ?
+            ")->execute([$adminId, $comment, $comment, $id]);
+
+            self::notifyAuthor($db, $question['author_user_id'],
+                'Question changes requested',
+                'Admin requested modifications on Question #' . $id . ': ' . $comment);
+
+            self::audit($db, $adminId, 'REQUEST_CHANGES', $id, 'Requested changes on question #' . $id . ': ' . $comment);
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
+        }
+
+        Response::json(['question_id' => intval($id), 'status' => 'changes_requested'], 'Changes requested and teacher notified');
+    }
+
+    /** Unpublishes an approved question, removing it immediately from all student exams. */
+    public static function unpublish($id) {
+        $db = null;
+        $adminId = self::actingAdminId($db);
+
+        $id = intval($id);
+        $stmt = $db->prepare("SELECT * FROM questions WHERE id = ?");
+        $stmt->execute([$id]);
+        $question = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$question) Response::error('Question not found', 404);
+        if ($question['status'] !== 'published') Response::error('Question is not currently published', 409);
+
+        $db->beginTransaction();
+        try {
+            $db->prepare("UPDATE questions SET status = 'draft', reviewed_by = ?, updated_at = NOW() WHERE id = ?")
+               ->execute([$adminId, $id]);
+
+            if ($question['author_user_id']) {
+                $db->prepare("UPDATE teacher_profiles SET questions_approved = GREATEST(0, questions_approved - 1) WHERE user_id = ?")
+                   ->execute([$question['author_user_id']]);
+
+                self::notifyAuthor($db, $question['author_user_id'],
+                    'Question unpublished',
+                    'Your question #' . $id . ' has been unpublished by admin and taken down from student views.');
+            }
+
+            self::audit($db, $adminId, 'UNPUBLISH_QUESTION', $id, 'Unpublished question #' . $id);
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
+        }
+
+        Response::json(['question_id' => $id, 'status' => 'draft'], 'Question unpublished and moved to draft');
     }
 
     // ─── TEACHER ACCOUNT MANAGEMENT ───────────────────────────────────

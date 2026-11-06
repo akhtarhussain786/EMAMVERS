@@ -10,6 +10,8 @@ import '../notifications/notifications_view.dart';
 import '../map_learning/map_learning_home_view.dart';
 import '../friends/friends_leaderboard_view.dart';
 import '../notebook/mistake_notebook_view.dart';
+import '../discovery/question_bank_view.dart';
+import '../../widgets/premium_nav_bar.dart';
 
 class HomeView extends StatefulWidget {
   final Function(int examId) onSelectExam;
@@ -112,7 +114,9 @@ class _HomeViewState extends State<HomeView> {
       backgroundColor: AppConstants.primaryDark,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(AppConstants.space20, AppConstants.space20, AppConstants.space20, 100),
+          // Clears the floating nav bar, including the device's gesture inset.
+          padding: EdgeInsets.fromLTRB(AppConstants.space20, AppConstants.space20,
+              AppConstants.space20, PremiumNavBar.spaceFor(context)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -195,7 +199,7 @@ class _HomeViewState extends State<HomeView> {
               RankCard(
                 rank: userRanking.currentRank,
                 percentile: userRanking.percentile,
-                rankImprovementText: '↑ ${userRanking.rankImprovement} positions this week',
+                rankImprovementText: userRanking.rankMovementLabel,
                 bestRank: userRanking.bestRank,
               ),
               const SizedBox(height: AppConstants.space24),
@@ -331,7 +335,9 @@ class _HomeViewState extends State<HomeView> {
                   _buildQuickAction('AI Coach', Icons.auto_awesome, AppConstants.accentPurple, widget.onOpenAiCoach),
                   _buildQuickAction('Practice', Icons.edit_note, AppConstants.accentBlue, widget.onBuildPractice),
                   _buildQuickAction('Leaderboard', Icons.emoji_events_outlined, AppConstants.accentEmerald, widget.onOpenLeaderboard),
-                  _buildQuickAction('Daily Quiz', Icons.timer_outlined, AppConstants.accentCyan, widget.onOpenAiCoach),
+                  _buildQuickAction('Q-Bank', Icons.auto_stories_outlined, AppConstants.accentCyan, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const StudentQuestionBankView()));
+                  }),
                   _buildQuickAction('Affairs', Icons.newspaper, AppConstants.accentRose, () {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const CurrentAffairsView()));
                   }),

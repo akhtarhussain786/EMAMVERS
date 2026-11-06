@@ -42,7 +42,8 @@ class AdminController {
     }
 
     public static function getDashboardMetrics() {
-        AuthMiddleware::getAuthenticatedUser('admin');
+        $auth = AuthMiddleware::getAuthenticatedUser('admin');
+        $adminId = $auth['sub'] ?? 1;
         $db = Database::getConnection();
 
         $usersCount = $db->query("SELECT COUNT(*) FROM users")->fetchColumn();
@@ -73,7 +74,8 @@ class AdminController {
 
     // TAXONOMY API
     public static function getExams() {
-        AuthMiddleware::getAuthenticatedUser('admin');
+        $auth = AuthMiddleware::getAuthenticatedUser('admin');
+        $adminId = $auth['sub'] ?? 1;
         $db = Database::getConnection();
         $exams = $db->query("
             SELECT e.*, c.name as category_name, o.short_name as org_name 
@@ -86,7 +88,8 @@ class AdminController {
     }
 
     public static function createExam() {
-        AuthMiddleware::getAuthenticatedUser('admin');
+        $auth = AuthMiddleware::getAuthenticatedUser('admin');
+        $adminId = $auth['sub'] ?? 1;
         $input = json_decode(file_get_contents('php://input'), true);
         $title = trim($input['title'] ?? '');
         $categoryId = intval($input['category_id'] ?? 1);
@@ -104,7 +107,8 @@ class AdminController {
 
     // PATTERNS API
     public static function getPatterns() {
-        AuthMiddleware::getAuthenticatedUser('admin');
+        $auth = AuthMiddleware::getAuthenticatedUser('admin');
+        $adminId = $auth['sub'] ?? 1;
         $db = Database::getConnection();
         $patterns = $db->query("
             SELECT ep.*, e.title as exam_title 
@@ -117,7 +121,8 @@ class AdminController {
 
     // QUESTIONS & BULK IMPORT API
     public static function getQuestions() {
-        AuthMiddleware::getAuthenticatedUser('admin');
+        $auth = AuthMiddleware::getAuthenticatedUser('admin');
+        $adminId = $auth['sub'] ?? 1;
         $db = Database::getConnection();
         $questions = $db->query("
             SELECT q.*, s.name as subject_name, qt.question_text,
@@ -133,7 +138,8 @@ class AdminController {
     }
 
     public static function bulkImportQuestions() {
-        AuthMiddleware::getAuthenticatedUser('admin');
+        $auth = AuthMiddleware::getAuthenticatedUser('admin');
+        $adminId = $auth['sub'] ?? 1;
         $input = json_decode(file_get_contents('php://input'), true);
         $questions = $input['questions'] ?? [];
 
@@ -178,7 +184,8 @@ class AdminController {
 
     // AUDIT LOGS
     public static function getAuditLogs() {
-        AuthMiddleware::getAuthenticatedUser('admin');
+        $auth = AuthMiddleware::getAuthenticatedUser('admin');
+        $adminId = $auth['sub'] ?? 1;
         $db = Database::getConnection();
         $logs = $db->query("
             SELECT al.*, a.username, a.full_name 
@@ -192,7 +199,8 @@ class AdminController {
     // ─── ADMIN TEST BUILDER ─────────────────────────────────────────────
 
     public static function createTest() {
-        AuthMiddleware::getAuthenticatedUser('admin');
+        $auth = AuthMiddleware::getAuthenticatedUser('admin');
+        $adminId = $auth['sub'] ?? 1;
         $input = json_decode(file_get_contents('php://input'), true);
 
         $examId    = intval($input['exam_id'] ?? 0);
@@ -221,7 +229,8 @@ class AdminController {
     }
 
     public static function assignQuestionsToTest() {
-        AuthMiddleware::getAuthenticatedUser('admin');
+        $auth = AuthMiddleware::getAuthenticatedUser('admin');
+        $adminId = $auth['sub'] ?? 1;
         $input = json_decode(file_get_contents('php://input'), true);
 
         $testId = intval($input['test_id'] ?? 0);
@@ -279,7 +288,8 @@ class AdminController {
     // ─── TAXONOMY MANAGEMENT ──────────────────────────────────────────
 
     public static function createCategory() {
-        AuthMiddleware::getAuthenticatedUser('admin');
+        $auth = AuthMiddleware::getAuthenticatedUser('admin');
+        $adminId = $auth['sub'] ?? 1;
         $input = json_decode(file_get_contents('php://input'), true);
 
         $name = trim($input['name'] ?? '');
@@ -303,7 +313,8 @@ class AdminController {
     }
 
     public static function createSubject() {
-        AuthMiddleware::getAuthenticatedUser('admin');
+        $auth = AuthMiddleware::getAuthenticatedUser('admin');
+        $adminId = $auth['sub'] ?? 1;
         $input = json_decode(file_get_contents('php://input'), true);
 
         $name = trim($input['name'] ?? '');
@@ -321,7 +332,8 @@ class AdminController {
     // ─── QUESTION CRUD ────────────────────────────────────────────────
 
     public static function createQuestion() {
-        AuthMiddleware::getAuthenticatedUser('admin');
+        $auth = AuthMiddleware::getAuthenticatedUser('admin');
+        $adminId = $auth['sub'] ?? 1;
         $input = json_decode(file_get_contents('php://input'), true);
 
         $subjectId = intval($input['subject_id'] ?? 1);
@@ -337,8 +349,15 @@ class AdminController {
 
         $db = Database::getConnection();
 
-        $qStmt = $db->prepare("INSERT INTO questions (subject_id, chapter_id, topic_id, question_type, difficulty, status) VALUES (?, ?, ?, ?, ?, 'published')");
-        $qStmt->execute([$subjectId, $chapterId, $topicId, $type, $difficulty]);
+        $marks = floatval($input['marks'] ?? 2.00);
+        $negativeMarks = floatval($input['negative_marks'] ?? 0.50);
+        $imageUrl = trim($input['image_url'] ?? '');
+        $status = in_array($input['status'] ?? '', ['draft', 'published'], true) ? $input['status'] : 'published';
+
+        $qStmt = $db->prepare("INSERT INTO questions (subject_id, chapter_id, topic_id, created_by_admin_id, question_type, image_url, difficulty, marks, negative_marks, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+        $qStmt->execute([$subjectId, $chapterId, $topicId, $adminId, $type, $imageUrl ?: null, $difficulty, $marks, $negativeMarks, $status]);
+
+
         $qId = $db->lastInsertId();
 
         $tStmt = $db->prepare("INSERT INTO question_translations (question_id, language, question_text, solution_text) VALUES (?, 'en', ?, ?)");
@@ -353,7 +372,8 @@ class AdminController {
     }
 
     public static function deleteQuestion($id) {
-        AuthMiddleware::getAuthenticatedUser('admin');
+        $auth = AuthMiddleware::getAuthenticatedUser('admin');
+        $adminId = $auth['sub'] ?? 1;
         $db = Database::getConnection();
         $db->prepare("DELETE FROM questions WHERE id = ?")->execute([$id]);
         Response::json(['deleted' => true], 'Question deleted from bank');
@@ -362,7 +382,8 @@ class AdminController {
     // ─── CHALLENGE MANAGER ────────────────────────────────────────────
 
     public static function createChallenge() {
-        AuthMiddleware::getAuthenticatedUser('admin');
+        $auth = AuthMiddleware::getAuthenticatedUser('admin');
+        $adminId = $auth['sub'] ?? 1;
         $input = json_decode(file_get_contents('php://input'), true);
 
         $examId = intval($input['exam_id'] ?? 0);
