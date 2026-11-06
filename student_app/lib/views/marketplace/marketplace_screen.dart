@@ -370,8 +370,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
 
   Widget _buildLoadError() {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(32, 32, 32, 110),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -406,8 +406,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
 
   Widget _buildEmpty() {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 110),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

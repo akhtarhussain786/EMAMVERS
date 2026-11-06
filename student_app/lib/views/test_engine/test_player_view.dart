@@ -341,6 +341,7 @@ class _TestPlayerViewState extends State<TestPlayerView> {
         ],
       ),
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             // Section Bar
@@ -382,39 +383,44 @@ class _TestPlayerViewState extends State<TestPlayerView> {
 
             // Bottom Action Bar
             Container(
-              padding: const EdgeInsets.all(AppConstants.space16),
               decoration: BoxDecoration(
                 color: AppConstants.cardDark,
                 border: Border(top: BorderSide(color: AppConstants.cardBorder)),
               ),
-              child: Row(
-                children: [
-                  OutlinedButton(
-                    onPressed: _onMarkForReview,
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppConstants.accentAmber),
-                      foregroundColor: AppConstants.accentAmber,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: Text(currentQuestion.isMarkedForReview ? 'Unmark' : 'Mark Review', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.all(AppConstants.space16),
+                  child: Row(
+                    children: [
+                      OutlinedButton(
+                        onPressed: _onMarkForReview,
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppConstants.accentAmber),
+                          foregroundColor: AppConstants.accentAmber,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: Text(currentQuestion.isMarkedForReview ? 'Unmark' : 'Mark Review', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: _onClearResponse,
+                        child: const Text('Clear', style: TextStyle(color: AppConstants.textMuted, fontSize: 12.5)),
+                      ),
+                      const Spacer(),
+                      ElevatedButton(
+                        onPressed: _onSaveAndNext,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppConstants.accentIndigo,
+                          foregroundColor: AppConstants.onAccent,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: const Text('Save & Next →', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: _onClearResponse,
-                    child: const Text('Clear', style: TextStyle(color: AppConstants.textMuted, fontSize: 12.5)),
-                  ),
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: _onSaveAndNext,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppConstants.accentIndigo,
-                      foregroundColor: AppConstants.onAccent,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: const Text('Save & Next →', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
-                  ),
-                ],
+                ),
               ),
             ),
           ],

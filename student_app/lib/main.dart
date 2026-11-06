@@ -25,6 +25,7 @@ import 'views/teacher/teacher_documents_view.dart';
 import 'views/map_learning/map_learning_home_view.dart';
 import 'views/notebook/mistake_notebook_view.dart';
 import 'views/practice/build_practice_view.dart';
+import 'views/discovery/question_bank_view.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -139,6 +140,7 @@ class _ExamVerseAppState extends State<ExamVerseApp> {
         '/teacher-documents': (_) => const TeacherDocumentsView(),
         '/map-learning': (_) => const MapLearningHomeView(),
         '/mistake-notebook': (_) => const MistakeNotebookView(),
+        '/question-bank': (_) => const StudentQuestionBankView(),
       },
       home: !isAuthenticated
           ? (!hasSeenOnboarding

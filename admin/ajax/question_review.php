@@ -11,13 +11,12 @@ $db     = Database::getConnection();
 $action = $_GET['action'] ?? '';
 $adminId = $_SESSION['admin_user']['id'] ?? null;
 
-
-
 switch ($action) {
 
     // ── REVIEW QUEUE ───────────────────────────────────────────────────
     case 'list':
-        $status    = in_array($_GET['status'] ?? '', ['review','published','rejected'], true) ? $_GET['status'] : 'review';
+        $allowedStatuses = ['review', 'published', 'changes_requested', 'rejected'];
+        $status    = in_array($_GET['status'] ?? '', $allowedStatuses, true) ? $_GET['status'] : 'review';
         $subjectId = intval($_GET['subject_id'] ?? 0);
 
         $where  = ["q.status = ?", "q.author_user_id IS NOT NULL"];
@@ -26,15 +25,17 @@ switch ($action) {
         $whereSql = implode(' AND ', $where);
 
         $stmt = $db->prepare("
-            SELECT q.id, q.status, q.difficulty, q.created_at, q.reviewed_at, q.rejection_reason,
+            SELECT q.id, q.status, q.difficulty, q.image_url, q.marks, q.negative_marks,
+                   q.created_at, q.reviewed_at, q.rejection_reason, q.admin_comment,
                    qt.question_text, qt.solution_text AS explanation,
-                   s.name AS subject_name, t.name AS topic_name,
+                   s.name AS subject_name, c.name AS chapter_name, t.name AS topic_name,
                    u.full_name AS author_name,
                    tp.display_name AS author_display_name,
                    tp.questions_approved, tp.questions_rejected
             FROM questions q
             LEFT JOIN question_translations qt ON q.id = qt.question_id AND qt.language='en'
             LEFT JOIN subjects s ON q.subject_id = s.id
+            LEFT JOIN chapters c ON q.chapter_id = c.id
             LEFT JOIN topics t ON q.topic_id = t.id
             LEFT JOIN users u ON q.author_user_id = u.id
             LEFT JOIN teacher_profiles tp ON tp.user_id = q.author_user_id
@@ -56,7 +57,7 @@ switch ($action) {
         }
 
         $counts = [];
-        foreach (['review','published','rejected'] as $st) {
+        foreach ($allowedStatuses as $st) {
             $c = $db->prepare("SELECT COUNT(*) FROM questions WHERE status=? AND author_user_id IS NOT NULL");
             $c->execute([$st]);
             $counts[$st] = intval($c->fetchColumn());
@@ -75,7 +76,7 @@ switch ($action) {
         $q->execute([$id]);
         $question = $q->fetch(PDO::FETCH_ASSOC);
         if (!$question) ajaxErr('Question not found', 404);
-        if ($question['status'] !== 'review') ajaxErr('This question has already been reviewed', 409);
+        if ($question['status'] === 'published') ajaxErr('This question is already approved and published', 409);
 
         $db->beginTransaction();
         try {
@@ -92,19 +93,21 @@ switch ($action) {
                 $db->prepare("UPDATE question_options SET is_correct = (option_key = ?) WHERE question_id = ? AND language='en'")
                    ->execute([strtoupper($body['correct_option']), $id]);
             }
-            // Reviewers frequently re-grade difficulty; keep this in step with
-            // the API's approve endpoint, which already supported it.
             if (!empty($body['difficulty']) && in_array($body['difficulty'], ['easy','medium','hard'], true)) {
                 $db->prepare("UPDATE questions SET difficulty = ? WHERE id = ?")->execute([$body['difficulty'], $id]);
             }
 
-            $db->prepare("UPDATE questions SET status='published', reviewed_by=?, reviewed_at=NOW(), rejection_reason=NULL WHERE id=?")
+            $db->prepare("UPDATE questions SET status='published', reviewed_by=?, reviewed_at=NOW(), rejection_reason=NULL, admin_comment=NULL WHERE id=?")
                ->execute([$adminId, $id]);
-            $db->prepare("UPDATE teacher_profiles SET questions_approved = questions_approved + 1 WHERE user_id=?")
-               ->execute([$question['author_user_id']]);
 
-            notifyTeacher($db, $question['author_user_id'], 'Question approved',
-                'Your question has been approved and is now live for students.');
+            if ($question['author_user_id']) {
+                $db->prepare("UPDATE teacher_profiles SET questions_approved = questions_approved + 1 WHERE user_id=?")
+                   ->execute([$question['author_user_id']]);
+
+                notifyTeacher($db, $question['author_user_id'], 'Question approved',
+                    'Your question #' . $id . ' has been approved by admin and is now live for students.');
+            }
+
             auditLog($db, $adminId, 'APPROVE_QUESTION', $id, 'Approved teacher question #' . $id);
             $db->commit();
         } catch (Throwable $e) {
@@ -116,30 +119,72 @@ switch ($action) {
         ajaxOk(['question_id' => $id], 'Question approved and published ✓');
         break;
 
-    // ── REJECT ─────────────────────────────────────────────────────────
-    case 'reject':
-        $id     = intval($_GET['id'] ?? 0);
-        $body   = getBody();
-        $reason = trim($body['reason'] ?? '');
+    // ── REQUEST CHANGES ────────────────────────────────────────────────
+    case 'request_changes':
+        $id      = intval($_GET['id'] ?? 0);
+        $body    = getBody();
+        $comment = trim($body['comment'] ?? ($body['reason'] ?? ''));
         if (!$id) ajaxErr('id required', 422);
-        if ($reason === '') ajaxErr('A reason is required so the teacher can correct and resubmit', 422);
-        if (mb_strlen($reason) > 500) ajaxErr('Reason must be under 500 characters', 422);
+        if ($comment === '') ajaxErr('Feedback comment is mandatory when requesting changes', 422);
+        if (mb_strlen($comment) > 1000) ajaxErr('Comment must be under 1000 characters', 422);
 
         $q = $db->prepare("SELECT id, status, author_user_id FROM questions WHERE id=?");
         $q->execute([$id]);
         $question = $q->fetch(PDO::FETCH_ASSOC);
         if (!$question) ajaxErr('Question not found', 404);
-        if ($question['status'] !== 'review') ajaxErr('This question has already been reviewed', 409);
 
         $db->beginTransaction();
         try {
-            $db->prepare("UPDATE questions SET status='rejected', reviewed_by=?, reviewed_at=NOW(), rejection_reason=? WHERE id=?")
-               ->execute([$adminId, $reason, $id]);
-            $db->prepare("UPDATE teacher_profiles SET questions_rejected = questions_rejected + 1 WHERE user_id=?")
-               ->execute([$question['author_user_id']]);
+            $db->prepare("
+                UPDATE questions 
+                SET status='changes_requested', reviewed_by=?, reviewed_at=NOW(), 
+                    rejection_reason=?, admin_comment=? 
+                WHERE id=?
+            ")->execute([$adminId, $comment, $comment, $id]);
 
-            notifyTeacher($db, $question['author_user_id'], 'Question needs changes',
-                'A question you submitted was not approved. Reason: ' . $reason);
+            if ($question['author_user_id']) {
+                notifyTeacher($db, $question['author_user_id'], 'Question changes requested',
+                    'Admin requested modifications on Question #' . $id . ': ' . $comment);
+            }
+
+            auditLog($db, $adminId, 'REQUEST_CHANGES', $id, 'Requested changes on question #' . $id . ': ' . $comment);
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            error_log('EXAMVERSE request changes failed: ' . $e->getMessage());
+            ajaxErr('Could not request changes', 500);
+        }
+
+        ajaxOk(['question_id' => $id], 'Changes requested. The teacher has been notified with your feedback.');
+        break;
+
+    // ── REJECT ─────────────────────────────────────────────────────────
+    case 'reject':
+        $id     = intval($_GET['id'] ?? 0);
+        $body   = getBody();
+        $reason = trim($body['reason'] ?? ($body['comment'] ?? ''));
+        if (!$id) ajaxErr('id required', 422);
+        if ($reason === '') ajaxErr('A rejection reason is mandatory so the teacher understands why it was rejected', 422);
+        if (mb_strlen($reason) > 1000) ajaxErr('Reason must be under 1000 characters', 422);
+
+        $q = $db->prepare("SELECT id, status, author_user_id FROM questions WHERE id=?");
+        $q->execute([$id]);
+        $question = $q->fetch(PDO::FETCH_ASSOC);
+        if (!$question) ajaxErr('Question not found', 404);
+
+        $db->beginTransaction();
+        try {
+            $db->prepare("UPDATE questions SET status='rejected', reviewed_by=?, reviewed_at=NOW(), rejection_reason=?, admin_comment=? WHERE id=?")
+               ->execute([$adminId, $reason, $reason, $id]);
+
+            if ($question['author_user_id']) {
+                $db->prepare("UPDATE teacher_profiles SET questions_rejected = questions_rejected + 1 WHERE user_id=?")
+                   ->execute([$question['author_user_id']]);
+
+                notifyTeacher($db, $question['author_user_id'], 'Question rejected',
+                    'A question you submitted was rejected. Reason: ' . $reason);
+            }
+
             auditLog($db, $adminId, 'REJECT_QUESTION', $id, 'Rejected teacher question #' . $id . ': ' . $reason);
             $db->commit();
         } catch (Throwable $e) {
@@ -148,7 +193,42 @@ switch ($action) {
             ajaxErr('Could not reject this question', 500);
         }
 
-        ajaxOk(['question_id' => $id], 'Question rejected and the teacher notified');
+        ajaxOk(['question_id' => $id], 'Question rejected and teacher notified');
+        break;
+
+    // ── UNPUBLISH ──────────────────────────────────────────────────────
+    case 'unpublish':
+        $id = intval($_GET['id'] ?? 0);
+        if (!$id) ajaxErr('id required', 422);
+
+        $q = $db->prepare("SELECT id, status, author_user_id FROM questions WHERE id=?");
+        $q->execute([$id]);
+        $question = $q->fetch(PDO::FETCH_ASSOC);
+        if (!$question) ajaxErr('Question not found', 404);
+        if ($question['status'] !== 'published') ajaxErr('Question is not currently published', 409);
+
+        $db->beginTransaction();
+        try {
+            $db->prepare("UPDATE questions SET status='draft', reviewed_by=?, updated_at=NOW() WHERE id=?")
+               ->execute([$adminId, $id]);
+
+            if ($question['author_user_id']) {
+                $db->prepare("UPDATE teacher_profiles SET questions_approved = GREATEST(0, questions_approved - 1) WHERE user_id=?")
+                   ->execute([$question['author_user_id']]);
+
+                notifyTeacher($db, $question['author_user_id'], 'Question unpublished',
+                    'Your question #' . $id . ' has been unpublished by admin and is no longer live for students.');
+            }
+
+            auditLog($db, $adminId, 'UNPUBLISH_QUESTION', $id, 'Unpublished question #' . $id);
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            error_log('EXAMVERSE unpublish failed: ' . $e->getMessage());
+            ajaxErr('Could not unpublish question', 500);
+        }
+
+        ajaxOk(['question_id' => $id], 'Question unpublished and moved to draft.');
         break;
 
     // ── TEACHER ACCOUNTS ───────────────────────────────────────────────
@@ -199,57 +279,32 @@ switch ($action) {
             $db->prepare("INSERT INTO users (full_name, email, mobile, password_hash, user_type, is_verified, status) VALUES (?,?,?,?,'teacher',1,'active')")
                ->execute([$fullName, $email, $mobile, password_hash($password, PASSWORD_BCRYPT)]);
             $userId = $db->lastInsertId();
-            
+
             $db->prepare("INSERT INTO teacher_profiles (user_id, display_name, qualification, specialisation, status) VALUES (?,?,?,?,'active')")
-               ->execute([$userId, $displayName, $qualification ?: null, $specialisation ?: null]);
+               ->execute([$userId, $displayName, $qualification, $specialisation]);
 
-            // Auto-create approved application record for reporting
-            try {
-                $appNo = 'TCH-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(3)));
-                $db->prepare("
-                    INSERT INTO teacher_applications (
-                        application_no, user_id, highest_qualification, degree_name,
-                        specialization, institution_name, passing_year, experience_years,
-                        current_organization, status, assigned_reviewer_id, reviewer_message,
-                        approved_at, reviewed_at
-                    ) VALUES (?, ?, ?, ?, ?, 'ExamVerse Faculty', ?, 2.0, 'ExamVerse Faculty', 'approved', ?, 'Directly created and verified by Administrator', NOW(), NOW())
-                ")->execute([
-                    $appNo,
-                    $userId,
-                    $qualification ?: 'Faculty Degree',
-                    $qualification ?: 'General',
-                    $specialisation ?: 'General',
-                    date('Y'),
-                    $adminId
-                ]);
-            } catch (Exception $eApp) {}
-
-            auditLog($db, $adminId, 'CREATE_TEACHER', $userId, 'Created teacher account: ' . $email);
+            auditLog($db, $adminId, 'CREATE_TEACHER', $userId, 'Created teacher account for ' . $email);
             $db->commit();
         } catch (Throwable $e) {
             $db->rollBack();
             error_log('EXAMVERSE create teacher failed: ' . $e->getMessage());
-            ajaxErr('Could not create the teacher account: ' . $e->getMessage(), 500);
+            ajaxErr('Could not create teacher account', 500);
         }
 
-        ajaxOk(['user_id' => $userId, 'email' => $email, 'full_name' => $fullName], 'Teacher account created successfully! ✓', 201);
+        ajaxOk(['user_id' => $userId], 'Teacher account created ✓');
         break;
 
-    case 'teacher_status':
+    case 'set_teacher_status':
         $id     = intval($_GET['id'] ?? 0);
         $body   = getBody();
-        $status = $body['status'] ?? '';
-        if (!$id) ajaxErr('id required', 422);
-        if (!in_array($status, ['active','suspended'], true)) ajaxErr("status must be 'active' or 'suspended'", 422);
+        $status = in_array($body['status'] ?? '', ['active','suspended'], true) ? $body['status'] : '';
+        if (!$id || !$status) ajaxErr('id and valid status required', 422);
 
-        $stmt = $db->prepare("UPDATE teacher_profiles SET status=? WHERE id=?");
-        $stmt->execute([$status, $id]);
-        if ($stmt->rowCount() === 0) ajaxErr('Teacher not found', 404);
-
-        auditLog($db, $adminId, 'UPDATE_TEACHER_STATUS', $id, 'Teacher #' . $id . ' set to ' . $status);
-        ajaxOk(['status' => $status], 'Teacher status updated');
+        $db->prepare("UPDATE teacher_profiles SET status=? WHERE id=?")->execute([$status, $id]);
+        auditLog($db, $adminId, 'SET_TEACHER_STATUS', $id, 'Changed teacher #' . $id . ' status to ' . $status);
+        ajaxOk(null, 'Teacher status updated');
         break;
 
     default:
-        ajaxErr("Unknown action: $action", 400);
+        ajaxErr('Unknown action: ' . $action, 404);
 }

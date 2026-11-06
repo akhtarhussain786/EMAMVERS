@@ -176,6 +176,14 @@ if (($path === '/v1/health' || $path === '/health') && $method === 'GET') {
     TeacherController::submitQuestion();
 } elseif ($path === '/v1/teacher/questions' && $method === 'GET') {
     TeacherController::myQuestions();
+} elseif ($path === '/v1/teacher/upload-image' && $method === 'POST') {
+    TeacherController::uploadImage();
+} elseif (matchRoute('/v1/teacher/questions/{id}', $path, $params) && $method === 'GET') {
+    TeacherController::getQuestionDetail($params['id']);
+} elseif ($path === '/v1/question-bank' && $method === 'GET') {
+    DiscoveryController::getQuestionBank();
+} elseif ($path === '/v1/questions' && $method === 'GET') {
+    DiscoveryController::getQuestionBank();
 
 // ── ADMIN: TEACHER KYC VERIFICATION (PRD §15) ────────────────────────────
 } elseif ($path === '/v1/admin/teacher-applications' && $method === 'GET') {
@@ -200,6 +208,10 @@ if (($path === '/v1/health' || $path === '/health') && $method === 'GET') {
     QuestionReviewController::approve($params['id']);
 } elseif (matchRoute('/v1/admin/question-submissions/{id}/reject', $path, $params) && $method === 'POST') {
     QuestionReviewController::reject($params['id']);
+} elseif (matchRoute('/v1/admin/question-submissions/{id}/request-changes', $path, $params) && $method === 'POST') {
+    QuestionReviewController::requestChanges($params['id']);
+} elseif (matchRoute('/v1/admin/question-submissions/{id}/unpublish', $path, $params) && $method === 'POST') {
+    QuestionReviewController::unpublish($params['id']);
 
 // ── QUESTION GOVERNANCE, DUPLICATES & REPORTS (PRD §16) ───────────────────
 } elseif (matchRoute('/v1/admin/questions/{id}/duplicates', $path, $params) && $method === 'GET') {

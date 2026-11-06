@@ -198,4 +198,103 @@ class DiscoveryController {
 
         Response::json(['exams' => $results, 'categories' => $cats, 'total' => count($results)], 'Search results');
     }
+
+    /**
+     * Student Question Bank & Practice Browser.
+     * Enforces strict backend rule: ONLY published (approved) questions are accessible to students.
+     */
+    public static function getQuestionBank() {
+        $db = Database::getConnection();
+
+        $subjectId  = intval($_GET['subject_id'] ?? 0);
+        $chapterId  = intval($_GET['chapter_id'] ?? 0);
+        $topicId    = intval($_GET['topic_id'] ?? 0);
+        $categoryId = intval($_GET['category_id'] ?? 0);
+        $examId     = intval($_GET['exam_id'] ?? 0);
+        $difficulty = trim($_GET['difficulty'] ?? '');
+        $page       = max(1, intval($_GET['page'] ?? 1));
+        $limit      = min(50, max(1, intval($_GET['limit'] ?? 15)));
+        $offset     = ($page - 1) * $limit;
+        $showSolution = isset($_GET['show_solution']) ? in_array(strtolower($_GET['show_solution']), ['1','true','yes'], true) : true;
+
+        $where  = ["q.status = 'published'"];
+        $params = [];
+
+        if ($subjectId > 0) {
+            $where[] = "q.subject_id = ?";
+            $params[] = $subjectId;
+        }
+        if ($chapterId > 0) {
+            $where[] = "q.chapter_id = ?";
+            $params[] = $chapterId;
+        }
+        if ($topicId > 0) {
+            $where[] = "q.topic_id = ?";
+            $params[] = $topicId;
+        }
+        if ($examId > 0) {
+            $where[] = "EXISTS (SELECT 1 FROM question_exams qe WHERE qe.question_id = q.id AND qe.exam_id = ?)";
+            $params[] = $examId;
+        } elseif ($categoryId > 0) {
+            $where[] = "EXISTS (SELECT 1 FROM question_exams qe JOIN exams e ON qe.exam_id = e.id WHERE qe.question_id = q.id AND e.category_id = ?)";
+            $params[] = $categoryId;
+        }
+        if ($difficulty !== '' && in_array($difficulty, ['easy', 'medium', 'hard'], true)) {
+            $where[] = "q.difficulty = ?";
+            $params[] = $difficulty;
+        }
+
+        $whereSql = implode(' AND ', $where);
+
+        $cntStmt = $db->prepare("SELECT COUNT(*) FROM questions q WHERE $whereSql");
+        $cntStmt->execute($params);
+        $total = intval($cntStmt->fetchColumn());
+
+        $solCol = $showSolution ? ", qt.solution_text AS explanation" : "";
+
+        $stmt = $db->prepare("
+            SELECT q.id, q.question_type, q.image_url, q.difficulty, q.marks, q.negative_marks,
+                   q.pyq_year, q.pyq_shift, qt.question_text $solCol,
+                   s.name AS subject_name, c.name AS chapter_name, t.name AS topic_name
+            FROM questions q
+            LEFT JOIN question_translations qt ON q.id = qt.question_id AND qt.language = 'en'
+            LEFT JOIN subjects s ON q.subject_id = s.id
+            LEFT JOIN chapters c ON q.chapter_id = c.id
+            LEFT JOIN topics t ON q.topic_id = t.id
+            WHERE $whereSql
+            ORDER BY q.id DESC
+            LIMIT $limit OFFSET $offset
+        ");
+        $stmt->execute($params);
+        $questions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (!empty($questions)) {
+            $ids = array_column($questions, 'id');
+            $ph = implode(',', array_fill(0, count($ids), '?'));
+            $isCorrCol = $showSolution ? ", is_correct" : "";
+            $optStmt = $db->prepare("
+                SELECT question_id, option_key, option_text $isCorrCol
+                FROM question_options
+                WHERE question_id IN ($ph) AND language = 'en'
+                ORDER BY option_key ASC
+            ");
+            $optStmt->execute($ids);
+            $byQ = [];
+            foreach ($optStmt->fetchAll(PDO::FETCH_ASSOC) as $o) {
+                $byQ[$o['question_id']][] = $o;
+            }
+            foreach ($questions as &$q) {
+                $q['options'] = $byQ[$q['id']] ?? [];
+            }
+            unset($q);
+        }
+
+        Response::json([
+            'questions' => $questions,
+            'total'     => $total,
+            'page'      => $page,
+            'limit'     => $limit,
+            'pages'     => ceil($total / $limit) ?: 1,
+        ], 'Questions loaded successfully');
+    }
 }
